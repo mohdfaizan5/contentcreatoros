@@ -178,3 +178,31 @@ export function SeriesList({ seriesList }: SeriesListProps) {
         </div>
     );
 }
+
+// Masonry grid layout
+export function SeriesMasonryGrid({ seriesList }: SeriesListProps) {
+    if (seriesList.length === 0) {
+        return (
+            <div className="text-center py-16 rounded-2xl border border-dashed bg-muted/20">
+                <Stack className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" weight="duotone" />
+                <h3 className="font-semibold text-muted-foreground">No series yet</h3>
+                <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto">
+                    Create a series to think in systems, not random posts
+                </p>
+            </div>
+        );
+    }
+
+    return (
+        <div
+            className="columns-1 md:columns-2 lg:columns-3 gap-4"
+            style={{ columnFill: 'balance' }}
+        >
+            {seriesList.map((s) => (
+                <div key={s.id} className="mb-4 break-inside-avoid">
+                    <SeriesCard series={s} />
+                </div>
+            ))}
+        </div>
+    );
+}

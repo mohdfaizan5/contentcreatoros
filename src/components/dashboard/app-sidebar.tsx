@@ -33,31 +33,43 @@ const mainNavItems = [
         title: 'Dashboard',
         url: '/app',
         icon: House,
+        color: 'text-slate-500',
+        hoverBg: 'hover:bg-slate-500/10',
     },
     {
         title: 'Ideas',
         url: '/app/ideas',
         icon: Lightbulb,
+        color: 'text-amber-500',
+        hoverBg: 'hover:bg-amber-500/10',
     },
     {
         title: 'Templates',
         url: '/app/templates',
         icon: FileText,
+        color: 'text-blue-500',
+        hoverBg: 'hover:bg-blue-500/10',
     },
     {
         title: 'Inspiration',
         url: '/app/inspiration',
         icon: Sparkle,
+        color: 'text-purple-500',
+        hoverBg: 'hover:bg-purple-500/10',
     },
     {
         title: 'Planning',
         url: '/app/planning',
         icon: CalendarBlank,
+        color: 'text-cyan-500',
+        hoverBg: 'hover:bg-cyan-500/10',
     },
     {
         title: 'Series',
         url: '/app/series',
         icon: Stack,
+        color: 'text-green-500',
+        hoverBg: 'hover:bg-green-500/10',
     },
 ];
 
@@ -66,11 +78,15 @@ const growthNavItems = [
         title: 'Links',
         url: '/app/links',
         icon: LinkSimple,
+        color: 'text-sky-500',
+        hoverBg: 'hover:bg-sky-500/10',
     },
     {
         title: 'Lead Magnets',
         url: '/app/lead-magnets',
         icon: Magnet,
+        color: 'text-rose-500',
+        hoverBg: 'hover:bg-rose-500/10',
     },
 ];
 
@@ -81,10 +97,10 @@ export function AppSidebar() {
         <Sidebar collapsible="icon">
             <SidebarHeader className="border-b border-sidebar-border">
                 <div className="flex items-center gap-2 px-2 py-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary text-primary-foreground font-bold">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 text-primary-foreground font-bold shadow-lg transition-transform hover:scale-105">
                         C
                     </div>
-                    <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden">
+                    <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
                         Content OS
                     </span>
                 </div>
@@ -92,45 +108,59 @@ export function AppSidebar() {
 
             <SidebarContent>
                 <SidebarGroup>
-                    <SidebarGroupLabel>Content</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">Content</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {mainNavItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === item.url}
-                                        tooltip={item.title}
-                                    >
-                                        <Link href={item.url}>
-                                            <item.icon weight={pathname === item.url ? 'fill' : 'regular'} />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {mainNavItems.map((item) => {
+                                const isActive = pathname === item.url;
+                                return (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isActive}
+                                            tooltip={item.title}
+                                            className={`transition-all duration-200 ${!isActive ? item.hoverBg : ''}`}
+                                        >
+                                            <Link href={item.url} className="group/link">
+                                                <item.icon
+                                                    className={`transition-all duration-200 ${isActive ? item.color : 'group-hover/link:' + item.color}`}
+                                                    weight={isActive ? 'fill' : 'regular'}
+                                                />
+                                                <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
 
                 <SidebarGroup>
-                    <SidebarGroupLabel>Growth</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">Growth</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
-                            {growthNavItems.map((item) => (
-                                <SidebarMenuItem key={item.title}>
-                                    <SidebarMenuButton
-                                        asChild
-                                        isActive={pathname === item.url}
-                                        tooltip={item.title}
-                                    >
-                                        <Link href={item.url}>
-                                            <item.icon weight={pathname === item.url ? 'fill' : 'regular'} />
-                                            <span>{item.title}</span>
-                                        </Link>
-                                    </SidebarMenuButton>
-                                </SidebarMenuItem>
-                            ))}
+                            {growthNavItems.map((item) => {
+                                const isActive = pathname === item.url;
+                                return (
+                                    <SidebarMenuItem key={item.title}>
+                                        <SidebarMenuButton
+                                            asChild
+                                            isActive={isActive}
+                                            tooltip={item.title}
+                                            className={`transition-all duration-200 ${!isActive ? item.hoverBg : ''}`}
+                                        >
+                                            <Link href={item.url} className="group/link">
+                                                <item.icon
+                                                    className={`transition-all duration-200 ${isActive ? item.color : 'group-hover/link:' + item.color}`}
+                                                    weight={isActive ? 'fill' : 'regular'}
+                                                />
+                                                <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
+                                            </Link>
+                                        </SidebarMenuButton>
+                                    </SidebarMenuItem>
+                                );
+                            })}
                         </SidebarMenu>
                     </SidebarGroupContent>
                 </SidebarGroup>
@@ -139,9 +169,9 @@ export function AppSidebar() {
             <SidebarFooter className="border-t border-sidebar-border">
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Settings">
+                        <SidebarMenuButton asChild tooltip="Settings" className="transition-all duration-200 hover:bg-muted">
                             <Link href="/app/settings">
-                                <GearIcon />
+                                <GearIcon className="transition-transform duration-300 hover:rotate-90" />
                                 <span>Settings</span>
                             </Link>
                         </SidebarMenuButton>

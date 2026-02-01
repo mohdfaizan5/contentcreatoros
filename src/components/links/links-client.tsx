@@ -18,25 +18,56 @@ export function LinksClient({ profile }: LinksClientProps) {
         return <ClaimUsername />;
     }
 
+    const activeLinks = (profile.links || []).filter(l => l.is_active).length;
+    const totalLinks = (profile.links || []).length;
+
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Links</h1>
-                    <p className="text-muted-foreground">
-                        Your public profile: <Link href={`/profile/${profile.username}`} target="_blank" className="text-primary hover:underline">/{profile.username}</Link>
-                    </p>
+        <div className="space-y-8 max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="animate-fade-in-up flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                        <LinkSimple className="h-5 w-5 text-sky-500" weight="duotone" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Links</h1>
+                        <p className="text-muted-foreground text-sm">
+                            Your public profile:{' '}
+                            <Link href={`/profile/${profile.username}`} target="_blank" className="text-primary hover:underline font-medium">
+                                /{profile.username}
+                            </Link>
+                        </p>
+                    </div>
                 </div>
-                <Button onClick={() => setShowLinkForm(true)}>
-                    <Plus className="h-4 w-4 mr-2" />
+                <Button
+                    onClick={() => setShowLinkForm(true)}
+                    className="gap-2 rounded-xl transition-all duration-200 hover:scale-105"
+                >
+                    <Plus className="h-4 w-4" weight="bold" />
                     Add Link
                 </Button>
             </div>
 
+            {/* Stats */}
+            {totalLinks > 0 && (
+                <div className="grid grid-cols-2 gap-3">
+                    <div className="rounded-xl bg-sky-500/5 border border-sky-500/10 p-4 text-center">
+                        <div className="text-3xl font-bold text-sky-600 dark:text-sky-400">{activeLinks}</div>
+                        <div className="text-sm text-muted-foreground">Active Links</div>
+                    </div>
+                    <div className="rounded-xl bg-gray-500/5 border border-gray-500/10 p-4 text-center">
+                        <div className="text-3xl font-bold text-gray-600 dark:text-gray-400">{totalLinks - activeLinks}</div>
+                        <div className="text-sm text-muted-foreground">Hidden</div>
+                    </div>
+                </div>
+            )}
+
             <ProfileEditor profile={profile} />
 
             {showLinkForm && (
-                <LinkForm profileId={profile.id} onClose={() => setShowLinkForm(false)} />
+                <div className="animate-fade-in-up">
+                    <LinkForm profileId={profile.id} onClose={() => setShowLinkForm(false)} />
+                </div>
             )}
 
             <LinksList links={profile.links || []} />

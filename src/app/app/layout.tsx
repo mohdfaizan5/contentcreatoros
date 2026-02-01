@@ -21,9 +21,9 @@ export default async function DashboardLayout({
         <TooltipProvider>
             <SidebarProvider>
                 <AppSidebar />
-                <SidebarInset>
-                    <header className="flex h-14 items-center gap-4 border-b px-6">
-                        <SidebarTrigger className="-ml-2" />
+                <SidebarInset className="bg-content-gradient">
+                    <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b px-6 header-blur">
+                        <SidebarTrigger className="-ml-2 transition-transform hover:scale-110" />
                         <div className="flex-1" />
                         <UserDropdown email={data.user.email} />
                     </header>

@@ -39,9 +39,9 @@ function PlanningItem({ idea }: PlanningItemProps) {
             <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                     {idea.idea_type === 'series_concept' ? (
-                        <Stack className="h-4 w-4 text-green-500 flex-shrink-0" weight="fill" />
+                        <Stack className="h-4 w-4 text-green-500 shrink-0" weight="fill" />
                     ) : (
-                        <Lightbulb className="h-4 w-4 text-amber-500 flex-shrink-0" weight="duotone" />
+                        <Lightbulb className="h-4 w-4 text-amber-500 shrink-0" weight="duotone" />
                     )}
                     <span className="font-medium truncate">{idea.title}</span>
                 </div>
@@ -96,27 +96,70 @@ export function PlanningBoard({ ideas, seriesList }: PlanningBoardProps) {
 
     const standaloneIdeas = ideas.filter(idea => !idea.linked_series_id);
 
+    // Status counts
+    const dumpedCount = ideas.filter(i => i.status === 'dumped').length;
+    const refinedCount = ideas.filter(i => i.status === 'refined').length;
+    const plannedCount = ideas.filter(i => i.status === 'planned').length;
+    const scriptedCount = ideas.filter(i => i.status === 'scripted').length;
+
     return (
-        <div className="space-y-6">
-            <div className="flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold tracking-tight">Content Planning</h1>
-                    <p className="text-muted-foreground">
-                        Move ideas through your pipeline: Dumped → Refined → Planned → Scripted
-                    </p>
+        <div className="space-y-8 max-w-5xl mx-auto">
+            {/* Header */}
+            <div className="animate-fade-in-up flex items-start justify-between gap-4">
+                <div className="flex items-center gap-3">
+                    <div className="h-10 w-10 rounded-xl bg-cyan-500/10 flex items-center justify-center">
+                        <CalendarBlank className="h-5 w-5 text-cyan-500" weight="duotone" />
+                    </div>
+                    <div>
+                        <h1 className="text-2xl font-bold tracking-tight">Content Planning</h1>
+                        <p className="text-muted-foreground text-sm">
+                            Move ideas through your pipeline
+                        </p>
+                    </div>
                 </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            {/* Pipeline Status */}
+            {ideas.length > 0 && (
+                <div className="grid grid-cols-4 gap-2">
+                    <div className="rounded-xl bg-gray-500/5 border border-gray-500/10 p-3 text-center transition-all hover:border-gray-400/30">
+                        <div className="text-xl font-bold text-gray-600 dark:text-gray-400">{dumpedCount}</div>
+                        <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                            Dumped
+                        </div>
+                    </div>
+                    <div className="rounded-xl bg-blue-500/5 border border-blue-500/10 p-3 text-center transition-all hover:border-blue-400/30">
+                        <div className="text-xl font-bold text-blue-600 dark:text-blue-400">{refinedCount}</div>
+                        <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                            Refined
+                        </div>
+                    </div>
+                    <div className="rounded-xl bg-amber-500/5 border border-amber-500/10 p-3 text-center transition-all hover:border-amber-400/30">
+                        <div className="text-xl font-bold text-amber-600 dark:text-amber-400">{plannedCount}</div>
+                        <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                            Planned
+                        </div>
+                    </div>
+                    <div className="rounded-xl bg-green-500/5 border border-green-500/10 p-3 text-center transition-all hover:border-green-400/30">
+                        <div className="text-xl font-bold text-green-600 dark:text-green-400">{scriptedCount}</div>
+                        <div className="text-xs text-muted-foreground flex items-center justify-center gap-1">
+                            Scripted
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* View Mode Filter */}
+            <div className="flex items-center gap-3">
                 <Funnel className="h-4 w-4 text-muted-foreground" />
-                <div className="flex gap-1 p-1 bg-muted rounded-lg">
+                <div className="flex gap-1 p-1 bg-muted/50 rounded-xl">
                     {(['all', 'by-series', 'standalone'] as ViewMode[]).map((mode) => (
                         <button
                             key={mode}
                             onClick={() => setViewMode(mode)}
-                            className={`px-3 py-1.5 rounded-md text-sm font-medium transition-all ${viewMode === mode
-                                    ? 'bg-background shadow-sm'
-                                    : 'text-muted-foreground hover:text-foreground'
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${viewMode === mode
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground'
                                 }`}
                         >
                             {mode === 'all' ? 'All Content' : mode === 'by-series' ? 'By Series' : 'Standalone'}

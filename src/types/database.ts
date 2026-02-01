@@ -9,6 +9,26 @@ export type PlatformType = 'x' | 'youtube' | 'linkedin' | 'generic';
 export type InspirationType = 'creator' | 'content';
 export type CollectFields = 'email_only' | 'name_and_email';
 export type DeliveryType = 'download' | 'redirect' | 'content';
+export type EmbedType = 'x' | 'instagram' | 'linkedin' | 'link';
+
+// ============================================
+// TEMPLATE TYPES
+// ============================================
+
+export interface TemplateExample {
+    id: string;
+    content: string;
+    author: string | null;
+    platform: PlatformType | null;
+    source_url: string | null;
+}
+
+export interface TemplateReference {
+    id: string;
+    url: string;
+    title: string | null;
+    embed_type: EmbedType;
+}
 
 // ============================================
 // DATABASE ENTITIES
@@ -39,6 +59,10 @@ export interface Template {
     cta_style: string | null;
     instructions: string | null;
     structure_fields: Record<string, unknown>;
+    // Enhanced template fields
+    template_text: string | null;
+    examples: TemplateExample[];
+    reference_links: TemplateReference[];
     created_at: string;
     updated_at: string;
 }
@@ -146,6 +170,9 @@ export interface CreateTemplateInput {
     cta_style?: string | null;
     instructions?: string | null;
     structure_fields?: Record<string, unknown>;
+    template_text?: string | null;
+    examples?: TemplateExample[];
+    reference_links?: TemplateReference[];
 }
 
 export interface UpdateTemplateInput {
@@ -157,6 +184,9 @@ export interface UpdateTemplateInput {
     cta_style?: string | null;
     instructions?: string | null;
     structure_fields?: Record<string, unknown>;
+    template_text?: string | null;
+    examples?: TemplateExample[];
+    reference_links?: TemplateReference[];
 }
 
 export interface CreateSeriesInput {

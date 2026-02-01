@@ -84,6 +84,7 @@ export async function updateTemplate(id: string, input: UpdateTemplateInput): Pr
     if (error) throw error;
 
     revalidatePath('/app/templates');
+    revalidatePath(`/app/templates/${id}`);
     return data;
 }
 
@@ -98,4 +99,5 @@ export async function deleteTemplate(id: string): Promise<void> {
     if (error) throw error;
 
     revalidatePath('/app/templates');
+    revalidatePath(`/app/templates/${id}`);
 }
