@@ -98,7 +98,7 @@ export async function claimUsername(input: CreateLinkProfileInput): Promise<Link
         throw error;
     }
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
     return data;
 }
 
@@ -122,8 +122,59 @@ export async function updateProfile(input: UpdateLinkProfileInput): Promise<Link
         throw error;
     }
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
     return data;
+}
+
+const MAX_FILE_SIZE = 2 * 1024 * 1024; // 2MB
+
+export async function uploadProfileLogo(formData: FormData): Promise<string> {
+    const supabase = await createClient();
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) throw new Error('Not authenticated');
+
+    const file = formData.get('file') as File;
+    if (!file) throw new Error('No file provided');
+
+    // Validate file size
+    if (file.size > MAX_FILE_SIZE) {
+        throw new Error('File size must be less than 2MB');
+    }
+
+    // Validate file type
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+        throw new Error('Invalid file type. Please upload a JPEG, PNG, GIF, or WebP image.');
+    }
+
+    // Generate unique filename
+    const extension = file.name.split('.').pop() || 'png';
+    const filename = `${userData.user.id}/${Date.now()}.${extension}`;
+
+    // Upload to Supabase Storage
+    const { data, error } = await supabase.storage
+        .from('public_profile_pictures')
+        .upload(filename, file, {
+            cacheControl: '3600',
+            upsert: true,
+        });
+
+    if (error) {
+        console.error('Upload error:', error);
+        throw new Error('Failed to upload image');
+    }
+
+    // Get public URL
+    const { data: urlData } = supabase.storage
+        .from('public_profile_pictures')
+        .getPublicUrl(data.path);
+
+    // Update profile with new logo URL
+    await updateProfile({ logo_url: urlData.publicUrl });
+
+    revalidatePath('/app/public-profile');
+    return urlData.publicUrl;
 }
 
 export async function createLink(input: CreateLinkInput): Promise<Link> {
@@ -151,7 +202,7 @@ export async function createLink(input: CreateLinkInput): Promise<Link> {
 
     if (error) throw error;
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
     return data;
 }
 
@@ -167,7 +218,7 @@ export async function updateLink(id: string, input: UpdateLinkInput): Promise<Li
 
     if (error) throw error;
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
     return data;
 }
 
@@ -181,7 +232,7 @@ export async function deleteLink(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
 }
 
 export async function reorderLinks(profileId: string, linkIds: string[]): Promise<void> {
@@ -198,7 +249,7 @@ export async function reorderLinks(profileId: string, linkIds: string[]): Promis
 
     await Promise.all(updates);
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
 }
 
 export async function toggleLink(id: string): Promise<Link> {
@@ -220,6 +271,6 @@ export async function toggleLink(id: string): Promise<Link> {
 
     if (error) throw error;
 
-    revalidatePath('/app/links');
+    revalidatePath('/app/public-profile');
     return data;
 }

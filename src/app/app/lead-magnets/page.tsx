@@ -3,5 +3,9 @@ import { LeadMagnetsClient } from '@/components/lead-magnets/lead-magnets-client
 
 export default async function LeadMagnetsPage() {
     const magnets = await getMagnets();
-    return <LeadMagnetsClient magnets={magnets} />;
+    return (
+        <div className="space-y-6">
+            <LeadMagnetsClient magnets={magnets} />
+        </div>
+    );
 }

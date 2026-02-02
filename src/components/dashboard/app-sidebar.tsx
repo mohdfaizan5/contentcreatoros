@@ -27,6 +27,8 @@ import {
     SidebarRail,
 } from '@/components/ui/sidebar';
 import { GearIcon } from '@phosphor-icons/react';
+import Logo from '@/components/logo';
+import { NavBadge } from './nav-badge';
 
 const mainNavItems = [
     {
@@ -49,6 +51,7 @@ const mainNavItems = [
         icon: FileText,
         color: 'text-blue-500',
         hoverBg: 'hover:bg-blue-500/10',
+        badge: 'updated' as const,
     },
     {
         title: 'Inspiration',
@@ -56,6 +59,7 @@ const mainNavItems = [
         icon: Sparkle,
         color: 'text-purple-500',
         hoverBg: 'hover:bg-purple-500/10',
+        badge: 'updated' as const,
     },
     {
         title: 'Planning',
@@ -75,11 +79,12 @@ const mainNavItems = [
 
 const growthNavItems = [
     {
-        title: 'Links',
-        url: '/app/links',
+        title: 'Public Profile',
+        url: '/app/public-profile',
         icon: LinkSimple,
         color: 'text-sky-500',
         hoverBg: 'hover:bg-sky-500/10',
+        badge: 'updated' as const,
     },
     {
         title: 'Lead Magnets',
@@ -87,6 +92,7 @@ const growthNavItems = [
         icon: Magnet,
         color: 'text-rose-500',
         hoverBg: 'hover:bg-rose-500/10',
+        badge: 'updated' as const,
     },
 ];
 
@@ -94,16 +100,16 @@ export function AppSidebar() {
     const pathname = usePathname();
 
     return (
-        <Sidebar collapsible="icon">
-            <SidebarHeader className="border-b border-sidebar-border">
-                <div className="flex items-center gap-2 px-2 py-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-primary to-purple-600 text-primary-foreground font-bold shadow-lg transition-transform hover:scale-105">
-                        C
-                    </div>
-                    <span className="font-semibold text-lg group-data-[collapsible=icon]:hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">
-                        Content OS
-                    </span>
-                </div>
+        <Sidebar collapsible="icon" className='bg-amber-200'>
+            <SidebarHeader className="border-b border-sidebar-border py-4">
+                <Logo
+                    full
+                    height={20}
+                    width={20}
+                    className="gap-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:py-[1.5px]"
+
+                    textClassName="group-data-[collapsible=icon]:hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-base font-bold text-transparent"
+                />
             </SidebarHeader>
 
             <SidebarContent>
@@ -123,10 +129,11 @@ export function AppSidebar() {
                                         >
                                             <Link href={item.url} className="group/link">
                                                 <item.icon
-                                                    className={`transition-all duration-200 ${isActive ? item.color : 'group-hover/link:' + item.color}`}
+                                                    className={`transition-all duration-200 ${isActive ? '' : 'group-hover/link:' + item.color}`}
                                                     weight={isActive ? 'fill' : 'regular'}
                                                 />
                                                 <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
+                                                {'badge' in item && item.badge && <NavBadge isUpdated />}
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>
@@ -152,10 +159,11 @@ export function AppSidebar() {
                                         >
                                             <Link href={item.url} className="group/link">
                                                 <item.icon
-                                                    className={`transition-all duration-200 ${isActive ? item.color : 'group-hover/link:' + item.color}`}
+                                                    className={`transition-all duration-200 ${isActive ? '' : 'group-hover/link:' + item.color}`}
                                                     weight={isActive ? 'fill' : 'regular'}
                                                 />
                                                 <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
+                                                {'badge' in item && item.badge && <NavBadge isUpdated />}
                                             </Link>
                                         </SidebarMenuButton>
                                     </SidebarMenuItem>

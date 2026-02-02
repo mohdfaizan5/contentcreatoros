@@ -12,6 +12,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Button } from '@/components/ui/button';
+import Image from 'next/image';
 
 interface UserDropdownProps {
     email?: string;
@@ -37,15 +38,17 @@ export function UserDropdown({ email, avatarUrl }: UserDropdownProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="relative h-9 w-9 rounded-full">
+                <Button variant="ghost" size="icon" className="relative rounded-full">
                     {avatarUrl ? (
-                        <img
+                        <Image
                             src={avatarUrl}
                             alt="Avatar"
+                            width={36}
+                            height={36}
                             className="h-9 w-9 rounded-full object-cover"
                         />
                     ) : (
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
+                        <div className="flex h-full w-full items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-medium">
                             {getInitials(email)}
                         </div>
                     )}

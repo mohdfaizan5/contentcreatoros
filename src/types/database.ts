@@ -98,6 +98,13 @@ export interface LinkProfile {
     display_name: string | null;
     bio: string | null;
     avatar_url: string | null;
+    // Branding fields
+    logo_url: string | null;
+    banner_url: string | null;
+    tagline: string | null;
+    // Theme fields
+    template_id: string | null;
+    accent_color: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -226,6 +233,11 @@ export interface CreateLinkProfileInput {
     display_name?: string | null;
     bio?: string | null;
     avatar_url?: string | null;
+    logo_url?: string | null;
+    banner_url?: string | null;
+    tagline?: string | null;
+    template_id?: string | null;
+    accent_color?: string | null;
 }
 
 export interface UpdateLinkProfileInput {
@@ -233,6 +245,11 @@ export interface UpdateLinkProfileInput {
     display_name?: string | null;
     bio?: string | null;
     avatar_url?: string | null;
+    logo_url?: string | null;
+    banner_url?: string | null;
+    tagline?: string | null;
+    template_id?: string | null;
+    accent_color?: string | null;
 }
 
 export interface CreateLinkInput {

@@ -1,9 +1,32 @@
 import { notFound } from 'next/navigation';
 import { getPublicProfile } from '@/actions/links';
-import { LinkSimple } from '@phosphor-icons/react/dist/ssr';
+import { getTemplate, getCardBorderRadius } from '@/lib/profile-templates';
+import { PublicLinksList } from '@/components/links/public-links';
+import { trackProfileView } from '@/actions/analytics';
+import type { Metadata } from 'next';
 
 interface PublicProfilePageProps {
     params: Promise<{ username: string }>;
+}
+
+export async function generateMetadata({ params }: PublicProfilePageProps): Promise<Metadata> {
+    const { username } = await params;
+    const profile = await getPublicProfile(username);
+
+    if (!profile) {
+        return {
+            title: 'Profile Not Found | Content Creator OS',
+        };
+    }
+
+    const title = profile.display_name
+        ? `${profile.display_name} | Content Creator OS`
+        : 'Content Creator OS';
+
+    return {
+        title,
+        description: profile.bio || profile.tagline || `Check out ${profile.display_name || profile.username}'s profile`,
+    };
 }
 
 export default async function PublicProfilePage({ params }: PublicProfilePageProps) {
@@ -14,50 +37,76 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         notFound();
     }
 
+    // Track profile view (fire and forget - don't await)
+    trackProfileView(profile.id).catch(() => {
+        // Silently fail - analytics shouldn't break the page
+    });
+
+    const template = getTemplate(profile.template_id);
+    const borderRadius = getCardBorderRadius(template.styles.cardStyle);
+
     return (
-        <div className="min-h-screen bg-gradient-to-b from-background to-muted/30">
-            <div className="max-w-md mx-auto px-4 py-12">
+        <div className={`min-h-screen ${template.styles.background}`}>
+            <div className="max-w-md mx-auto px-4 pt-12 pb-8">
+                {/* Profile Header */}
                 <div className="text-center mb-8">
-                    {profile.avatar_url ? (
+                    {/* Avatar/Logo */}
+                    {profile.logo_url || profile.avatar_url ? (
                         <img
-                            src={profile.avatar_url}
+                            src={profile.logo_url || profile.avatar_url!}
                             alt={profile.display_name || profile.username}
-                            className="w-24 h-24 rounded-full mx-auto mb-4 object-cover border-4 border-background shadow-lg"
+                            className="w-24 h-24 mx-auto mb-4 object-cover border-4 border-white shadow-xl rounded-full"
                         />
                     ) : (
-                        <div className="w-24 h-24 rounded-full mx-auto mb-4 bg-primary text-primary-foreground flex items-center justify-center text-3xl font-bold shadow-lg">
+                        <div
+                            className={`w-24 h-24 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold shadow-lg bg-white/20 backdrop-blur-sm border border-white/30 ${template.styles.headerTextColor}`}
+                            style={profile.accent_color ? { backgroundColor: profile.accent_color, color: '#fff' } : undefined}
+                        >
                             {(profile.display_name || profile.username).charAt(0).toUpperCase()}
                         </div>
                     )}
 
-                    <h1 className="text-2xl font-bold">{profile.display_name || profile.username}</h1>
+                    {/* Name */}
+                    <h1 className={`text-2xl font-bold ${template.styles.headerTextColor} ${template.styles.fontFamily}`}>
+                        {profile.display_name || profile.username}
+                    </h1>
 
+                    {/* Tagline */}
+                    {profile.tagline && (
+                        <p className={`mt-1 text-sm ${template.styles.headerMutedColor}`}>
+                            {profile.tagline}
+                        </p>
+                    )}
+
+                    {/* Bio */}
                     {profile.bio && (
-                        <p className="text-muted-foreground mt-2">{profile.bio}</p>
+                        <p className={`mt-3 ${template.styles.headerMutedColor}`}>
+                            {profile.bio}
+                        </p>
                     )}
                 </div>
 
-                <div className="space-y-3">
-                    {profile.links?.map((link) => (
-                        <a
-                            key={link.id}
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="flex items-center justify-center gap-2 w-full py-4 px-6 rounded-xl bg-card border shadow-sm hover:shadow-md hover:scale-[1.02] transition-all text-center font-medium"
-                        >
-                            <LinkSimple className="h-5 w-5" />
-                            {link.title}
-                        </a>
-                    ))}
-                </div>
+                {/* Links - Client Component */}
+                <PublicLinksList
+                    links={profile.links || []}
+                    template={{
+                        cardBg: template.styles.cardBg,
+                        cardBorder: template.styles.cardBorder,
+                        cardShadow: template.styles.cardShadow,
+                        cardHover: template.styles.cardHover,
+                        fontFamily: template.styles.fontFamily,
+                        cardTextColor: template.styles.cardTextColor,
+                    }}
+                    borderRadius={borderRadius}
+                    accentColor={profile.accent_color}
+                />
 
-                {(!profile.links || profile.links.length === 0) && (
-                    <p className="text-center text-muted-foreground">No links yet</p>
-                )}
-
-                <div className="mt-12 text-center">
-                    <a href="/" className="text-sm text-muted-foreground hover:text-foreground transition-colors">
+                {/* Footer */}
+                <div className="py-8 text-center">
+                    <a
+                        href="/"
+                        className={`text-sm transition-colors ${template.styles.headerMutedColor} hover:opacity-80`}
+                    >
                         Powered by Content OS
                     </a>
                 </div>

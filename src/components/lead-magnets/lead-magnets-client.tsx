@@ -6,6 +6,7 @@ import { Magnet, Plus, Trash, Users, Download } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { deleteMagnet, exportLeadsCsv } from '@/actions/lead-magnets';
 import type { LeadMagnetWithLeads } from '@/types/database';
+import { CompactStats } from '../analytics/compact-stats';
 
 interface LeadMagnetsClientProps {
     magnets: LeadMagnetWithLeads[];
@@ -28,6 +29,27 @@ export function LeadMagnetsClient({ magnets }: LeadMagnetsClientProps) {
                         <p className="text-muted-foreground text-sm">
                             Create landing pages to collect emails
                         </p>
+                        {/* Stats pills */}
+                        {magnets.length > 0 && (
+                            <div className="flex items-center gap-2 flex-wrap">
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 text-sm text-rose-600">
+                                    <Magnet className="h-4 w-4" weight="fill" />
+                                    <span className="font-medium">{magnets.length}</span>
+                                    <span className="text-muted-foreground">magnets</span>
+                                </div>
+                                {activeMagnets > 0 && (
+                                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 text-sm text-green-600">
+                                        <span className="font-medium">{activeMagnets}</span>
+                                        <span className="text-muted-foreground">active</span>
+                                    </div>
+                                )}
+                                <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-sm text-blue-600">
+                                    <Users className="h-4 w-4" weight="fill" />
+                                    <span className="font-medium">{totalLeads}</span>
+                                    <span className="text-muted-foreground">total leads</span>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
                 <Link href="/app/lead-magnets/create">
@@ -37,28 +59,10 @@ export function LeadMagnetsClient({ magnets }: LeadMagnetsClientProps) {
                     </Button>
                 </Link>
             </div>
+            <CompactStats />
 
-            {/* Stats pills */}
-            {magnets.length > 0 && (
-                <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-rose-500/10 text-sm text-rose-600">
-                        <Magnet className="h-4 w-4" weight="fill" />
-                        <span className="font-medium">{magnets.length}</span>
-                        <span className="text-muted-foreground">magnets</span>
-                    </div>
-                    {activeMagnets > 0 && (
-                        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-green-500/10 text-sm text-green-600">
-                            <span className="font-medium">{activeMagnets}</span>
-                            <span className="text-muted-foreground">active</span>
-                        </div>
-                    )}
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-500/10 text-sm text-blue-600">
-                        <Users className="h-4 w-4" weight="fill" />
-                        <span className="font-medium">{totalLeads}</span>
-                        <span className="text-muted-foreground">total leads</span>
-                    </div>
-                </div>
-            )}
+
+
 
             {/* Masonry Grid */}
             <MagnetsMasonryGrid magnets={magnets} />
@@ -126,8 +130,8 @@ function MagnetCard({ magnet }: { magnet: LeadMagnetWithLeads }) {
                 </div>
 
                 <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium capitalize ${magnet.is_active
-                        ? 'bg-green-500/10 text-green-600'
-                        : 'bg-gray-500/10 text-gray-600'
+                    ? 'bg-green-500/10 text-green-600'
+                    : 'bg-gray-500/10 text-gray-600'
                     }`}>
                     {magnet.delivery_type}
                 </span>

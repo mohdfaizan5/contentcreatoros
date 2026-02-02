@@ -167,11 +167,10 @@ export function InspirationCard({ inspiration }: InspirationCardProps) {
                 </div>
 
                 {/* Tweet Embed */}
-                <Link href={`/app/inspiration/${inspiration.id}`} className="block">
-                    <div className="flex justify-center [&>div]:my-0! [&_.react-tweet-theme]:my-0!">
-                        <TweetEmbed id={tweetId} />
-                    </div>
-                </Link>
+                {/* Tweet Embed - Note: Cannot wrap in Link because Tweet contains links */}
+                <div className="flex justify-center [&>div]:my-0! [&_.react-tweet-theme]:my-0!">
+                    <TweetEmbed id={tweetId} />
+                </div>
 
                 {/* Notes if present */}
                 {inspiration.notes && (

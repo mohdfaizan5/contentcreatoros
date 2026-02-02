@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Link from 'next/link';
+import Logo from '@/components/logo';
 
 const LandingFooter = () => {
     return (
@@ -11,14 +12,7 @@ const LandingFooter = () => {
                     {/* Logo & Description */}
                     <div className="md:col-span-1">
                         <div className="flex items-center gap-2 mb-4">
-                            <div className="w-10 h-10 bg-gradient-to-br from-[#2F92C7] to-[#1F92F9] rounded-xl flex items-center justify-center">
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="white">
-                                    <path d="M12 2L2 7L12 12L22 7L12 2Z" />
-                                    <path d="M2 17L12 22L22 17" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    <path d="M2 12L12 17L22 12" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </div>
-                            <span className="text-xl font-bold">Content OS</span>
+                            <Logo full textClassName="font-bold" />
                         </div>
                         <p className="text-white/60 text-sm leading-relaxed">
                             A daily-use system for creators to capture ideas, plan content, and think in series. Designed for solo creators and small teams.

@@ -46,9 +46,9 @@ const quickActions = [
         iconColor: 'text-green-600 dark:text-green-400',
     },
     {
-        title: 'Setup Links',
+        title: 'Public Profile',
         description: 'Create your public profile page',
-        href: '/app/links',
+        href: '/app/public-profile',
         icon: LinkSimple,
         gradient: 'from-sky-500 to-blue-600',
         bgGlow: 'bg-sky-500',
@@ -98,7 +98,7 @@ export default function DashboardPage() {
             </div>
 
             {/* Quick Actions */}
-            <div>
+            <div className='hidden'>
                 <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold">Quick Actions</h2>
                     <span className="text-xs text-muted-foreground">Choose where to start</span>

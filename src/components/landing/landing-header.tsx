@@ -3,6 +3,7 @@
 import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
+import Logo from '@/components/logo';
 
 const LandingHeader = () => {
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -11,16 +12,8 @@ const LandingHeader = () => {
         <header className="fixed top-0 left-0 right-0 z-50 px-6 py-4">
             <nav className="max-w-7xl mx-auto flex items-center justify-between">
                 {/* Logo */}
-                <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center shadow-md">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#2F92C7" />
-                            <path d="M2 17L12 22L22 17" stroke="#2F92C7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                            <path d="M2 12L12 17L22 12" stroke="#2F92C7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg>
-                    </div>
-                    <span className="text-white font-bold text-xl">Content OS</span>
-                </div>
+                {/* Logo */}
+                <Logo full textClassName="text-white font-bold" />
 
                 {/* Desktop Navigation */}
                 <div className="hidden md:flex items-center gap-1 bg-white/20 backdrop-blur-md rounded-full px-2 py-1">
