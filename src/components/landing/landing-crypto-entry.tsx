@@ -9,7 +9,7 @@ const LandingCryptoEntry = () => {
     return (
         <section className="relative bg-white py-20 md:py-32 overflow-hidden">
             {/* Decorative floating elements */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute inset-0 overflow-hidden pointer-events-none -bg-amber-300">
                 {/* Left decoratives */}
                 <div className="absolute top-32 left-8 w-8 h-8 border-2 border-gray-200 rounded-lg rotate-12 animate-float-slow" />
                 <div className="absolute top-48 left-24 w-6 h-6 bg-gray-100 rounded-full animate-float animation-delay-200" />

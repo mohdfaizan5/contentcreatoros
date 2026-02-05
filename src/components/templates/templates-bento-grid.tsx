@@ -64,8 +64,8 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
                         onClick={handlePin}
                         disabled={isPending}
                         className={`p-1 rounded-md transition-colors ${isPinned
-                                ? 'bg-amber-500/20 text-amber-500'
-                                : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                            ? 'bg-amber-500/20 text-amber-500'
+                            : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
                             }`}
                     >
                         <PushPin className="h-3.5 w-3.5" weight={isPinned ? 'fill' : 'regular'} />
@@ -148,7 +148,7 @@ export function TemplatesMasonryGrid({ templates }: TemplatesMasonryGridProps) {
                         <span className="text-sm font-medium text-muted-foreground">Pinned</span>
                     </div>
                     <div
-                        className="columns-2 md:columns-3 lg:columns-4 gap-4"
+                        className="columns-2 md:columns-2 gap-4"
                         style={{ columnFill: 'balance' }}
                     >
                         {pinned.map((template) => (
@@ -167,7 +167,7 @@ export function TemplatesMasonryGrid({ templates }: TemplatesMasonryGridProps) {
                         <p className="text-sm font-medium text-muted-foreground mb-3">All Templates</p>
                     )}
                     <div
-                        className="columns-2 md:columns-3 lg:columns-4 gap-4"
+                        className="columns-2 md:columns-2  gap-4"
                         style={{ columnFill: 'balance' }}
                     >
                         {unpinned.map((template) => (

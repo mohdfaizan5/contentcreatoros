@@ -1,77 +1,66 @@
 'use client';
 
-import { useState } from 'react';
-import { PencilSimple } from '@phosphor-icons/react';
+import { useState, useRef, useEffect } from 'react';
+import { PencilSimple, ArrowsClockwise, ArrowSquareOut } from '@phosphor-icons/react';
 import type { LinkProfileWithLinks } from '@/types/database';
+import { Button } from '@/components/ui/button';
 
 interface ProfilePreviewCardProps {
     profile: LinkProfileWithLinks;
-    onEditClick: () => void;
+    onEditClick?: () => void;
 }
 
 export function ProfilePreviewCard({ profile, onEditClick }: ProfilePreviewCardProps) {
-    const [isHovered, setIsHovered] = useState(false);
+    const [refreshKey, setRefreshKey] = useState(0);
+    const [loading, setLoading] = useState(true);
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+
+    // Refresh iframe when profile basic details change heavily, but normally standard Save updates DB which iframe fetches.
+    // We might need a manual refresh button.
+
+    const handleRefresh = () => {
+        setLoading(true);
+        setRefreshKey(prev => prev + 1);
+    };
 
     return (
-        <div
-            className="relative rounded-xl border bg-card p-6 transition-all hover:shadow-md"
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={() => setIsHovered(false)}
-        >
-            <div className="flex items-start gap-4">
-                {/* Avatar/Logo with subtle edit icon */}
-                <div className="relative">
-                    {profile.logo_url || profile.avatar_url ? (
-                        <img
-                            src={profile.logo_url || profile.avatar_url!}
-                            alt={profile.display_name || profile.username}
-                            className="w-16 h-16 rounded-xl object-cover border"
-                        />
-                    ) : (
-                        <div className="w-16 h-16 rounded-xl bg-primary/10 flex items-center justify-center text-primary text-xl font-bold">
-                            {(profile.display_name || profile.username).charAt(0).toUpperCase()}
-                        </div>
-                    )}
-
-                    {/* Subtle edit icon on image */}
-                    {isHovered && (
-                        <button
-                            onClick={onEditClick}
-                            className="absolute -top-2 -right-2 p-1.5 rounded-lg bg-primary text-primary-foreground shadow-lg hover:scale-110 transition-transform"
-                        >
-                            <PencilSimple className="h-3.5 w-3.5" weight="bold" />
-                        </button>
-                    )}
-                </div>
-
-                {/* Profile Info */}
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1">
-                            <h3 className="font-semibold text-lg truncate">
-                                {profile.display_name || profile.username}
-                            </h3>
-                            {profile.tagline && (
-                                <p className="text-sm text-muted-foreground truncate mt-0.5">
-                                    {profile.tagline}
-                                </p>
-                            )}
-                        </div>
-                    </div>
-
-                    {/* Bio */}
-                    {profile.bio && (
-                        <p className="text-sm text-muted-foreground mt-2 line-clamp-2">
-                            {profile.bio}
-                        </p>
-                    )}
-
-                    {/* Link count */}
-                    <p className="text-xs text-muted-foreground mt-3">
-                        {(profile.links || []).filter(l => l.is_active).length} active link{(profile.links || []).filter(l => l.is_active).length !== 1 ? 's' : ''}
-                    </p>
-                </div>
+        <div className="flex flex-col h-[600px] w-full bg-muted/5 relative group">
+            {/* Toolbar */}
+            <div className="absolute top-2 right-2 z-10 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                <Button
+                    size="icon"
+                    variant="secondary"
+                    className="h-8 w-8 rounded-full shadow-sm bg-background/80 backdrop-blur-sm"
+                    onClick={handleRefresh}
+                    title="Refresh Preview"
+                >
+                    <ArrowsClockwise className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+                </Button>
+                <a
+                    href={`/profile/${profile.username}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="h-8 w-8 flex items-center justify-center rounded-full shadow-sm bg-background/80 backdrop-blur-sm hover:bg-background transition-colors text-foreground"
+                    title="Open Live Page"
+                >
+                    <ArrowSquareOut className="h-4 w-4" />
+                </a>
             </div>
+
+            {/* Iframe Preview */}
+            <div className="flex-1 w-full h-full overflow-hidden bg-background">
+                <iframe
+                    key={refreshKey}
+                    ref={iframeRef}
+                    src={`/profile/${profile.username}`}
+                    className="w-full h-full border-none"
+                    title="Profile Preview"
+                    onLoad={() => setLoading(false)}
+                />
+            </div>
+
+            {/* Interaction Blocker (optional, to prevent clicking links in preview) */}
+            {/* <div className="absolute inset-0 z-0 pointer-events-none" /> */}
         </div>
     );
 }

@@ -18,12 +18,12 @@ const LandingHero = () => {
             <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Hero Text */}
                 <div className="text-center mb-12">
-                    <h1 className="text-4xl md:text-5xl lg:text-7xl font-serif text-white mb-4 leading-[4rem]">
-                        <span className="font-serif font-normal">From raw ideas</span> to
-                        <br />
+                    <h1 className="text-5xl  lg:text-7xl font-semibold text-white mb-4 leading-[2.8rem] md:leading-[3.7rem]">
+                        <span className="">From raw ideas to </span>
+                        <br className='hidden lg:block' />
                         consistent content
                     </h1>
-                    <p className="text-white/80 text-lg md:text-xl max-w-2xl mx-auto mb-8">
+                    <p className="text-white/80 leading-5 md:leading-6 text-lg md:text-xl max-w-2xl mx-auto mb-8">
                         A daily-use system for solo creators and small teams to
                         <br className="hidden md:block" />
                         capture ideas, plan content, and think in series.
@@ -75,7 +75,7 @@ const LandingHero = () => {
                     </div>
 
                     {/* Floating Card - Left: Ideas */}
-                    <div className="absolute left-4 md:left-16 top-24 md:top-32 animate-float animation-delay-200">
+                    <div className="absolute left-4 md:left-52 top-24 md:top-32 animate-float animation-delay-200">
                         <div className="bg-white rounded-2xl shadow-xl p-4 w-48 md:w-56">
                             <div className="text-xs text-gray-500 mb-2">Idea Dump</div>
                             <div className="flex items-center gap-3 mb-3">
@@ -116,7 +116,7 @@ const LandingHero = () => {
                     </div>
 
                     {/* Floating Card - Right: Template */}
-                    <div className="absolute right-4 md:right-16 top-20 md:top-28 animate-float-reverse">
+                    <div className="absolute right-4 md:right-52 top-20 md:top-28 animate-float-reverse">
                         <div className="bg-white rounded-2xl shadow-xl p-4 w-44 md:w-52">
                             <div className="text-xs text-gray-500 mb-2">Templates</div>
                             <div className="flex items-center gap-3 mb-3">
@@ -137,7 +137,7 @@ const LandingHero = () => {
                     </div>
 
                     {/* Floating Card - Far Right: Planning */}
-                    <div className="hidden lg:block absolute right-4 top-56 animate-float animation-delay-600">
+                    <div className="hidden lg:block absolute right-4 md:right-80 top-56 animate-float animation-delay-600">
                         <div className="bg-white rounded-2xl shadow-xl p-3 w-40">
                             <div className="text-xs text-gray-500 mb-2">Planning</div>
                             <div className="space-y-1">

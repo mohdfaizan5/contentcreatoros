@@ -3,6 +3,7 @@
 // ============================================
 // ENUMS
 // ============================================
+// Note: IdeaType and IdeaStatus kept for backwards compatibility with existing data
 export type IdeaType = 'standalone' | 'series_concept';
 export type IdeaStatus = 'dumped' | 'refined' | 'planned' | 'scripted';
 export type PlatformType = 'x' | 'youtube' | 'linkedin' | 'generic';
@@ -10,6 +11,50 @@ export type InspirationType = 'creator' | 'content';
 export type CollectFields = 'email_only' | 'name_and_email';
 export type DeliveryType = 'download' | 'redirect' | 'content';
 export type EmbedType = 'x' | 'instagram' | 'linkedin' | 'link';
+
+// ============================================
+// EDITOR.JS TYPES
+// ============================================
+
+export interface EditorJSBlock {
+    id?: string;
+    type: string;
+    data: Record<string, unknown>;
+}
+
+export interface EditorJSData {
+    time?: number;
+    blocks: EditorJSBlock[];
+    version?: string;
+}
+
+// ============================================
+// V1 PLANNING TYPES
+// ============================================
+
+export interface ContentCard {
+    id: string;
+    user_id: string;
+    title: string;
+    description: string | null;
+    idea_id: string | null;
+    platforms: string[]; // e.g., ['youtube', 'linkedin', 'twitter']
+    content_type: string | null; // e.g., 'short', 'long-form', 'carousel'
+    series_id: string | null;
+    column_id: string; // Current kanban column name
+    checked: boolean; // Completion checkbox state
+    order: number; // Order within column
+    created_at: string;
+    updated_at: string;
+}
+
+export interface UserWorkflow {
+    id: string;
+    user_id: string;
+    columns: string[]; // e.g., ['Starting Point', 'Edited', 'Done']
+    created_at: string;
+    updated_at: string;
+}
 
 // ============================================
 // TEMPLATE TYPES
@@ -39,6 +84,7 @@ export interface Idea {
     user_id: string;
     title: string;
     raw_text: string | null;
+    content: EditorJSData | null; // Editor.js JSON data
     idea_type: IdeaType;
     status: IdeaStatus;
     linked_series_id: string | null;
@@ -151,21 +197,13 @@ export interface Lead {
 export interface CreateIdeaInput {
     title: string;
     raw_text?: string | null;
-    idea_type?: IdeaType;
-    status?: IdeaStatus;
-    linked_series_id?: string | null;
-    linked_template_id?: string | null;
-    target_platform?: string | null;
+    content?: EditorJSData | null;
 }
 
 export interface UpdateIdeaInput {
     title?: string;
     raw_text?: string | null;
-    idea_type?: IdeaType;
-    status?: IdeaStatus;
-    linked_series_id?: string | null;
-    linked_template_id?: string | null;
-    target_platform?: string | null;
+    content?: EditorJSData | null;
 }
 
 export interface CreateTemplateInput {
@@ -301,10 +339,8 @@ export interface CreateLeadInput {
 // EXTENDED TYPES (with relations)
 // ============================================
 
-export interface IdeaWithSeries extends Idea {
-    series?: Series | null;
-    template?: Template | null;
-}
+// Simplified - IdeaWithSeries alias for backwards compatibility
+export type IdeaWithSeries = Idea;
 
 export interface SeriesWithIdeas extends Series {
     ideas?: Idea[];

@@ -1,12 +1,22 @@
-import { getIdeas } from '@/actions/ideas';
-import { getSeries } from '@/actions/series';
-import { PlanningBoard } from '@/components/planning/planning-board';
+/**
+ * Content Planning Page (app/planning)
+ * Server Component that fetches data and passes to Client Component
+ */
+
+import { getUserWorkflow } from '@/actions/planning';
+import PlanningClient from '@/components/planning/planning-client';
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/server';
 
 export default async function PlanningPage() {
-    const [ideas, seriesList] = await Promise.all([
-        getIdeas(),
-        getSeries(),
-    ]);
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-    return <PlanningBoard ideas={ideas} seriesList={seriesList} />;
+    if (!user) {
+        redirect('/auth/login');
+    }
+
+    const workflow = await getUserWorkflow();
+
+    return <PlanningClient initialWorkflow={workflow} />;
 }

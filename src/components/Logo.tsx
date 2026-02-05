@@ -27,7 +27,7 @@ const Logo = ({
         height={height}
         alt="ContentOS logo"
       />
-      {full && <span className={cn("-ml-1", textClassName)}>ContentOS</span>}
+      {full && <span className={cn("-ml-[2px]", textClassName)}>ContentOS</span>}
     </>
   );
 
@@ -35,7 +35,7 @@ const Logo = ({
     return (
       <Link
         href={href || "/"}
-        className={cn("flex items-center text-xl font-light font-bbh", className)}
+        className={cn("flex items-start text-xl font-light font-bbh", className)}
       >
         {content}
       </Link>

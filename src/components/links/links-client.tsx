@@ -18,6 +18,9 @@ interface LinksClientProps {
     profile: LinkProfileWithLinks | null;
 }
 
+// ... imports
+// (Keep existing imports)
+
 export function LinksClient({ profile }: LinksClientProps) {
     const [showLinkForm, setShowLinkForm] = useState(false);
     const [activeTab, setActiveTab] = useState<'links' | 'branding' | 'analytics'>('links');
@@ -29,86 +32,131 @@ export function LinksClient({ profile }: LinksClientProps) {
     const totalLinks = (profile.links || []).length;
 
     return (
-        <div className="space-y-6 max-w-4xl mx-auto">
-            {/* Header */}
-            <div className="animate-fade-in-up flex items-start justify-between gap-4">
-                <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
-                        <LinkSimple className="h-5 w-5 text-sky-500" weight="duotone" />
+        <div className="max-w-[1400px] mx-auto px-4 md:px-8 py-6">
+            <div className="grid lg:grid-cols-12 gap-8 items-start">
+                {/* LEFT COLUMN - Editor & Tabs */}
+                <div className="lg:col-span-7 space-y-6">
+
+                    {/* Header */}
+                    <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-3">
+                            <div className="h-10 w-10 rounded-xl bg-sky-500/10 flex items-center justify-center">
+                                <LinkSimple className="h-5 w-5 text-sky-500" weight="duotone" />
+                            </div>
+                            <div>
+                                <h1 className="text-xl font-bold tracking-tight">Public Page</h1>
+                                <p className="text-muted-foreground text-sm flex items-center gap-1">
+                                    Manage your creative profile
+                                </p>
+                            </div>
+                        </div>
+                        <Link href={`/profile/${profile.username}`} target="_blank" className="text-primary hover:underline text-sm font-medium inline-flex items-center gap-1 bg-primary/5 px-3 py-1.5 rounded-lg hover:bg-primary/10 transition-colors">
+                            /{profile.username}
+                            <ArrowSquareOut className="h-3 w-3" />
+                        </Link>
                     </div>
-                    <div>
-                        <h1 className="text-2xl font-bold tracking-tight">Public Links</h1>
-                        <p className="text-muted-foreground text-sm">
-                            <Link href={`/profile/${profile.username}`} target="_blank" className="text-primary hover:underline font-medium inline-flex items-center gap-1">
-                                /{profile.username}
-                                <ArrowSquareOut className="h-3 w-3" />
-                            </Link>
-                            {totalLinks > 0 && <span className="ml-2">• {totalLinks} link{totalLinks !== 1 ? 's' : ''}</span>}
-                        </p>
+
+                    {/* Navigation Tabs */}
+                    <div className="flex gap-1 p-1 rounded-xl bg-muted/30 border w-fit">
+                        <button
+                            onClick={() => setActiveTab('links')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'links'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                        >
+                            <LinkSimple className="h-4 w-4" weight={activeTab === 'links' ? 'fill' : 'duotone'} />
+                            Links
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('branding')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'branding'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                        >
+                            <Palette className="h-4 w-4" weight={activeTab === 'branding' ? 'fill' : 'duotone'} />
+                            Appearance
+                        </button>
+                        <button
+                            onClick={() => setActiveTab('analytics')}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all flex items-center gap-2 ${activeTab === 'analytics'
+                                ? 'bg-background shadow-sm text-foreground'
+                                : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                                }`}
+                        >
+                            <ChartLine className="h-4 w-4" weight={activeTab === 'analytics' ? 'fill' : 'duotone'} />
+                            Analytics
+                        </button>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="min-h-[400px]">
+                        {activeTab === 'links' && (
+                            <div className="space-y-6 animate-fade-in">
+                                {/* Add Link Button Section */}
+                                <div className="flex flex-col gap-4">
+                                    {!showLinkForm ? (
+                                        <Button
+                                            onClick={() => setShowLinkForm(true)}
+                                            className="w-full py-6 text-base shadow-sm rounded-xl border-2 border-dashed border-muted-foreground/20 bg-muted/5 text-muted-foreground hover:bg-muted/10 hover:border-primary/50 hover:text-primary transition-all custom-dashed-button"
+                                            variant="ghost"
+                                        >
+                                            <Plus className="h-5 w-5 mr-2" weight="bold" />
+                                            Add New Link
+                                        </Button>
+                                    ) : (
+                                        <div className="animate-fade-in-up">
+                                            <LinkForm profileId={profile.id} onClose={() => setShowLinkForm(false)} />
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="space-y-3">
+                                    <div className="flex items-center justify-between px-1">
+                                        <h3 className="text-sm font-medium text-muted-foreground">Your Links ({totalLinks})</h3>
+                                    </div>
+                                    <LinksList links={profile.links || []} profileId={profile.id} />
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'branding' && (
+                            <div className="animate-fade-in">
+                                <ProfileEditor profile={profile} />
+                            </div>
+                        )}
+
+                        {activeTab === 'analytics' && (
+                            <div className="animate-fade-in">
+                                <ProfileViewsAnalytics />
+                            </div>
+                        )}
                     </div>
                 </div>
-                {activeTab === 'links' && (
-                    <Button
-                        onClick={() => setShowLinkForm(true)}
-                        className="gap-2 rounded-xl transition-all duration-200 hover:scale-105"
-                    >
-                        <Plus className="h-4 w-4" weight="bold" />
-                        Add Link
-                    </Button>
-                )}
-            </div>
 
-            {/* Tabs */}
-            <div className="flex gap-2 p-1 rounded-xl bg-muted/50 w-fit">
-                <button
-                    onClick={() => setActiveTab('links')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'links'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                >
-                    <LinkSimple className="h-4 w-4 inline mr-2" weight="duotone" />
-                    Links
-                </button>
-                <button
-                    onClick={() => setActiveTab('branding')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'branding'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                >
-                    <PencilSimple className="h-4 w-4 inline mr-2" weight="duotone" />
-                    Edit
-                </button>
-                <button
-                    onClick={() => setActiveTab('analytics')}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${activeTab === 'analytics'
-                        ? 'bg-background shadow-sm text-foreground'
-                        : 'text-muted-foreground hover:text-foreground'
-                        }`}
-                >
-                    <ChartLine className="h-4 w-4 inline mr-2" weight="duotone" />
-                    Analytics
-                </button>
-            </div>
-
-            {activeTab === 'links' ? (
-                <>
-                    <ProfilePreviewCard profile={profile} onEditClick={() => setActiveTab('branding')} />
-
-                    {showLinkForm && (
-                        <div className="animate-fade-in-up">
-                            <LinkForm profileId={profile.id} onClose={() => setShowLinkForm(false)} />
+                {/* RIGHT COLUMN - Preview */}
+                <div className="lg:col-span-5 relative hidden lg:block h-full">
+                    <div className="sticky top-24 self-start">
+                        <div className="bg-muted/30 rounded-3xl p-4 border border-muted/50">
+                            <div className="flex items-center justify-between mb-4 px-2">
+                                <h3 className="text-sm font-semibold text-muted-foreground flex items-center gap-2">
+                                    <Eye className="h-4 w-4" />
+                                    Live Preview
+                                </h3>
+                                <div className="flex gap-1.5">
+                                    <div className="h-2.5 w-2.5 rounded-full bg-red-400/50" />
+                                    <div className="h-2.5 w-2.5 rounded-full bg-amber-400/50" />
+                                    <div className="h-2.5 w-2.5 rounded-full bg-green-400/50" />
+                                </div>
+                            </div>
+                            <div className="overflow-hidden rounded-2xl border bg-background shadow-lg shadow-black/5">
+                                <ProfilePreviewCard profile={profile} />
+                            </div>
                         </div>
-                    )}
-
-                    <LinksList links={profile.links || []} profileId={profile.id} />
-                </>
-            ) : activeTab === 'analytics' ? (
-                <ProfileViewsAnalytics />
-            ) : (
-                <ProfileEditor profile={profile} />
-            )}
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }

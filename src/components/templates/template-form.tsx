@@ -1,12 +1,11 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { FileText, X, Plus, Trash } from '@phosphor-icons/react';
+import { FileText, X, Plus, Trash, TwitterLogo, LinkedinLogo, YoutubeLogo, Heart, ChatCircle, ArrowsClockwise, Share, ThumbsUp, ChatTeardropText, Repeat } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { createTemplate } from '@/actions/templates';
-import { MadLibsEditor } from './mad-libs-editor';
-import { PlaceholderRenderer } from './placeholder-renderer';
 import { detectEmbedType, generateId } from '@/lib/template-utils';
+import { SocialEmbed } from './social-embed';
 import type { PlatformType, TemplateExample, TemplateReference } from '@/types/database';
 
 const platforms: { value: PlatformType; label: string }[] = [
@@ -253,29 +252,25 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                 </div>
             )}
 
-            {/* Step 3: Template Text (Mad Libs) */}
+            {/* Step 3: Template Text with Inline Preview */}
             {step === 3 && (
                 <div className="space-y-4 animate-fade-in-up">
-                    <div>
-                        <label className="text-sm font-medium mb-2 block">Template Text</label>
-                        <p className="text-xs text-muted-foreground mb-3">
-                            Write your template with fill-in-the-blank placeholders
-                        </p>
-                        <MadLibsEditor
-                            value={templateText}
-                            onChange={setTemplateText}
-                            placeholder={`I spent [time period] with [notable individuals] in [location]\n\nX [content types] (that every [target audience] needs to hear):`}
-                            rows={6}
-                        />
-                    </div>
+                    <p className="text-xs text-muted-foreground">
+                        Type your template with [placeholders] in brackets
+                    </p>
 
-                    {templateText && (
-                        <div>
-                            <label className="text-sm font-medium mb-2 block">Preview</label>
-                            <div className="p-4 rounded-xl bg-muted/50 border">
-                                <PlaceholderRenderer templateText={templateText} />
-                            </div>
-                        </div>
+                    {/* Platform-specific inline editor */}
+                    {platform === 'x' && (
+                        <TwitterFormEditor value={templateText} onChange={setTemplateText} />
+                    )}
+                    {platform === 'linkedin' && (
+                        <LinkedInFormEditor value={templateText} onChange={setTemplateText} />
+                    )}
+                    {platform === 'youtube' && (
+                        <YouTubeFormEditor value={templateText} onChange={setTemplateText} />
+                    )}
+                    {platform === 'generic' && (
+                        <GenericFormEditor value={templateText} onChange={setTemplateText} />
                     )}
                 </div>
             )}
@@ -286,69 +281,35 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                     <div>
                         <label className="text-sm font-medium mb-2 block">Add Examples</label>
                         <p className="text-xs text-muted-foreground mb-3">
-                            Show this template in action with real examples
+                            Paste a URL to embed or write content directly
                         </p>
                     </div>
 
                     {/* Existing examples */}
                     {examples.length > 0 && (
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                             {examples.map((example) => (
-                                <div key={example.id} className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border">
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm line-clamp-2">{example.content}</p>
-                                        {example.author && (
-                                            <p className="text-xs text-muted-foreground mt-1">— {example.author}</p>
-                                        )}
-                                    </div>
-                                    <Button
-                                        variant="ghost"
-                                        size="icon-sm"
-                                        onClick={() => removeExample(example.id)}
-                                        className="text-destructive hover:text-destructive"
-                                    >
-                                        <Trash className="h-4 w-4" />
-                                    </Button>
-                                </div>
+                                <SmartExampleDisplay
+                                    key={example.id}
+                                    example={example}
+                                    onDelete={() => removeExample(example.id)}
+                                />
                             ))}
                         </div>
                     )}
 
-                    {/* Add new example form */}
-                    <div className="space-y-3 p-4 rounded-xl border border-dashed">
-                        <textarea
-                            placeholder="Paste an example that uses this template style..."
-                            value={newExampleContent}
-                            onChange={(e) => setNewExampleContent(e.target.value)}
-                            rows={3}
-                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
-                        />
-                        <div className="grid grid-cols-2 gap-2">
-                            <input
-                                type="text"
-                                placeholder="Author name (optional)"
-                                value={newExampleAuthor}
-                                onChange={(e) => setNewExampleAuthor(e.target.value)}
-                                className="px-4 py-2.5 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-                            />
-                            <input
-                                type="url"
-                                placeholder="Source URL (optional)"
-                                value={newExampleUrl}
-                                onChange={(e) => setNewExampleUrl(e.target.value)}
-                                className="px-4 py-2.5 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
-                            />
-                        </div>
-                        <Button
-                            variant="outline"
-                            onClick={addExample}
-                            disabled={!newExampleContent.trim()}
-                            className="gap-2"
-                        >
-                            <Plus className="h-4 w-4" />
-                            Add Example
-                        </Button>
-                    </div>
+                    {/* Smart input */}
+                    <SmartExampleInput
+                        onAdd={(content, author, url) => {
+                            setExamples([...examples, {
+                                id: generateId(),
+                                content: content.trim(),
+                                author: author?.trim() || null,
+                                platform: platform,
+                                source_url: url?.trim() || null,
+                            }]);
+                        }}
+                    />
                 </div>
             )}
 
@@ -439,6 +400,242 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                     </Button>
                 )}
             </div>
+        </div>
+    );
+}
+
+// ============================================
+// INLINE FORM EDITORS
+// ============================================
+
+interface FormEditorProps {
+    value: string;
+    onChange: (value: string) => void;
+}
+
+function TwitterFormEditor({ value, onChange }: FormEditorProps) {
+    return (
+        <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="px-4 py-3 flex items-center gap-3">
+                <div className="h-10 w-10 rounded-full bg-linear-to-br from-sky-400 to-sky-600" />
+                <div className="flex-1">
+                    <div className="flex items-center gap-1">
+                        <span className="font-semibold text-sm">Your Name</span>
+                        <svg className="h-4 w-4 text-sky-500" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M22.25 12c0-1.43-.88-2.67-2.19-3.34.46-1.39.2-2.9-.81-3.91s-2.52-1.27-3.91-.81c-.66-1.31-1.91-2.19-3.34-2.19s-2.67.88-3.33 2.19c-1.4-.46-2.91-.2-3.92.81s-1.26 2.52-.8 3.91c-1.31.67-2.2 1.91-2.2 3.34s.89 2.67 2.2 3.34c-.46 1.39-.21 2.9.8 3.91s2.52 1.26 3.91.81c.67 1.31 1.91 2.19 3.34 2.19s2.68-.88 3.34-2.19c1.39.45 2.9.2 3.91-.81s1.27-2.52.81-3.91c1.31-.67 2.19-1.91 2.19-3.34zm-11.71 4.2L6.8 12.46l1.41-1.42 2.26 2.26 4.8-5.23 1.47 1.36-6.2 6.77z" />
+                        </svg>
+                    </div>
+                    <span className="text-xs text-muted-foreground">@yourhandle</span>
+                </div>
+                <TwitterLogo className="h-5 w-5 text-sky-500" weight="fill" />
+            </div>
+            <div className="px-4 pb-3">
+                <textarea
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder="I spent [time period] with [notable individuals]..."
+                    className="w-full bg-transparent text-[15px] leading-relaxed focus:outline-none resize-none min-h-[100px] placeholder:text-muted-foreground/50"
+                    rows={4}
+                />
+            </div>
+            <div className="px-4 py-2 border-t flex items-center justify-between text-muted-foreground">
+                <button className="flex items-center gap-1.5"><ChatCircle className="h-4 w-4" /><span className="text-xs">123</span></button>
+                <button className="flex items-center gap-1.5"><ArrowsClockwise className="h-4 w-4" /><span className="text-xs">456</span></button>
+                <button className="flex items-center gap-1.5"><Heart className="h-4 w-4" /><span className="text-xs">789</span></button>
+                <button className="flex items-center gap-1.5"><Share className="h-4 w-4" /></button>
+            </div>
+        </div>
+    );
+}
+
+function LinkedInFormEditor({ value, onChange }: FormEditorProps) {
+    return (
+        <div className="rounded-2xl border bg-card overflow-hidden">
+            <div className="px-4 py-3 flex items-start gap-3">
+                <div className="h-12 w-12 rounded-full bg-linear-to-br from-blue-500 to-blue-700" />
+                <div className="flex-1">
+                    <p className="font-semibold text-sm">Your Name</p>
+                    <p className="text-xs text-muted-foreground">Your headline • 1h</p>
+                </div>
+                <LinkedinLogo className="h-5 w-5 text-blue-600" weight="fill" />
+            </div>
+            <div className="px-4 pb-3">
+                <textarea
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder="What do you want to talk about?"
+                    className="w-full bg-transparent text-sm leading-relaxed focus:outline-none resize-none min-h-[120px] placeholder:text-muted-foreground/50"
+                    rows={5}
+                />
+            </div>
+            <div className="px-4 py-2 border-t border-b text-xs text-muted-foreground">👍 ❤️ 💡 1,234</div>
+            <div className="px-4 py-2 flex items-center justify-around text-muted-foreground">
+                <button className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg hover:bg-blue-600/10"><ThumbsUp className="h-4 w-4" /><span className="text-xs font-medium">Like</span></button>
+                <button className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg hover:bg-blue-600/10"><ChatTeardropText className="h-4 w-4" /><span className="text-xs font-medium">Comment</span></button>
+                <button className="flex items-center gap-1.5 py-1.5 px-3 rounded-lg hover:bg-blue-600/10"><Repeat className="h-4 w-4" /><span className="text-xs font-medium">Repost</span></button>
+            </div>
+        </div>
+    );
+}
+
+function YouTubeFormEditor({ value, onChange }: FormEditorProps) {
+    return (
+        <div className="rounded-xl border bg-card p-4 flex items-start gap-3">
+            <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
+                <YoutubeLogo className="h-5 w-5 text-red-500" weight="fill" />
+            </div>
+            <div className="flex-1 min-w-0">
+                <p className="text-xs text-muted-foreground mb-1">YouTube Title</p>
+                <textarea
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder="Enter your video title template..."
+                    className="w-full bg-transparent font-medium text-sm focus:outline-none resize-none min-h-[60px] placeholder:text-muted-foreground/50"
+                    rows={2}
+                />
+            </div>
+        </div>
+    );
+}
+
+function GenericFormEditor({ value, onChange }: FormEditorProps) {
+    return (
+        <div className="rounded-xl border bg-card p-4">
+            <textarea
+                value={value}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="Enter your template content with [placeholders]..."
+                className="w-full bg-transparent text-sm leading-relaxed focus:outline-none resize-none min-h-[120px] placeholder:text-muted-foreground/50"
+                rows={5}
+            />
+        </div>
+    );
+}
+
+// ============================================
+// SMART EXAMPLE COMPONENTS
+// ============================================
+
+/**
+ * Checks if a string is a single URL (no other content)
+ */
+function isSingleUrl(text: string): boolean {
+    const trimmed = text.trim();
+    try {
+        new URL(trimmed);
+        return !trimmed.includes(' ') && !trimmed.includes('\n');
+    } catch {
+        return false;
+    }
+}
+
+interface SmartExampleInputProps {
+    onAdd: (content: string, author?: string, url?: string) => void;
+}
+
+function SmartExampleInput({ onAdd }: SmartExampleInputProps) {
+    const [input, setInput] = useState('');
+    const [author, setAuthor] = useState('');
+
+    const isUrl = isSingleUrl(input);
+
+    const handleAdd = () => {
+        if (!input.trim()) return;
+        if (isUrl) {
+            onAdd(input.trim(), undefined, input.trim());
+        } else {
+            onAdd(input.trim(), author || undefined, undefined);
+        }
+        setInput('');
+        setAuthor('');
+    };
+
+    return (
+        <div className="space-y-3 p-4 rounded-xl border border-dashed">
+            {isUrl ? (
+                <input
+                    type="url"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Paste a URL to embed (X, LinkedIn, etc.)"
+                    className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                />
+            ) : (
+                <>
+                    <textarea
+                        value={input}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Paste content or a URL..."
+                        rows={3}
+                        className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                    />
+                    {input.trim() && (
+                        <input
+                            type="text"
+                            value={author}
+                            onChange={(e) => setAuthor(e.target.value)}
+                            placeholder="Author name (optional)"
+                            className="w-full px-4 py-2.5 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                        />
+                    )}
+                </>
+            )}
+            <Button
+                variant="outline"
+                onClick={handleAdd}
+                disabled={!input.trim()}
+                className="gap-2"
+            >
+                <Plus className="h-4 w-4" />
+                {isUrl ? 'Add Embed' : 'Add Example'}
+            </Button>
+        </div>
+    );
+}
+
+interface SmartExampleDisplayProps {
+    example: TemplateExample;
+    onDelete: () => void;
+}
+
+function SmartExampleDisplay({ example, onDelete }: SmartExampleDisplayProps) {
+    const isUrl = example.source_url && isSingleUrl(example.content);
+
+    if (isUrl && example.source_url) {
+        // Render as embed
+        const embedType = detectEmbedType(example.source_url);
+        return (
+            <div className="relative group">
+                <SocialEmbed reference={{ id: example.id, url: example.source_url, title: null, embed_type: embedType }} />
+                <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    onClick={onDelete}
+                    className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity text-destructive hover:text-destructive bg-background/80"
+                >
+                    <Trash className="h-4 w-4" />
+                </Button>
+            </div>
+        );
+    }
+
+    // Render as content card
+    return (
+        <div className="flex items-start gap-2 p-3 rounded-xl bg-muted/50 border">
+            <div className="flex-1 min-w-0">
+                <p className="text-sm whitespace-pre-wrap">{example.content}</p>
+                {example.author && (
+                    <p className="text-xs text-muted-foreground mt-1">— {example.author}</p>
+                )}
+            </div>
+            <Button
+                variant="ghost"
+                size="icon-sm"
+                onClick={onDelete}
+                className="text-destructive hover:text-destructive"
+            >
+                <Trash className="h-4 w-4" />
+            </Button>
         </div>
     );
 }

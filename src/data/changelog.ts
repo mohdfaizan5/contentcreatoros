@@ -7,6 +7,92 @@ import { Changelog } from '@/types/changelog';
  */
 export const changelog: Changelog = [
     {
+        version: '1.0.3',
+        date: 'Feb 5, 2026',
+        title: 'Auth UI Polish & Planning Enhancements',
+        description: 'Visual overhaul of authentication pages and improvements to the content planning board.',
+        improvements: [
+            'Redesigned Login, Sign Up, and Forgot Password pages with modern aesthetic',
+            'Added gradient accents and floating decorative elements to auth forms',
+            'Added ability to create new columns directly from the Kanban board',
+            'Improved Kanban board horizontal scrolling and layout response',
+        ],
+        fixes: [
+            'Standardized casing for Logo component imports to match file system (logo.tsx)',
+            'Fixed build failures on case-sensitive environments',
+        ],
+        patches: [],
+    },
+    {
+        version: '1.0.2',
+        date: 'Feb 4, 2026',
+        title: 'Templates UI Improvements',
+        description: 'Enhanced template editing experience with inline editing and smart embeds.',
+        improvements: [
+            'Inline editing in platform-specific mock previews (Twitter, LinkedIn, YouTube)',
+            'Unified preview and input - type directly in the social media mock UI',
+            'Smart example input - paste a URL to auto-embed or write content for text examples',
+            'Embedded reference links displayed with Twitter widgets',
+        ],
+        fixes: [
+            'Removed redundant platform badge and template name repetition',
+        ],
+        patches: [
+            'Combined template header with platform badge for cleaner layout',
+        ],
+    },
+    {
+        version: '1.0.1',
+        date: 'Feb 4, 2026',
+        title: 'Ideas Feature Simplification',
+        description: 'Streamlined the ideas feature for a cleaner, more focused experience.',
+        improvements: [
+            'Added dedicated page for creating ideas with Editor.js at /app/ideas/new',
+            'Added "Create a new idea" button to ideas page header',
+            'Ideas now open in full page view instead of modal dialog',
+            'Simplified idea cards - cleaner design without action buttons',
+        ],
+        fixes: [
+            'Fixed duplicate "Start writing..." placeholder in read-only Editor views',
+            'Widened idea detail view for better content viewing',
+        ],
+        patches: [
+            'Removed series concept toggle from idea creation',
+            'Removed quick dump input in favor of dedicated create page',
+            'Simplified database types for ideas',
+        ],
+    },
+    {
+        version: '1.0.0',
+        date: 'Feb 3, 2026',
+        title: 'V1 Release - Ideas, Planning & AI Assistant',
+        description: 'Major V1 release with Editor.js integration for ideas, customizable kanban planning board, and AI-powered content assistance using Claude.',
+        improvements: [
+            'Added Editor.js rich text editor to Ideas with headers, lists, quotes, and code blocks',
+            'Implemented Content Planning kanban board with customizable workflow columns',
+            'Created first-time onboarding flow for workflow setup (preset + custom options)',
+            'Built drag-and-drop content cards with platform badges and series linking',
+            'Added animated checkbox interaction for content completion tracking',
+            'Implemented "Move to Planning" feature to convert ideas into content cards',
+            'Created AI Assistant chat interface powered by Claude 3.5 Sonnet',
+            'Added streaming AI responses with message copy and clear conversation features',
+            'Built Create Content dialog with platform multiselect and dynamic content types',
+            'Implemented series autocomplete in content creation workflow',
+            'Added masonry/waterfall layout preparation for ideas (foundation in place)',
+        ],
+        fixes: [
+            'Updated database schema with content and user_workflows tables',
+            'Fixed TypeScript types to support Editor.js JSON data structure',
+            'Resolved planning page conflicts with V1 implementation',
+        ],
+        patches: [
+            'Added ANTHROPIC_API_KEY environment variable requirement',
+            'Created comprehensive server actions for planning features',
+            'Updated navigation with AI Assistant link and "NEW" badge',
+            'Prepared migration file for V1 database changes',
+        ],
+    },
+    {
         version: '0.3.0',
         date: 'Feb 2, 2026',
         title: 'Analytics & Inline Editing',
