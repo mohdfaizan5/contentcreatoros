@@ -7,6 +7,17 @@ import { Changelog } from '@/types/changelog';
  */
 export const changelog: Changelog = [
     {
+        version: '1.0.4',
+        date: 'Feb 5, 2026',
+        title: 'Production Build Fixes',
+        description: 'Critical fixes for production deployment failures on Vercel.',
+        improvements: [],
+        fixes: [
+            'Fixed critical "Module not found" error for Logo component on Vercel deployments by renaming "Logo.tsx" to "logo.tsx" to match import casing',
+        ],
+        patches: [],
+    },
+    {
         version: '1.0.3',
         date: 'Feb 5, 2026',
         title: 'Auth UI Polish & Planning Enhancements',
