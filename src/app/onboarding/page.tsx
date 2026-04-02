@@ -13,10 +13,10 @@ type OnboardingPageProps = {
 };
 
 function getSafeRedirectTarget(value?: string): string {
-  if (!value) return '/app/x/analytics';
+  if (!value) return '/app/analytics';
   if (value === '/app') return value;
   if (value.startsWith('/app/')) return value;
-  return '/app/x/analytics';
+  return '/app/analytics';
 }
 
 export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {

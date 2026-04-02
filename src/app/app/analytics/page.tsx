@@ -197,7 +197,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
             </div>
 
             <Button asChild variant="ghost" className="justify-start sm:justify-center">
-              <Link href="/app/x/analytics">
+              <Link href="/app/analytics">
                 <ArrowClockwise className="size-4" />
                 Refresh
               </Link>

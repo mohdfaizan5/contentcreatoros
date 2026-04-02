@@ -173,7 +173,7 @@ function DefaultEntryStep({
 }
 
 export default function OnboardingFlow({
-  redirectTo = '/app/x/analytics',
+  redirectTo = '/app/analytics',
   stepRenderers,
 }: OnboardingFlowProps) {
   const router = useRouter();

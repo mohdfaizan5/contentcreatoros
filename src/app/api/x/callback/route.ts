@@ -15,14 +15,14 @@ export async function GET(request: NextRequest) {
   if (xError) {
     await clearXSession();
     return NextResponse.redirect(
-      new URL(`/app/x/analytics?error=${encodeURIComponent(xError)}`, request.url),
+      new URL(`/app/analytics?error=${encodeURIComponent(xError)}`, request.url),
     );
   }
 
   if (!code) {
     await clearXSession();
     return NextResponse.redirect(
-      new URL('/app/x/analytics?error=Missing%20authorization%20code', request.url),
+      new URL('/app/analytics?error=Missing%20authorization%20code', request.url),
     );
   }
 
@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
   if (!isValidState) {
     await clearXSession();
     return NextResponse.redirect(
-      new URL('/app/x/analytics?error=Invalid%20X%20OAuth%20state', request.url),
+      new URL('/app/analytics?error=Invalid%20X%20OAuth%20state', request.url),
     );
   }
 
@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
       error instanceof Error ? error.message : 'Unable to complete the X connection.';
 
     return NextResponse.redirect(
-      new URL(`/app/x/analytics?error=${encodeURIComponent(message)}`, request.url),
+      new URL(`/app/analytics?error=${encodeURIComponent(message)}`, request.url),
     );
   }
 }

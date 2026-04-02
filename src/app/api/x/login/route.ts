@@ -10,7 +10,7 @@ export async function GET(request: NextRequest) {
       error instanceof Error ? error.message : 'Unable to start the X connection flow.';
 
     return NextResponse.redirect(
-      new URL(`/app/x/analytics?error=${encodeURIComponent(message)}`, request.url),
+      new URL(`/app/analytics?error=${encodeURIComponent(message)}`, request.url),
     );
   }
 }
