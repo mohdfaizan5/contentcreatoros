@@ -33,6 +33,17 @@ import Logo from '@/components/logo';
 import { NavBadge } from './nav-badge';
 
 const xNavItems = [
+
+    {
+        title: 'Main',
+        url: '/app/x',
+        icon: XLogoIcon,
+        color: 'text-pink-500',
+        hoverBg: 'hover:bg-pink-500/10',
+        badge: 'new' as const,
+    },
+];
+const mainNavItems = [
     {
         title: 'Dashboard',
         url: '/app',
@@ -41,31 +52,11 @@ const xNavItems = [
         hoverBg: 'hover:bg-slate-500/10',
     },
     {
-        title: 'Analytics',
-        url: '/app/analytics',
-        icon: XLogoIcon,
-        color: 'text-pink-500',
-        hoverBg: 'hover:bg-pink-500/10',
-        badge: 'new' as const,
-    },
-
-];
-const mainNavItems = [
-
-    // {
-    //     title: 'Ideas',
-    //     url: '/app/ideas',
-    //     icon: Lightbulb,
-    //     color: 'text-amber-500',
-    //     hoverBg: 'hover:bg-amber-500/10',
-    // },
-    {
-        title: 'Content Calendar',
-        url: '/app/calendar',
-        icon: XLogoIcon,
-        color: 'text-pink-500',
-        hoverBg: 'hover:bg-pink-500/10',
-        badge: 'new' as const,
+        title: 'Ideas',
+        url: '/app/ideas',
+        icon: Lightbulb,
+        color: 'text-amber-500',
+        hoverBg: 'hover:bg-amber-500/10',
     },
     {
         title: 'Templates',
@@ -126,7 +117,7 @@ const growthNavItems = [
     },
 ];
 
-export function AppSidebar() {
+export function OldAppSidebar() {
     const pathname = usePathname();
 
     return (
@@ -203,7 +194,7 @@ export function AppSidebar() {
                     </SidebarGroupContent>
                 </SidebarGroup>
 
-                {/* <SidebarGroup>
+                <SidebarGroup>
                     <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">Growth</SidebarGroupLabel>
                     <SidebarGroupContent>
                         <SidebarMenu>
@@ -231,12 +222,12 @@ export function AppSidebar() {
                             })}
                         </SidebarMenu>
                     </SidebarGroupContent>
-                </SidebarGroup> */}
+                </SidebarGroup>
             </SidebarContent>
 
             <SidebarFooter className="bg-[#030E1F]- border-t-[0.5px] border-sidebar-border space-y-3">
                 {/* Feedback Card */}
-                {/* <div className="mx-2 p-3 rounded-xl bg-linear-to-br from-blue-500/90 to-blue-600/90 text-white group-data-[collapsible=icon]:hidden">
+                <div className="mx-2 p-3 rounded-xl bg-linear-to-br from-blue-500/90 to-blue-600/90 text-white group-data-[collapsible=icon]:hidden">
                     <p className="text-sm font-medium leading-snug">
                         We're actively building this tool!
                     </p>
@@ -251,7 +242,7 @@ export function AppSidebar() {
                             Learn More
                         </button>
                     </div>
-                </div> */}
+                </div>
 
                 <SidebarMenu>
                     <SidebarMenuItem>

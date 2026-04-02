@@ -18,10 +18,19 @@ const LandingHero = () => {
             <div className="relative z-10 max-w-7xl mx-auto px-6 pt-16 md:pt-24">
                 {/* Hero Text */}
                 <div className="text-center mb-12">
-                    <h1 className="text-5xl  lg:text-7xl font-semibold text-white mb-4 leading-[2.8rem] md:leading-[3.7rem]">
-                        <span className="">From raw ideas to </span>
+                    <h1 className="text-5xl  lg:text-7xl font-semibold text-white mb-4 leading-[2.8rem] md:leading-[3.8rem]">
+                        <span className="">Your AI CMO 
+                            <br className='hidden lg:block' />
+                            for X.com Growth
+                            {/* on Autopilot */}
+                            </span>
+                        {/* <span className="">Your X.com Growth
+                            <br className='hidden lg:block' />
+                            on Autopilot</span> */}
+                        {/* From URL to Viral in 60 Seconds. */}
+                        {/* <span className="">From raw ideas to </span>
                         <br className='hidden lg:block' />
-                        consistent content
+                        consistent content */}
                     </h1>
                     <p className="text-white/80 leading-5 md:leading-6 text-lg md:text-xl max-w-2xl mx-auto mb-8">
                         A daily-use system for solo creators and small teams to

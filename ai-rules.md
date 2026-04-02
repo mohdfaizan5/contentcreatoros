@@ -1,4 +1,5 @@
-- use bun to install every package with shadcn packages unless requried with npm
+- check if there is a bun.lock file if there is use bun to install every package or shadcn packages unless required to use npm
+- if there is uv.lock file use uv to install every package unless instructed otherwise to use pip
 - make sure you dont break the existing code
 - use comments to explain the code, not everywhere atleast in complex functions and in start of the file to tell what this file does.
 - make sure you write code understanding the bigger picture and how it fits into the whole application.
