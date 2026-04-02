@@ -430,6 +430,69 @@ export function getInitialOnboardingAnswers() {
   }, {});
 }
 
+export type PersistedOnboardingAnswerRow = {
+  question_key: string;
+  answer: unknown;
+};
+
+export function getAnswersFromPersistedRows(rows: PersistedOnboardingAnswerRow[]) {
+  const answers = getInitialOnboardingAnswers();
+  const questionsByKey = new Map(
+    getQuestionSteps().flatMap((step) => step.questions.map((question) => [question.key, question])),
+  );
+
+  for (const row of rows) {
+    const question = questionsByKey.get(row.question_key);
+
+    if (!question) {
+      continue;
+    }
+
+    const value = row.answer;
+
+    if (
+      (question.type === 'single-select' || question.type === 'multi-select') &&
+      value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      'value' in value
+    ) {
+      const structuredValue = value as { value?: unknown; otherText?: unknown };
+
+      if (typeof structuredValue.value === 'string' || Array.isArray(structuredValue.value)) {
+        answers[question.key] = structuredValue.value as string | string[];
+      }
+
+      if ('otherOption' in question && question.otherOption) {
+        answers[question.otherOption.answerKey] =
+          typeof structuredValue.otherText === 'string' ? structuredValue.otherText : '';
+      }
+
+      continue;
+    }
+
+    if (question.type === 'tag-input') {
+      answers[question.key] = Array.isArray(value)
+        ? value.filter((item): item is string => typeof item === 'string')
+        : typeof value === 'string' && value.trim().length > 0
+          ? [value]
+          : [];
+      continue;
+    }
+
+    if (Array.isArray(value)) {
+      answers[question.key] = value.filter((item): item is string => typeof item === 'string');
+      continue;
+    }
+
+    if (typeof value === 'string') {
+      answers[question.key] = value;
+    }
+  }
+
+  return answers;
+}
+
 function hasValue(value: unknown) {
   if (Array.isArray(value)) {
     return value.length > 0;
@@ -442,7 +505,7 @@ function hasValue(value: unknown) {
   return Boolean(value);
 }
 
-function isOtherOptionSelected(question: OnboardingQuestion, answers: OnboardingAnswers) {
+export function isOtherOptionSelected(question: OnboardingQuestion, answers: OnboardingAnswers) {
   if (!('otherOption' in question) || !question.otherOption) {
     return false;
   }

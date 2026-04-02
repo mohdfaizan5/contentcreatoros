@@ -8,21 +8,9 @@ export const metadata = {
   description: 'Set up your X content strategy workspace',
 };
 
-type OnboardingPageProps = {
-  searchParams: Promise<{ redirectTo?: string }>;
-};
-
-function getSafeRedirectTarget(value?: string): string {
-  if (!value) return '/app/analytics';
-  if (value === '/app') return value;
-  if (value.startsWith('/app/')) return value;
-  return '/app/analytics';
-}
-
-export default async function OnboardingPage({ searchParams }: OnboardingPageProps) {
+export default async function OnboardingPage() {
   const supabase = await createClient();
-  const resolvedSearchParams = await searchParams;
-  const redirectTo = getSafeRedirectTarget(resolvedSearchParams?.redirectTo);
+
   const {
     data: { user },
   } = await supabase.auth.getUser();
@@ -38,8 +26,8 @@ export default async function OnboardingPage({ searchParams }: OnboardingPagePro
     .eq('flow_key', ONBOARDING_FLOW_KEY);
 
   if (!onboardingAnswersError && (onboardingAnswerCount ?? 0) > 0) {
-    redirect(redirectTo);
+    redirect('/app/analytics');
   }
 
-  return <OnboardingFlow redirectTo={redirectTo} />;
+  return <OnboardingFlow />;
 }
