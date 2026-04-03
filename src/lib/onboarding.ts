@@ -669,6 +669,57 @@ export function getPersistedAnswerEntries(answers: OnboardingAnswers) {
   );
 }
 
+export function hydrateOnboardingAnswersFromStoredRows(
+  rows: Array<{ question_key: string; answer: unknown }>,
+) {
+  const answers = getInitialOnboardingAnswers();
+  const questionsByKey = new Map(
+    getQuestionSteps().flatMap((step) => step.questions.map((question) => [question.key, question])),
+  );
+
+  rows.forEach((row) => {
+    const question = questionsByKey.get(row.question_key);
+
+    if (!question) {
+      return;
+    }
+
+    const answer = row.answer;
+
+    if (
+      answer &&
+      typeof answer === 'object' &&
+      !Array.isArray(answer) &&
+      'value' in answer
+    ) {
+      const complexAnswer = answer as {
+        otherText?: string | null;
+        value: string | string[];
+      };
+
+      answers[row.question_key] = complexAnswer.value;
+
+      if (
+        question.type !== 'text' &&
+        question.type !== 'textarea' &&
+        question.type !== 'tag-input' &&
+        question.otherOption &&
+        complexAnswer.otherText
+      ) {
+        answers[question.otherOption.answerKey] = complexAnswer.otherText;
+      }
+
+      return;
+    }
+
+    if (typeof answer === 'string' || Array.isArray(answer)) {
+      answers[row.question_key] = answer;
+    }
+  });
+
+  return answers;
+}
+
 export function mapAnswersToLegacyStage(answers: OnboardingAnswers): OnboardingStage {
   switch (answers.business_stage) {
     case 'just_launched':

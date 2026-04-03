@@ -1,13 +1,27 @@
 import MainCalendar from "@/components/main-calendar";
+import { getGeneratedTweetCalendarEvents } from "@/actions/generated-tweets";
 
-export default function XPage() {
-    return (
-        <div className="p-4">
-            <h1 className="text-2xl font-bold">X.com</h1>
-            <p className="mt-2 text-gray-600 dark:text-gray-400">
-                This is the X.com page. You can add your content here.
-            </p>
-            <MainCalendar />
-        </div>
-    );
+export default async function CalendarPage() {
+  const calendarEvents = await getGeneratedTweetCalendarEvents();
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">
+          Content Calendar
+        </h1>
+        <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+          See what is queued for X and what has already gone out, all on a
+          single calendar.
+        </p>
+        <p className="text-xs text-muted-foreground/80">
+          {calendarEvents.length
+            ? `${calendarEvents.length} synced X posts are showing on your calendar.`
+            : "No scheduled or published X posts yet. Generate one from Templates to see it here."}
+        </p>
+      </div>
+
+      <MainCalendar initialEvents={calendarEvents} readOnly />
+    </div>
+  );
 }

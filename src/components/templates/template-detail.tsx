@@ -9,7 +9,8 @@ import { deleteTemplate, updateTemplate } from '@/actions/templates';
 import { PlaceholderList } from './placeholder-renderer';
 import { ExamplesList } from './example-card';
 import { SocialEmbed } from './social-embed';
-import type { Template, PlatformType } from '@/types/database';
+import { BrandTweetStudio } from './brand-tweet-studio';
+import type { GeneratedTweet, Template, PlatformType } from '@/types/database';
 import { cn } from '@/lib/utils';
 
 const platformConfig: Record<PlatformType, { icon: React.ElementType; color: string; label: string }> = {
@@ -21,6 +22,8 @@ const platformConfig: Record<PlatformType, { icon: React.ElementType; color: str
 
 interface TemplateDetailProps {
     template: Template;
+    generatedTweets: GeneratedTweet[];
+    canAutoSchedule: boolean;
 }
 
 // Helper for auto-growing textarea
@@ -106,7 +109,11 @@ const HighlightedTextarea = ({ value, onChange, placeholder, minHeight = '100px'
     );
 };
 
-export function TemplateDetail({ template }: TemplateDetailProps) {
+export function TemplateDetail({
+    template,
+    generatedTweets,
+    canAutoSchedule,
+}: TemplateDetailProps) {
     const router = useRouter();
     const [copied, setCopied] = useState(false);
     const [editedText, setEditedText] = useState(template.template_text || '');
@@ -117,7 +124,6 @@ export function TemplateDetail({ template }: TemplateDetailProps) {
 
     const platform = platformConfig[template.platform_type];
     const Icon = platform.icon;
-    const examplesCount = template.examples?.length || 0;
     const referencesCount = template.reference_links?.length || 0;
 
     const notesRef = useAutoResize(editedNotes);
@@ -233,10 +239,17 @@ export function TemplateDetail({ template }: TemplateDetailProps) {
 
             {/* Inline Edit Preview - platform specific */}
             {template.platform_type === 'x' && (
-                <TwitterInlineEditor
-                    content={editedText}
-                    onChange={handleTextChange}
-                />
+                <div className="space-y-6">
+                    <TwitterInlineEditor
+                        content={editedText}
+                        onChange={handleTextChange}
+                    />
+                    <BrandTweetStudio
+                        canAutoSchedule={canAutoSchedule}
+                        generatedTweets={generatedTweets}
+                        templateId={template.id}
+                    />
+                </div>
             )}
 
             {template.platform_type === 'linkedin' && (

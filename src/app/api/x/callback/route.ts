@@ -1,6 +1,7 @@
 import {
   clearXSession,
   exchangeXCodeForToken,
+  persistXConnectionForCurrentUser,
   persistXTokens,
   validateXOAuthState,
 } from '@/lib/x';
@@ -38,6 +39,7 @@ export async function GET(request: NextRequest) {
   try {
     const tokenResponse = await exchangeXCodeForToken(code, request.nextUrl.origin);
     await persistXTokens(tokenResponse);
+    await persistXConnectionForCurrentUser(tokenResponse);
 
     return NextResponse.redirect(new URL('/app/analytics?connected=1', request.url));
   } catch (error) {

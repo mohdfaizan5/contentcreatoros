@@ -44,6 +44,7 @@ interface EventDialogProps {
   event: CalendarEvent | null;
   isOpen: boolean;
   onClose: () => void;
+  readOnly?: boolean;
   onSave: (event: CalendarEvent) => void;
   onDelete: (eventId: string) => void;
 }
@@ -75,6 +76,7 @@ export function EventDialog({
   event,
   isOpen,
   onClose,
+  readOnly = false,
   onSave,
   onDelete,
 }: EventDialogProps) {
@@ -218,9 +220,17 @@ export function EventDialog({
     <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>{event?.id ? "Edit Event" : "Create Event"}</DialogTitle>
+          <DialogTitle>
+            {readOnly
+              ? "Event details"
+              : event?.id
+                ? "Edit Event"
+                : "Create Event"}
+          </DialogTitle>
           <DialogDescription className="sr-only">
-            {event?.id
+            {readOnly
+              ? "Review the details of this event"
+              : event?.id
               ? "Edit the details of this event"
               : "Add a new event to your calendar"}
           </DialogDescription>
@@ -234,8 +244,10 @@ export function EventDialog({
           <div className="*:not-first:mt-1.5">
             <Label htmlFor="title">Title</Label>
             <Input
+              disabled={readOnly}
               id="title"
               onChange={(e) => setTitle(e.target.value)}
+              readOnly={readOnly}
               value={title}
             />
           </div>
@@ -243,8 +255,10 @@ export function EventDialog({
           <div className="*:not-first:mt-1.5">
             <Label htmlFor="description">Description</Label>
             <Textarea
+              disabled={readOnly}
               id="description"
               onChange={(e) => setDescription(e.target.value)}
+              readOnly={readOnly}
               rows={3}
               value={description}
             />
@@ -260,6 +274,7 @@ export function EventDialog({
                       "group w-full justify-between border-input bg-background px-3 font-normal outline-none outline-offset-0 hover:bg-background focus-visible:outline-[3px]",
                       !startDate && "text-muted-foreground",
                     )}
+                    disabled={readOnly}
                     id="start-date"
                     variant={"outline"}
                   >
@@ -303,7 +318,7 @@ export function EventDialog({
               <div className="min-w-28 *:not-first:mt-1.5">
                 <Label htmlFor="start-time">Start Time</Label>
                 <Select onValueChange={setStartTime} value={startTime}>
-                  <SelectTrigger id="start-time">
+                  <SelectTrigger disabled={readOnly} id="start-time">
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
                   <SelectContent>
@@ -328,6 +343,7 @@ export function EventDialog({
                       "group w-full justify-between border-input bg-background px-3 font-normal outline-none outline-offset-0 hover:bg-background focus-visible:outline-[3px]",
                       !endDate && "text-muted-foreground",
                     )}
+                    disabled={readOnly}
                     id="end-date"
                     variant={"outline"}
                   >
@@ -368,7 +384,7 @@ export function EventDialog({
               <div className="min-w-28 *:not-first:mt-1.5">
                 <Label htmlFor="end-time">End Time</Label>
                 <Select onValueChange={setEndTime} value={endTime}>
-                  <SelectTrigger id="end-time">
+                  <SelectTrigger disabled={readOnly} id="end-time">
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
                   <SelectContent>
@@ -386,6 +402,7 @@ export function EventDialog({
           <div className="flex items-center gap-2">
             <Checkbox
               checked={allDay}
+              disabled={readOnly}
               id="all-day"
               onCheckedChange={(checked) => setAllDay(checked === true)}
             />
@@ -395,8 +412,10 @@ export function EventDialog({
           <div className="*:not-first:mt-1.5">
             <Label htmlFor="location">Location</Label>
             <Input
+              disabled={readOnly}
               id="location"
               onChange={(e) => setLocation(e.target.value)}
+              readOnly={readOnly}
               value={location}
             />
           </div>
@@ -407,6 +426,7 @@ export function EventDialog({
             <RadioGroup
               className="flex gap-1.5"
               defaultValue={colorOptions[0]?.value}
+              disabled={readOnly}
               onValueChange={(value: EventColor) => setColor(value)}
               value={color}
             >
@@ -427,7 +447,7 @@ export function EventDialog({
           </fieldset>
         </div>
         <DialogFooter className="flex-row sm:justify-between">
-          {event?.id && (
+          {!readOnly && event?.id && (
             <Button
               aria-label="Delete event"
               onClick={handleDelete}
@@ -437,12 +457,20 @@ export function EventDialog({
               <RiDeleteBinLine aria-hidden="true" size={16} />
             </Button>
           )}
-          <div className="flex flex-1 justify-end gap-2">
-            <Button onClick={onClose} variant="outline">
-              Cancel
-            </Button>
-            <Button onClick={handleSave}>Save</Button>
-          </div>
+          {readOnly ? (
+            <div className="flex flex-1 justify-end gap-2">
+              <Button onClick={onClose} variant="outline">
+                Close
+              </Button>
+            </div>
+          ) : (
+            <div className="flex flex-1 justify-end gap-2">
+              <Button onClick={onClose} variant="outline">
+                Cancel
+              </Button>
+              <Button onClick={handleSave}>Save</Button>
+            </div>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>

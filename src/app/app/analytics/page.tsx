@@ -442,7 +442,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
           )}
         </CardContent>
         <CardFooter className="border-t border-slate-100 text-xs text-slate-400">
-          Scopes requested: users.read, tweet.read, offline.access
+          Scopes requested: users.read, tweet.read, tweet.write, offline.access
         </CardFooter>
       </Card>
     </div>

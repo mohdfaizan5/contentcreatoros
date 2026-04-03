@@ -47,6 +47,8 @@ import type { CalendarEvent, CalendarView } from "./types";
 import { addHoursToDate } from "./utils";
 import { WeekView } from "./week-view";
 
+const EMPTY_EVENTS: CalendarEvent[] = [];
+
 export interface EventCalendarProps {
   events?: CalendarEvent[];
   onEventAdd?: (event: CalendarEvent) => void;
@@ -54,15 +56,17 @@ export interface EventCalendarProps {
   onEventDelete?: (eventId: string) => void;
   className?: string;
   initialView?: CalendarView;
+  readOnly?: boolean;
 }
 
 export function EventCalendar({
-  events = [],
+  events = EMPTY_EVENTS,
   onEventAdd,
   onEventUpdate,
   onEventDelete,
   className,
   initialView = "month",
+  readOnly = false,
 }: EventCalendarProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<CalendarView>(initialView);
@@ -145,6 +149,10 @@ export function EventCalendar({
   };
 
   const handleEventCreate = (startTime: Date) => {
+    if (readOnly) {
+      return;
+    }
+
     console.log("Creating new event at:", startTime); // Debug log
 
     // Snap to 15-minute intervals
@@ -174,6 +182,10 @@ export function EventCalendar({
   };
 
   const handleEventSave = (event: CalendarEvent) => {
+    if (readOnly) {
+      return;
+    }
+
     if (event.id) {
       onEventUpdate?.(event);
       // Show toast notification when an event is updated
@@ -197,6 +209,10 @@ export function EventCalendar({
   };
 
   const handleEventDelete = (eventId: string) => {
+    if (readOnly) {
+      return;
+    }
+
     const deletedEvent = events.find((e) => e.id === eventId);
     onEventDelete?.(eventId);
     setIsEventDialogOpen(false);
@@ -212,6 +228,10 @@ export function EventCalendar({
   };
 
   const handleEventUpdate = (updatedEvent: CalendarEvent) => {
+    if (readOnly) {
+      return;
+    }
+
     onEventUpdate?.(updatedEvent);
 
     // Show toast notification when an event is updated via drag and drop
@@ -272,7 +292,7 @@ export function EventCalendar({
         } as React.CSSProperties
       }
     >
-      <CalendarDndProvider onEventUpdate={handleEventUpdate}>
+      <CalendarDndProvider onEventUpdate={readOnly ? undefined : handleEventUpdate}>
         <div
           className={cn(
             "flex items-center justify-between p-2 sm:p-4",
@@ -348,21 +368,23 @@ export function EventCalendar({
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
-            <Button
-              className="max-[479px]:aspect-square max-[479px]:p-0!"
-              onClick={() => {
-                setSelectedEvent(null); // Ensure we're creating a new event
-                setIsEventDialogOpen(true);
-              }}
-              size="sm"
-            >
-              <PlusIcon
-                aria-hidden="true"
-                className="sm:-ms-1 opacity-60"
-                size={16}
-              />
-              <span className="max-sm:sr-only">New event</span>
-            </Button>
+            {!readOnly && (
+              <Button
+                className="max-[479px]:aspect-square max-[479px]:p-0!"
+                onClick={() => {
+                  setSelectedEvent(null); // Ensure we're creating a new event
+                  setIsEventDialogOpen(true);
+                }}
+                size="sm"
+              >
+                <PlusIcon
+                  aria-hidden="true"
+                  className="sm:-ms-1 opacity-60"
+                  size={16}
+                />
+                <span className="max-sm:sr-only">New event</span>
+              </Button>
+            )}
           </div>
         </div>
 
@@ -371,24 +393,27 @@ export function EventCalendar({
             <MonthView
               currentDate={currentDate}
               events={events}
-              onEventCreate={handleEventCreate}
+              onEventCreate={readOnly ? undefined : handleEventCreate}
               onEventSelect={handleEventSelect}
+              readOnly={readOnly}
             />
           )}
           {view === "week" && (
             <WeekView
               currentDate={currentDate}
               events={events}
-              onEventCreate={handleEventCreate}
+              onEventCreate={readOnly ? undefined : handleEventCreate}
               onEventSelect={handleEventSelect}
+              readOnly={readOnly}
             />
           )}
           {view === "day" && (
             <DayView
               currentDate={currentDate}
               events={events}
-              onEventCreate={handleEventCreate}
+              onEventCreate={readOnly ? undefined : handleEventCreate}
               onEventSelect={handleEventSelect}
+              readOnly={readOnly}
             />
           )}
           {view === "agenda" && (
@@ -413,6 +438,7 @@ export function EventCalendar({
             setSelectedEvent(null);
           }}
           onDelete={handleEventDelete}
+          readOnly={readOnly}
           onSave={handleEventSave}
         />
       </CalendarDndProvider>

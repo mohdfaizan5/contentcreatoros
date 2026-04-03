@@ -11,6 +11,12 @@ export type InspirationType = 'creator' | 'content';
 export type CollectFields = 'email_only' | 'name_and_email';
 export type DeliveryType = 'download' | 'redirect' | 'content';
 export type EmbedType = 'x' | 'instagram' | 'linkedin' | 'link';
+export type GeneratedTweetStatus =
+    | 'draft'
+    | 'scheduled'
+    | 'publishing'
+    | 'published'
+    | 'failed';
 
 // ============================================
 // EDITOR.JS TYPES
@@ -188,6 +194,38 @@ export interface Lead {
     email: string;
     name: string | null;
     created_at: string;
+}
+
+export interface XAccount {
+    id: string;
+    user_id: string;
+    x_user_id: string;
+    username: string;
+    access_token: string;
+    refresh_token: string | null;
+    expires_at: string | null;
+    scope: string[] | null;
+    connected_at: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface GeneratedTweet {
+    id: string;
+    user_id: string;
+    template_id: string;
+    x_account_id: string | null;
+    content: string;
+    character_count: number;
+    status: GeneratedTweetStatus;
+    scheduled_for: string | null;
+    published_at: string | null;
+    x_tweet_id: string | null;
+    error_message: string | null;
+    model: string | null;
+    prompt_snapshot: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
 }
 
 // ============================================

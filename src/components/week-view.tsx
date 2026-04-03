@@ -36,7 +36,8 @@ interface WeekViewProps {
   currentDate: Date;
   events: CalendarEvent[];
   onEventSelect: (event: CalendarEvent) => void;
-  onEventCreate: (startTime: Date) => void;
+  onEventCreate?: (startTime: Date) => void;
+  readOnly?: boolean;
 }
 
 interface PositionedEvent {
@@ -53,6 +54,7 @@ export function WeekView({
   events,
   onEventSelect,
   onEventCreate,
+  readOnly = false,
 }: WeekViewProps) {
   const days = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
@@ -343,6 +345,7 @@ export function WeekView({
               >
                 <div className="size-full">
                   <DraggableEvent
+                    disabled={readOnly}
                     event={positionedEvent.event}
                     height={positionedEvent.height}
                     onClick={(e) => handleEventClick(positionedEvent.event, e)}
@@ -391,6 +394,10 @@ export function WeekView({
                         id={`week-cell-${day.toISOString()}-${quarterHourTime}`}
                         key={`${hour.toString()}-${quarter}`}
                         onClick={() => {
+                          if (!onEventCreate) {
+                            return;
+                          }
+
                           const startTime = new Date(day);
                           startTime.setHours(hourValue);
                           startTime.setMinutes(quarter * 15);

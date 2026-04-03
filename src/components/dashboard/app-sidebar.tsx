@@ -3,18 +3,14 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    Lightbulb,
     FileText,
-    Sparkle,
-    CalendarBlank,
-    Stack,
-    LinkSimple,
-    Magnet,
+    GearIcon,
     House,
     Robot,
-    XLogoIcon
+    XLogoIcon,
 } from '@phosphor-icons/react';
 
+import Logo from '@/components/logo';
 import {
     Sidebar,
     SidebarContent,
@@ -28,11 +24,21 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from '@/components/ui/sidebar';
-import { GearIcon } from '@phosphor-icons/react';
-import Logo from '@/components/logo';
 import { NavBadge } from './nav-badge';
 
-const xNavItems = [
+type NavBadgeType = 'new' | 'updated' | 'comingSoon';
+
+interface SidebarNavItem {
+    title: string;
+    url?: string;
+    icon: typeof House;
+    color: string;
+    hoverBg?: string;
+    badge?: NavBadgeType;
+    disabled?: boolean;
+}
+
+const companyNavItems: SidebarNavItem[] = [
     {
         title: 'Dashboard',
         url: '/app',
@@ -46,26 +52,18 @@ const xNavItems = [
         icon: XLogoIcon,
         color: 'text-pink-500',
         hoverBg: 'hover:bg-pink-500/10',
-        badge: 'new' as const,
+        badge: 'new',
     },
-
 ];
-const mainNavItems = [
 
-    // {
-    //     title: 'Ideas',
-    //     url: '/app/ideas',
-    //     icon: Lightbulb,
-    //     color: 'text-amber-500',
-    //     hoverBg: 'hover:bg-amber-500/10',
-    // },
+const contentNavItems: SidebarNavItem[] = [
     {
         title: 'Content Calendar',
         url: '/app/calendar',
         icon: XLogoIcon,
         color: 'text-pink-500',
         hoverBg: 'hover:bg-pink-500/10',
-        badge: 'new' as const,
+        badge: 'new',
     },
     {
         title: 'Templates',
@@ -73,189 +71,133 @@ const mainNavItems = [
         icon: FileText,
         color: 'text-blue-500',
         hoverBg: 'hover:bg-blue-500/10',
-        badge: 'updated' as const,
+        badge: 'updated',
     },
-    // {
-    //     title: 'Inspiration',
-    //     url: '/app/inspiration',
-    //     icon: Sparkle,
-    //     color: 'text-purple-500',
-    //     hoverBg: 'hover:bg-purple-500/10',
-    //     badge: 'updated' as const,
-    // },
-    // {
-    //     title: 'Planning',
-    //     url: '/app/planning',
-    //     icon: CalendarBlank,
-    //     color: 'text-cyan-500',
-    //     hoverBg: 'hover:bg-cyan-500/10',
-    // },
-    // {
-    //     title: 'Series',
-    //     url: '/app/series',
-    //     icon: Stack,
-    //     color: 'text-green-500',
-    //     hoverBg: 'hover:bg-green-500/10',
-    // },
-    // {
-    //     title: 'AI Assistant',
-    //     url: '/app/ai',
-    //     icon: Robot,
-    //     color: 'text-pink-500',
-    //     hoverBg: 'hover:bg-pink-500/10',
-    //     badge: 'new' as const,
-    // },
+    {
+        title: 'Auto Replies',
+        icon: Robot,
+        color: 'text-amber-500',
+        badge: 'comingSoon',
+        disabled: true,
+    },
 ];
 
-const growthNavItems = [
-    {
-        title: 'Public Profile',
-        url: '/app/public-profile',
-        icon: LinkSimple,
-        color: 'text-sky-500',
-        hoverBg: 'hover:bg-sky-500/10',
-        badge: 'updated' as const,
-    },
-    {
-        title: 'Lead Magnets',
-        url: '/app/lead-magnets',
-        icon: Magnet,
-        color: 'text-rose-500',
-        hoverBg: 'hover:bg-rose-500/10',
-        badge: 'updated' as const,
-    },
-];
+function renderBadge(badge?: NavBadgeType) {
+    if (badge === 'new') {
+        return <NavBadge isNew />;
+    }
+
+    if (badge === 'comingSoon') {
+        return <NavBadge isComingSoon />;
+    }
+
+    if (badge === 'updated') {
+        return <NavBadge isUpdated />;
+    }
+
+    return null;
+}
+
+function SidebarNavSection({
+    items,
+    pathname,
+}: {
+    items: SidebarNavItem[];
+    pathname: string;
+}) {
+    return (
+        <SidebarMenu>
+            {items.map((item) => {
+                const isActive = !item.disabled && pathname === item.url;
+                const sharedClassName = `transition-all duration-200 ${!isActive && !item.disabled ? item.hoverBg ?? '' : ''
+                    }`;
+
+                if (item.disabled) {
+                    return (
+                        <SidebarMenuItem key={item.title}>
+                            <SidebarMenuButton
+                                aria-disabled="true"
+                                className={`${sharedClassName} cursor-not-allowed opacity-65 hover:bg-transparent`}
+                                tooltip={`${item.title} (Coming soon)`}
+                            >
+                                <item.icon className={item.color} weight="regular" />
+                                <span>{item.title}</span>
+                                {renderBadge(item.badge)}
+                            </SidebarMenuButton>
+                        </SidebarMenuItem>
+                    );
+                }
+
+                return (
+                    <SidebarMenuItem key={item.title}>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={item.title}
+                            className={sharedClassName}
+                        >
+                            <Link href={item.url ?? '#'} className="group/link">
+                                <item.icon
+                                    className={`transition-all duration-200 ${item.color} ${!isActive ? 'opacity-90 group-hover/link:opacity-100' : ''
+                                        }`}
+                                    weight={isActive ? 'fill' : 'regular'}
+                                />
+                                <span className={isActive ? 'font-medium' : ''}>
+                                    {item.title}
+                                </span>
+                                {renderBadge(item.badge)}
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                );
+            })}
+        </SidebarMenu>
+    );
+}
 
 export function AppSidebar() {
     const pathname = usePathname();
 
     return (
-        <Sidebar collapsible="icon" className='bg-amber-200- text white-'>
+        <Sidebar collapsible="icon" className="bg-amber-200- text white-">
             <SidebarHeader className="border-b border-sidebar-border py-4 bg-[#030E1F]-">
                 <Logo
                     full
                     height={20}
                     width={20}
                     className="ml-2 gap-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:py-[1.5px]"
-
                     textClassName="-text-white group-data-[collapsible=icon]:hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-base font-bold text-transparent"
                 />
             </SidebarHeader>
 
-
-            <SidebarContent className='bg-[#030E1F]-'>
+            <SidebarContent className="bg-[#030E1F]-">
                 <SidebarGroup>
-                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">Company</SidebarGroupLabel>
+                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">
+                        Company
+                    </SidebarGroupLabel>
                     <SidebarGroupContent>
-                        <SidebarMenu>
-                            {xNavItems.map((item) => {
-                                const isActive = pathname === item.url;
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={isActive}
-                                            tooltip={item.title}
-                                            className={`transition-all duration-200 ${!isActive ? item.hoverBg : ''}`}
-                                        >
-                                            <Link href={item.url} className="group/link">
-                                                <item.icon
-                                                    className={`transition-all duration-200 ${isActive ? '' : 'group-hover/link:' + item.color}`}
-                                                    weight={isActive ? 'fill' : 'regular'}
-                                                />
-                                                <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
-                                                {'badge' in item && item.badge && <NavBadge isUpdated />}
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                );
-                            })}
-                        </SidebarMenu>
-                    </SidebarGroupContent>
-                </SidebarGroup>
-                <SidebarGroup>
-                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">Content</SidebarGroupLabel>
-                    <SidebarGroupContent>
-                        <SidebarMenu>
-                            {mainNavItems.map((item) => {
-                                const isActive = pathname === item.url;
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={isActive}
-                                            tooltip={item.title}
-                                            className={`transition-all duration-200 ${!isActive ? item.hoverBg : ''}`}
-                                        >
-                                            <Link href={item.url} className="group/link">
-                                                <item.icon
-                                                    className={`transition-all duration-200 ${isActive ? '' : 'group-hover/link:' + item.color}`}
-                                                    weight={isActive ? 'fill' : 'regular'}
-                                                />
-                                                <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
-                                                {'badge' in item && item.badge && <NavBadge isUpdated />}
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                );
-                            })}
-                        </SidebarMenu>
+                        <SidebarNavSection items={companyNavItems} pathname={pathname} />
                     </SidebarGroupContent>
                 </SidebarGroup>
 
-                {/* <SidebarGroup>
-                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">Growth</SidebarGroupLabel>
+                <SidebarGroup>
+                    <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground/70">
+                        Content
+                    </SidebarGroupLabel>
                     <SidebarGroupContent>
-                        <SidebarMenu>
-                            {growthNavItems.map((item) => {
-                                const isActive = pathname === item.url;
-                                return (
-                                    <SidebarMenuItem key={item.title}>
-                                        <SidebarMenuButton
-                                            asChild
-                                            isActive={isActive}
-                                            tooltip={item.title}
-                                            className={`transition-all duration-200 ${!isActive ? item.hoverBg : ''}`}
-                                        >
-                                            <Link href={item.url} className="group/link">
-                                                <item.icon
-                                                    className={`transition-all duration-200 ${isActive ? '' : 'group-hover/link:' + item.color}`}
-                                                    weight={isActive ? 'fill' : 'regular'}
-                                                />
-                                                <span className={isActive ? 'font-medium' : ''}>{item.title}</span>
-                                                {'badge' in item && item.badge && <NavBadge isUpdated />}
-                                            </Link>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                );
-                            })}
-                        </SidebarMenu>
+                        <SidebarNavSection items={contentNavItems} pathname={pathname} />
                     </SidebarGroupContent>
-                </SidebarGroup> */}
+                </SidebarGroup>
             </SidebarContent>
 
             <SidebarFooter className="bg-[#030E1F]- border-t-[0.5px] border-sidebar-border space-y-3">
-                {/* Feedback Card */}
-                {/* <div className="mx-2 p-3 rounded-xl bg-linear-to-br from-blue-500/90 to-blue-600/90 text-white group-data-[collapsible=icon]:hidden">
-                    <p className="text-sm font-medium leading-snug">
-                        We're actively building this tool!
-                    </p>
-                    <p className="text-xs text-white/80 mt-1">
-                        Got feedback or questions? We'd love to hear from you.
-                    </p>
-                    <div className="flex gap-2 mt-3">
-                        <button className="flex-1 px-3 py-1.5 text-xs font-medium bg-white text-blue-600 rounded-lg hover:bg-white/90 transition-colors">
-                            Give Feedback
-                        </button>
-                        <button className="flex-1 px-3 py-1.5 text-xs font-medium bg-white/20 text-white rounded-lg hover:bg-white/30 transition-colors">
-                            Learn More
-                        </button>
-                    </div>
-                </div> */}
-
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton asChild tooltip="Settings" className="transition-all duration-200 hover:bg-muted">
+                        <SidebarMenuButton
+                            asChild
+                            tooltip="Settings"
+                            className="transition-all duration-200 hover:bg-muted"
+                        >
                             <Link href="/app/settings">
                                 <GearIcon className="transition-transform duration-300 hover:rotate-90" />
                                 <span>Settings</span>

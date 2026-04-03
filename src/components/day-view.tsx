@@ -31,7 +31,8 @@ interface DayViewProps {
   currentDate: Date;
   events: CalendarEvent[];
   onEventSelect: (event: CalendarEvent) => void;
-  onEventCreate: (startTime: Date) => void;
+  onEventCreate?: (startTime: Date) => void;
+  readOnly?: boolean;
 }
 
 interface PositionedEvent {
@@ -48,6 +49,7 @@ export function DayView({
   events,
   onEventSelect,
   onEventCreate,
+  readOnly = false,
 }: DayViewProps) {
   const hours = useMemo(() => {
     const dayStart = startOfDay(currentDate);
@@ -260,6 +262,7 @@ export function DayView({
             >
               <div className="size-full">
                 <DraggableEvent
+                  disabled={readOnly}
                   event={positionedEvent.event}
                   height={positionedEvent.height}
                   onClick={(e) => handleEventClick(positionedEvent.event, e)}
@@ -310,6 +313,10 @@ export function DayView({
                       id={`day-cell-${currentDate.toISOString()}-${quarterHourTime}`}
                       key={`${hour.toString()}-${quarter}`}
                       onClick={() => {
+                        if (!onEventCreate) {
+                          return;
+                        }
+
                         const startTime = new Date(currentDate);
                         startTime.setHours(hourValue);
                         startTime.setMinutes(quarter * 15);

@@ -12,6 +12,7 @@ import type { CalendarEvent } from "./types";
 interface DraggableEventProps {
   event: CalendarEvent;
   view: "month" | "week" | "day";
+  disabled?: boolean;
   showTime?: boolean;
   onClick?: (e: React.MouseEvent) => void;
   height?: number;
@@ -25,6 +26,7 @@ interface DraggableEventProps {
 export function DraggableEvent({
   event,
   view,
+  disabled = false,
   showTime,
   onClick,
   height,
@@ -60,6 +62,7 @@ export function DraggableEvent({
         multiDayWidth: multiDayWidth,
         view,
       },
+      disabled,
       id: `${event.id}-${view}`,
     });
 
@@ -114,7 +117,7 @@ export function DraggableEvent({
 
   return (
     <div
-      className="touch-none"
+      className={disabled ? undefined : "touch-none"}
       ref={(node) => {
         setNodeRef(node);
         if (elementRef) elementRef.current = node;
@@ -123,15 +126,15 @@ export function DraggableEvent({
     >
       <EventItem
         aria-hidden={ariaHidden}
-        dndAttributes={attributes}
-        dndListeners={listeners}
+        dndAttributes={disabled ? undefined : attributes}
+        dndListeners={disabled ? undefined : listeners}
         event={event}
         isDragging={isDragging}
         isFirstDay={isFirstDay}
         isLastDay={isLastDay}
         onClick={onClick}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
+        onMouseDown={disabled ? undefined : handleMouseDown}
+        onTouchStart={disabled ? undefined : handleTouchStart}
         showTime={showTime}
         view={view}
       />

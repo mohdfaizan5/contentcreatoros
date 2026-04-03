@@ -1,7 +1,9 @@
 import { cookies } from 'next/headers';
 import { TwitterApi } from 'twitter-api-v2';
+import { createClient } from '@/lib/server';
+import { createAdminClient } from '@/lib/server-admin';
 
-const X_SCOPE = ['users.read', 'tweet.read', 'offline.access'] as const;
+const X_SCOPE = ['users.read', 'tweet.read', 'tweet.write', 'offline.access'] as const;
 
 const X_STATE_COOKIE = 'x_oauth_state';
 const X_CODE_VERIFIER_COOKIE = 'x_oauth_code_verifier';
@@ -57,6 +59,17 @@ type XCookieTokens = {
   accessToken?: string;
   refreshToken?: string;
   expiresAt?: number;
+};
+
+type StoredXAccount = {
+  id: string;
+  user_id: string;
+  x_user_id: string;
+  username: string;
+  access_token: string;
+  refresh_token: string | null;
+  expires_at: string | null;
+  scope: string[] | null;
 };
 
 function getXClientId() {
@@ -234,6 +247,68 @@ export async function clearXSession() {
   });
 }
 
+async function upsertStoredXAccountForUser(
+  userId: string,
+  tokenResponse: XTokenResponse,
+  user: XUser,
+) {
+  const supabase = await createClient();
+  const expiresAt = tokenResponse.expires_in
+    ? new Date(Date.now() + tokenResponse.expires_in * 1000).toISOString()
+    : null;
+  const scope = tokenResponse.scope
+    ? tokenResponse.scope.split(' ').filter(Boolean)
+    : [...X_SCOPE];
+
+  const { error } = await supabase.from('x_accounts').upsert(
+    {
+      user_id: userId,
+      x_user_id: user.id,
+      username: user.username,
+      access_token: tokenResponse.access_token,
+      refresh_token: tokenResponse.refresh_token ?? null,
+      expires_at: expiresAt,
+      scope,
+      connected_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'user_id' },
+  );
+
+  if (error) {
+    throw new Error(
+      normalizeTwitterApiError(error, 'Unable to save the X connection for scheduled posting.'),
+    );
+  }
+}
+
+export async function persistXConnectionForCurrentUser(tokenResponse: XTokenResponse) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return;
+  }
+
+  const xUser = await getAuthenticatedXUser(tokenResponse.access_token);
+  await upsertStoredXAccountForUser(user.id, tokenResponse, xUser);
+}
+
+export async function clearStoredXConnectionForCurrentUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return;
+  }
+
+  await supabase.from('x_accounts').delete().eq('user_id', user.id);
+}
+
 export async function validateXOAuthState(state: string | null) {
   const cookieStore = await cookies();
   const savedState = cookieStore.get(X_STATE_COOKIE)?.value;
@@ -325,5 +400,115 @@ export async function getAuthenticatedUserTweets(accessToken: string, userId: st
     throw new Error(
       normalizeTwitterApiError(error, 'Unable to load the authenticated user timeline.'),
     );
+  }
+}
+
+export async function hasStoredXConnectionForCurrentUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return false;
+  }
+
+  const { count, error } = await supabase
+    .from('x_accounts')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id);
+
+  return !error && (count ?? 0) > 0;
+}
+
+async function getStoredXAccountById(accountId: string) {
+  const supabase = createAdminClient();
+  const { data, error } = await supabase
+    .from('x_accounts')
+    .select('*')
+    .eq('id', accountId)
+    .single();
+
+  if (error || !data) {
+    throw new Error('Unable to load the stored X connection.');
+  }
+
+  return data as StoredXAccount;
+}
+
+async function updateStoredXAccountTokens(
+  accountId: string,
+  tokenResponse: XTokenResponse,
+  user: XUser,
+) {
+  const supabase = createAdminClient();
+  const expiresAt = tokenResponse.expires_in
+    ? new Date(Date.now() + tokenResponse.expires_in * 1000).toISOString()
+    : null;
+  const scope = tokenResponse.scope
+    ? tokenResponse.scope.split(' ').filter(Boolean)
+    : [...X_SCOPE];
+
+  const { data, error } = await supabase
+    .from('x_accounts')
+    .update({
+      x_user_id: user.id,
+      username: user.username,
+      access_token: tokenResponse.access_token,
+      refresh_token: tokenResponse.refresh_token ?? null,
+      expires_at: expiresAt,
+      scope,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', accountId)
+    .select('*')
+    .single();
+
+  if (error || !data) {
+    throw new Error('Unable to refresh the stored X connection.');
+  }
+
+  return data as StoredXAccount;
+}
+
+async function refreshStoredXAccount(account: StoredXAccount) {
+  if (!account.refresh_token) {
+    throw new Error('Missing refresh token for scheduled X publishing.');
+  }
+
+  const refreshedToken = await refreshXAccessToken('', account.refresh_token);
+  const refreshedUser = await getAuthenticatedXUser(refreshedToken.access_token);
+
+  return updateStoredXAccountTokens(
+    account.id,
+    {
+      ...refreshedToken,
+      refresh_token: refreshedToken.refresh_token ?? account.refresh_token,
+    },
+    refreshedUser,
+  );
+}
+
+export async function publishTweetWithStoredConnection(accountId: string, text: string) {
+  let account = await getStoredXAccountById(accountId);
+  const expiresAt = account.expires_at ? new Date(account.expires_at).getTime() : null;
+
+  if (expiresAt && expiresAt <= Date.now() + 60_000) {
+    account = await refreshStoredXAccount(account);
+  }
+
+  try {
+    const client = createXUserClient(account.access_token);
+    const response = await client.v2.tweet(text);
+    return response.data;
+  } catch (error) {
+    if (!account.refresh_token) {
+      throw new Error(normalizeTwitterApiError(error, 'Unable to publish the scheduled tweet.'));
+    }
+
+    const refreshedAccount = await refreshStoredXAccount(account);
+    const client = createXUserClient(refreshedAccount.access_token);
+    const response = await client.v2.tweet(text);
+    return response.data;
   }
 }

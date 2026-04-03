@@ -1,3 +1,4 @@
+import { getCanAutoScheduleTweets, getGeneratedTweetsForTemplate } from '@/actions/generated-tweets';
 import { getTemplate } from '@/actions/templates';
 import { TemplateDetail } from '@/components/templates/template-detail';
 import { notFound } from 'next/navigation';
@@ -14,5 +15,16 @@ export default async function TemplateDetailPage({ params }: TemplateDetailPageP
         notFound();
     }
 
-    return <TemplateDetail template={template} />;
+    const [generatedTweets, canAutoSchedule] = await Promise.all([
+        getGeneratedTweetsForTemplate(id),
+        getCanAutoScheduleTweets(),
+    ]);
+
+    return (
+        <TemplateDetail
+            template={template}
+            generatedTweets={generatedTweets}
+            canAutoSchedule={canAutoSchedule}
+        />
+    );
 }

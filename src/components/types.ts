@@ -11,6 +11,12 @@ export interface CalendarEvent {
   location?: string;
 }
 
+export interface CalendarEventInput
+  extends Omit<CalendarEvent, "start" | "end"> {
+  start: Date | string;
+  end: Date | string;
+}
+
 export type EventColor =
   | "sky"
   | "amber"

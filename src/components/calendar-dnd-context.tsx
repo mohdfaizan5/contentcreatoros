@@ -63,7 +63,7 @@ export const useCalendarDnd = () => useContext(CalendarDndContext);
 // Props for the provider
 interface CalendarDndProviderProps {
   children: ReactNode;
-  onEventUpdate: (event: CalendarEvent) => void;
+  onEventUpdate?: (event: CalendarEvent) => void;
 }
 
 export function CalendarDndProvider({
@@ -301,7 +301,7 @@ export function CalendarDndProvider({
         originalStart.getHours() !== newStart.getHours() ||
         originalStart.getMinutes() !== newStart.getMinutes();
 
-      if (hasStartTimeChanged) {
+      if (hasStartTimeChanged && onEventUpdate) {
         // Update the event only if the time has changed
         onEventUpdate({
           ...calendarEvent,
