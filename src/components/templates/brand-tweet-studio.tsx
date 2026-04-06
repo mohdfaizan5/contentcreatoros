@@ -30,7 +30,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { generateTweetFromTemplate, scheduleGeneratedTweet } from '@/actions/generated-tweets';
+import {
+  generateTweetFromTemplate,
+  publishGeneratedTweetNow,
+  scheduleGeneratedTweet,
+} from '@/actions/generated-tweets';
 
 type BrandTweetStudioProps = {
   canAutoSchedule: boolean;
@@ -62,9 +66,11 @@ export function BrandTweetStudio({
   const [selectedTweetId, setSelectedTweetId] = useState<string | null>(null);
   const [generationError, setGenerationError] = useState<string | null>(null);
   const [scheduleError, setScheduleError] = useState<string | null>(null);
+  const [publishNowError, setPublishNowError] = useState<string | null>(null);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [isGenerating, startGenerationTransition] = useTransition();
   const [isScheduling, startScheduleTransition] = useTransition();
+  const [isPostingNow, startPostNowTransition] = useTransition();
 
   const selectedTweet = useMemo(
     () => tweets.find((tweet) => tweet.id === selectedTweetId) ?? null,
@@ -113,8 +119,30 @@ export function BrandTweetStudio({
     });
   };
 
+  const handlePostNowWithApi = (tweetId: string) => {
+    setPublishNowError(null);
+
+    startPostNowTransition(async () => {
+      try {
+        const publishedTweet = await publishGeneratedTweetNow(tweetId);
+
+        setTweets((currentTweets) =>
+          currentTweets.map((tweet) =>
+            tweet.id === publishedTweet.id ? publishedTweet : tweet,
+          ),
+        );
+      } catch (error) {
+        setPublishNowError(
+          error instanceof Error
+            ? error.message
+            : 'Unable to publish this tweet through the API.',
+        );
+      }
+    });
+  };
+
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-[linear-gradient(145deg,_rgba(255,255,255,0.96),_rgba(241,245,249,0.94))] p-6 shadow-[0_32px_80px_-50px_rgba(15,23,42,0.5)]">
+    <section className="rounded-[28px] border border-slate-200 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(241,245,249,0.94))] p-6 shadow-[0_32px_80px_-50px_rgba(15,23,42,0.5)]">
       <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
           <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
@@ -171,6 +199,13 @@ export function BrandTweetStudio({
         </div>
       ) : null}
 
+      {publishNowError ? (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full bg-rose-50 px-3 py-2 text-sm text-rose-700">
+          <WarningCircle className="size-4" weight="fill" />
+          {publishNowError}
+        </div>
+      ) : null}
+
       <div className="mt-6 grid gap-4">
         {tweets.length > 0 ? (
           tweets.map((tweet) => {
@@ -215,6 +250,24 @@ export function BrandTweetStudio({
                         >
                           <ArrowUpRight className="size-4" />
                           Tweet now
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={
+                            !canAutoSchedule ||
+                            isPostingNow ||
+                            tweet.status === 'publishing' ||
+                            tweet.status === 'published'
+                          }
+                          onSelect={() => {
+                            handlePostNowWithApi(tweet.id);
+                          }}
+                        >
+                          {isPostingNow ? (
+                            <SpinnerGap className="size-4 animate-spin" />
+                          ) : (
+                            <UploadSimple className="size-4" />
+                          )}
+                          Post now (api)
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           disabled={!canAutoSchedule}

@@ -3,8 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, Lightbulb, Sparkle, Brain, Lightning } from '@phosphor-icons/react';
 import { motion, AnimatePresence } from 'motion/react';
-import { cn } from '@/lib/utils';
 import Link from 'next/link';
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
 const PROMPTS = [
     { text: "Create a new idea", icon: Plus },
@@ -14,7 +14,13 @@ const PROMPTS = [
     { text: "Something brilliant", icon: Lightbulb },
 ];
 
-export function DynamicCreateButton() {
+interface DynamicCreateButtonProps {
+    appRoot?: AppShellRoot;
+}
+
+export function DynamicCreateButton({
+    appRoot = MODERN_APP_ROOT,
+}: DynamicCreateButtonProps) {
     const [index, setIndex] = useState(0);
 
     // Rotate through prompts every 3 seconds
@@ -30,7 +36,7 @@ export function DynamicCreateButton() {
 
     return (
         <Link
-            href="/app/ideas/new"
+            href={buildAppPath(appRoot, '/ideas/new')}
             className="relative group block w-fit overflow-hidden rounded-xl bg-primary text-primary-foreground font-medium shadow-lg hover:shadow-xl hover:bg-primary/90 transition-shadow duration-300 active:scale-95"
         >
             <motion.div

@@ -34,8 +34,8 @@ export function NavBadge({ isNew, isUpdated, isComingSoon }: NavBadgeProps) {
     if (isComingSoon) {
         return (
             <Badge
-                variant="outline"
-                className="ml-2 h-5 px-1.5 text-[10px] font-semibold border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+                variant="secondary"
+                className="ml-2 h-5 px-1.5 text-[10px] font-semibold "
             >
                 COMING SOON
             </Badge>

@@ -2,10 +2,11 @@
 
 import { useId, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
-import { Check, X } from '@phosphor-icons/react';
+import { Check, X, Question } from '@phosphor-icons/react';
 
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { OnboardingOption, OnboardingQuestionLayout } from '@/types/onboarding';
 
@@ -60,9 +61,9 @@ function ChoiceCard({
   return (
     <div
       className={cn(
-        'rounded-[24px] border p-4 transition-all duration-200',
+        'rounded-xl border p-3.5 transition-all duration-200',
         active
-          ? 'border-slate-900 bg-slate-900 text-white shadow-[0_18px_45px_-28px_rgba(15,23,42,0.85)]'
+          ? 'border-slate-900 bg-slate-900 text-white shadow-[0_14px_32px_-24px_rgba(15,23,42,0.8)]'
           : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50',
       )}
     >
@@ -205,12 +206,12 @@ export function OnboardingTagInput({
   };
 
   return (
-    <div className="rounded-[24px] border border-slate-200 bg-white p-3 shadow-[0_18px_45px_-38px_rgba(15,23,42,0.65)]">
+    <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm shadow-slate-950/5">
       <div className="flex flex-wrap gap-2">
         {values.map((value) => (
           <span
             key={value}
-            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1.5 text-sm text-white"
+            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-sm text-white"
           >
             {value}
             <button
@@ -241,7 +242,7 @@ export function OnboardingTagInput({
           }}
           onBlur={commitDraft}
           placeholder={placeholder}
-          className="h-11 rounded-2xl border-slate-200 bg-slate-50"
+          className="h-10 rounded-xl border-slate-200 bg-slate-50"
         />
       </div>
     </div>
@@ -316,12 +317,25 @@ export function OnboardingField({
 }) {
   return (
     <div className="space-y-3">
-      <div className="space-y-1">
+      <div className="flex items-center gap-1.5">
         <Label className="text-sm font-semibold text-slate-900">
           {label}
           {required && <span className="ml-1 text-slate-400">*</span>}
         </Label>
-        {description && <p className="text-sm leading-6 text-slate-500">{description}</p>}
+        {description && (
+          <TooltipProvider delayDuration={150}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="inline-flex size-4 cursor-default items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
+                  <Question weight="bold" className="size-2.5" />
+                </div>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-[280px] p-3 text-xs leading-relaxed hidden sm:block" side="right">
+                {description}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
       {children}
       {helperText && <p className="text-xs text-slate-400">{helperText}</p>}

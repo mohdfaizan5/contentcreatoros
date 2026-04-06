@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAppPath } from '@/lib/revalidate-app-paths';
 import type { LeadMagnet, Lead, CreateLeadMagnetInput, UpdateLeadMagnetInput, CreateLeadInput, LeadMagnetWithLeads } from '@/types/database';
 
 export async function getMagnets(): Promise<LeadMagnetWithLeads[]> {
@@ -80,7 +80,7 @@ export async function createMagnet(input: CreateLeadMagnetInput): Promise<LeadMa
         throw error;
     }
 
-    revalidatePath('/app/lead-magnets');
+    revalidateAppPath('/lead-magnets');
     return data;
 }
 
@@ -101,7 +101,7 @@ export async function updateMagnet(id: string, input: UpdateLeadMagnetInput): Pr
         throw error;
     }
 
-    revalidatePath('/app/lead-magnets');
+    revalidateAppPath('/lead-magnets');
     return data;
 }
 
@@ -115,7 +115,7 @@ export async function deleteMagnet(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/lead-magnets');
+    revalidateAppPath('/lead-magnets');
 }
 
 export async function captureLead(input: CreateLeadInput): Promise<Lead> {
@@ -155,7 +155,7 @@ export async function deleteLead(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/lead-magnets');
+    revalidateAppPath('/lead-magnets');
 }
 
 export async function exportLeadsCsv(magnetId: string): Promise<string> {

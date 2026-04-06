@@ -115,6 +115,10 @@ export interface Template {
     template_text: string | null;
     examples: TemplateExample[];
     reference_links: TemplateReference[];
+    is_public: boolean;
+    tags: string[];
+    likes_count?: number;
+    liked_by_me?: boolean;
     created_at: string;
     updated_at: string;
 }
@@ -256,6 +260,8 @@ export interface CreateTemplateInput {
     template_text?: string | null;
     examples?: TemplateExample[];
     reference_links?: TemplateReference[];
+    is_public?: boolean;
+    tags?: string[];
 }
 
 export interface UpdateTemplateInput {
@@ -270,6 +276,8 @@ export interface UpdateTemplateInput {
     template_text?: string | null;
     examples?: TemplateExample[];
     reference_links?: TemplateReference[];
+    is_public?: boolean;
+    tags?: string[];
 }
 
 export interface CreateSeriesInput {

@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAppPath } from '@/lib/revalidate-app-paths';
 import type { LinkProfile, Link, CreateLinkProfileInput, UpdateLinkProfileInput, CreateLinkInput, UpdateLinkInput, LinkProfileWithLinks } from '@/types/database';
 
 export async function getMyProfile(): Promise<LinkProfileWithLinks | null> {
@@ -98,7 +98,7 @@ export async function claimUsername(input: CreateLinkProfileInput): Promise<Link
         throw error;
     }
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
     return data;
 }
 
@@ -122,7 +122,7 @@ export async function updateProfile(input: UpdateLinkProfileInput): Promise<Link
         throw error;
     }
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
     return data;
 }
 
@@ -173,7 +173,7 @@ export async function uploadProfileLogo(formData: FormData): Promise<string> {
     // Update profile with new logo URL
     await updateProfile({ logo_url: urlData.publicUrl });
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
     return urlData.publicUrl;
 }
 
@@ -202,7 +202,7 @@ export async function createLink(input: CreateLinkInput): Promise<Link> {
 
     if (error) throw error;
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
     return data;
 }
 
@@ -218,7 +218,7 @@ export async function updateLink(id: string, input: UpdateLinkInput): Promise<Li
 
     if (error) throw error;
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
     return data;
 }
 
@@ -232,7 +232,7 @@ export async function deleteLink(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
 }
 
 export async function reorderLinks(profileId: string, linkIds: string[]): Promise<void> {
@@ -249,7 +249,7 @@ export async function reorderLinks(profileId: string, linkIds: string[]): Promis
 
     await Promise.all(updates);
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
 }
 
 export async function toggleLink(id: string): Promise<Link> {
@@ -271,6 +271,6 @@ export async function toggleLink(id: string): Promise<Link> {
 
     if (error) throw error;
 
-    revalidatePath('/app/public-profile');
+    revalidateAppPath('/public-profile');
     return data;
 }

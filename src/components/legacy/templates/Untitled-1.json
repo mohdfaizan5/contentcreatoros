@@ -1,0 +1,46 @@
+{
+  "company_description": "We help developers automatically generate backend APIs and database schemas using AI.\n",
+  "problem_solved": "Building backend infrastructure takes too much time and slows down product launches\n",
+  "x_account": "https://x.com/AppykitUI",
+  "target_audience": [
+    "developers"
+  ],
+  "target_audience_other": "",
+  "audience_experience": "beginner",
+  "audience_priorities": [
+    "making_money"
+  ],
+  "content_goals": [
+    "__other",
+    "build_audience"
+  ],
+  "cta_style": "no_cta",
+  "tone": "witty",
+  "writing_style": "mixed",
+  "inspiration_accounts": [
+    "https://x.com/claudeai",
+    "https://x.com/base44"
+  ],
+  "posting_frequency": "5_per_week",
+  "content_pillars": [
+    "educational",
+    "product",
+    "industry_insights",
+    "behind_the_scenes",
+    "case_studies"
+  ],
+  "content_formats": [
+    "text",
+    "image_text",
+    "video_text"
+  ],
+  "key_features": [],
+  "unique_value_prop": "",
+  "pricing_model": "paid",
+  "business_stage": "growing",
+  "competitor_accounts": [
+    "https://x.com/dillionverma"
+  ],
+  "competitor_notes": "",
+  "content_capability": "high_quality_visuals"
+}

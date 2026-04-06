@@ -2,10 +2,24 @@ import { NextRequest } from 'next/server';
 import { createAdminClient } from '@/lib/server-admin';
 import { publishTweetWithStoredConnection } from '@/lib/x';
 
-export async function GET(request: NextRequest) {
-  const authHeader = request.headers.get('authorization');
+function isAuthorizedDispatchRequest(request: NextRequest) {
+  const cronSecret = process.env.CRON_SECRET?.trim();
+  const authHeader = request.headers.get('authorization')?.trim();
+  const hasVercelCronHeader = Boolean(request.headers.get('x-vercel-cron'));
 
-  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+  if (cronSecret) {
+    return authHeader === `Bearer ${cronSecret}`;
+  }
+
+  if (process.env.VERCEL) {
+    return hasVercelCronHeader;
+  }
+
+  return process.env.NODE_ENV !== 'production';
+}
+
+export async function GET(request: NextRequest) {
+  if (!isAuthorizedDispatchRequest(request)) {
     return new Response('Unauthorized', { status: 401 });
   }
 
@@ -45,14 +59,33 @@ export async function GET(request: NextRequest) {
   const results: Array<{ id: string; status: string; tweetId?: string; error?: string }> = [];
 
   for (const tweet of dueTweets ?? []) {
-    await supabase
+    const { data: claimedTweet, error: claimError } = await supabase
       .from('generated_tweets')
       .update({
         status: 'publishing',
         updated_at: new Date().toISOString(),
       })
       .eq('id', tweet.id)
-      .eq('status', 'scheduled');
+      .eq('status', 'scheduled')
+      .select('id')
+      .maybeSingle();
+
+    if (claimError) {
+      results.push({
+        id: tweet.id,
+        status: 'failed',
+        error: 'Unable to claim this scheduled tweet for publishing.',
+      });
+      continue;
+    }
+
+    if (!claimedTweet) {
+      results.push({
+        id: tweet.id,
+        status: 'skipped',
+      });
+      continue;
+    }
 
     try {
       const publishedTweet = await publishTweetWithStoredConnection(

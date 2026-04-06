@@ -1,10 +1,13 @@
 'use server';
 
-import { revalidatePath } from 'next/cache';
 import { createClient } from '@/lib/server';
-import { hasStoredXConnectionForCurrentUser } from '@/lib/x';
+import {
+  hasStoredXConnectionForCurrentUser,
+  publishTweetWithStoredConnection,
+} from '@/lib/x';
 import { generateBrandTweet, X_CHARACTER_LIMIT } from '@/lib/brand-tweets';
 import { buildTweetIntentUrl } from '@/lib/x-intent';
+import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import type { GeneratedTweet, Template } from '@/types/database';
 import type { CalendarEventInput, EventColor } from '@/components/types';
 
@@ -205,8 +208,7 @@ export async function generateTweetFromTemplate(templateId: string) {
     throw new Error('Unable to save the generated tweet.');
   }
 
-  revalidatePath('/app/templates');
-  revalidatePath(`/app/templates/${template.id}`);
+  revalidateAppPaths(['/templates', `/templates/${template.id}`]);
 
   return {
     generatedTweet: generatedTweet as GeneratedTweet,
@@ -261,10 +263,105 @@ export async function scheduleGeneratedTweet({
     throw new Error('Unable to schedule this tweet.');
   }
 
-  revalidatePath('/app/templates');
-  revalidatePath(`/app/templates/${generatedTweet.template_id}`);
+  revalidateAppPaths(['/templates', `/templates/${generatedTweet.template_id}`]);
 
   return generatedTweet as GeneratedTweet;
+}
+
+export async function publishGeneratedTweetNow(generatedTweetId: string) {
+  const { supabase, user } = await getAuthenticatedUserAndClient();
+
+  const { data: existingTweet, error: existingTweetError } = await supabase
+    .from('generated_tweets')
+    .select('*')
+    .eq('id', generatedTweetId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (existingTweetError || !existingTweet) {
+    throw new Error('Unable to find this generated tweet.');
+  }
+
+  const tweet = existingTweet as GeneratedTweet;
+
+  if (tweet.status === 'published') {
+    throw new Error('This tweet has already been published.');
+  }
+
+  if (tweet.status === 'publishing') {
+    throw new Error('This tweet is already being published.');
+  }
+
+  let xAccountId = tweet.x_account_id;
+
+  if (!xAccountId) {
+    const { data: xAccount, error: xAccountError } = await supabase
+      .from('x_accounts')
+      .select('id')
+      .eq('user_id', user.id)
+      .single();
+
+    if (xAccountError || !xAccount) {
+      throw new Error('Connect X again before publishing tweets through the API.');
+    }
+
+    xAccountId = xAccount.id;
+  }
+
+  await supabase
+    .from('generated_tweets')
+    .update({
+      status: 'publishing',
+      error_message: null,
+      x_account_id: xAccountId,
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', generatedTweetId)
+    .eq('user_id', user.id);
+
+  try {
+    const publishedTweet = await publishTweetWithStoredConnection(xAccountId, tweet.content);
+
+    const { data: updatedTweet, error: updatedTweetError } = await supabase
+      .from('generated_tweets')
+      .update({
+        status: 'published',
+        published_at: new Date().toISOString(),
+        scheduled_for: null,
+        x_tweet_id: publishedTweet.id,
+        error_message: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', generatedTweetId)
+      .eq('user_id', user.id)
+      .select('*')
+      .single();
+
+    if (updatedTweetError || !updatedTweet) {
+      throw new Error('Tweet was sent to X, but we could not update its status locally.');
+    }
+
+    revalidateAppPaths(['/templates', `/templates/${updatedTweet.template_id}`]);
+
+    return updatedTweet as GeneratedTweet;
+  } catch (error) {
+    const message =
+      error instanceof Error
+        ? error.message
+        : 'Unable to publish this tweet through the API.';
+
+    await supabase
+      .from('generated_tweets')
+      .update({
+        status: 'failed',
+        error_message: message,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', generatedTweetId)
+      .eq('user_id', user.id);
+
+    throw new Error(message);
+  }
 }
 
 export async function getCanAutoScheduleTweets() {

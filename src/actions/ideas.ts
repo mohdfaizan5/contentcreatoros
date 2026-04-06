@@ -6,7 +6,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAppPath, revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import type { Idea, CreateIdeaInput, UpdateIdeaInput } from '@/types/database';
 
 /**
@@ -69,7 +69,7 @@ export async function createIdea(input: CreateIdeaInput): Promise<Idea> {
 
     if (error) throw error;
 
-    revalidatePath('/app/ideas');
+    revalidateAppPath('/ideas');
     return data;
 }
 
@@ -88,8 +88,7 @@ export async function updateIdea(id: string, input: UpdateIdeaInput): Promise<Id
 
     if (error) throw error;
 
-    revalidatePath('/app/ideas');
-    revalidatePath(`/app/ideas/${id}`);
+    revalidateAppPaths(['/ideas', `/ideas/${id}`]);
     return data;
 }
 
@@ -106,5 +105,5 @@ export async function deleteIdea(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/ideas');
+    revalidateAppPath('/ideas');
 }

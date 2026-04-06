@@ -9,6 +9,7 @@ import {
     Robot,
     XLogoIcon,
 } from '@phosphor-icons/react';
+import { VscCommentDiscussionSparkle } from "react-icons/vsc";
 
 import Logo from '@/components/logo';
 import {
@@ -25,6 +26,7 @@ import {
     SidebarRail,
 } from '@/components/ui/sidebar';
 import { NavBadge } from './nav-badge';
+import { BriefcaseIcon, CalendarDotsIcon, ChatsTeardropIcon, FilesIcon } from '@phosphor-icons/react/dist/ssr';
 
 type NavBadgeType = 'new' | 'updated' | 'comingSoon';
 
@@ -32,27 +34,30 @@ interface SidebarNavItem {
     title: string;
     url?: string;
     icon: typeof House;
-    color: string;
+    color?: string;
     hoverBg?: string;
     badge?: NavBadgeType;
     disabled?: boolean;
 }
+
+const DEFAULT_NAV_ICON_COLOR = 'text-muted-foreground';
+const DEFAULT_NAV_HOVER_BG = 'hover:bg-muted/70';
 
 const companyNavItems: SidebarNavItem[] = [
     {
         title: 'Dashboard',
         url: '/app',
         icon: House,
-        color: 'text-slate-500',
-        hoverBg: 'hover:bg-slate-500/10',
+        // color: 'text-slate-500',
+        // hoverBg: 'hover:bg-slate-500/10',
     },
     {
         title: 'Analytics',
         url: '/app/analytics',
         icon: XLogoIcon,
-        color: 'text-pink-500',
-        hoverBg: 'hover:bg-pink-500/10',
-        badge: 'new',
+        // color: 'text-pink-500',
+        // hoverBg: 'hover:bg-pink-500/10',
+        // badge: 'new',
     },
 ];
 
@@ -60,23 +65,34 @@ const contentNavItems: SidebarNavItem[] = [
     {
         title: 'Content Calendar',
         url: '/app/calendar',
-        icon: XLogoIcon,
-        color: 'text-pink-500',
-        hoverBg: 'hover:bg-pink-500/10',
-        badge: 'new',
+        icon: CalendarDotsIcon ,
+        // color: 'text-pink-500',
+        // hoverBg: 'hover:bg-pink-500/10',
+        // badge: 'new',
     },
     {
         title: 'Templates',
         url: '/app/templates',
-        icon: FileText,
-        color: 'text-blue-500',
-        hoverBg: 'hover:bg-blue-500/10',
-        badge: 'updated',
+        // icon: FileText,
+        icon: FilesIcon ,
+        // color: 'text-blue-500',
+        // hoverBg: 'hover:bg-blue-500/10',
+        // badge: 'updated',
+    },
+    {
+        title: 'Brand Kit',
+        url: '/app/brand-kit',
+        icon: BriefcaseIcon ,
+        // color: 'text-amber-500',
+        // badge: 'comingSoon',
+        // disabled: true,
     },
     {
         title: 'Auto Replies',
-        icon: Robot,
-        color: 'text-amber-500',
+        // @ts-ignore
+        icon: VscCommentDiscussionSparkle,
+        // icon: ChatsTeardropIcon  ,
+        // color: 'text-amber-500',
         badge: 'comingSoon',
         disabled: true,
     },
@@ -109,7 +125,9 @@ function SidebarNavSection({
         <SidebarMenu>
             {items.map((item) => {
                 const isActive = !item.disabled && pathname === item.url;
-                const sharedClassName = `transition-all duration-200 ${!isActive && !item.disabled ? item.hoverBg ?? '' : ''
+                const iconColor = item.color ?? DEFAULT_NAV_ICON_COLOR;
+                const hoverBg = item.hoverBg ?? DEFAULT_NAV_HOVER_BG;
+                const sharedClassName = `transition-all duration-200 ${!isActive && !item.disabled ? hoverBg : ''
                     }`;
 
                 if (item.disabled) {
@@ -120,7 +138,7 @@ function SidebarNavSection({
                                 className={`${sharedClassName} cursor-not-allowed opacity-65 hover:bg-transparent`}
                                 tooltip={`${item.title} (Coming soon)`}
                             >
-                                <item.icon className={item.color} weight="regular" />
+                                <item.icon className={iconColor} weight="regular" />
                                 <span>{item.title}</span>
                                 {renderBadge(item.badge)}
                             </SidebarMenuButton>
@@ -138,7 +156,7 @@ function SidebarNavSection({
                         >
                             <Link href={item.url ?? '#'} className="group/link">
                                 <item.icon
-                                    className={`transition-all duration-200 ${item.color} ${!isActive ? 'opacity-90 group-hover/link:opacity-100' : ''
+                                    className={`transition-all duration-200 ${iconColor} ${!isActive ? 'opacity-90 group-hover/link:opacity-100' : ''
                                         }`}
                                     weight={isActive ? 'fill' : 'regular'}
                                 />

@@ -2,8 +2,13 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { CheckCircle, SpinnerGap } from '@phosphor-icons/react';
-
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 import { saveOnboarding } from '@/actions/onboarding';
+import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -25,6 +30,23 @@ import {
   OnboardingRadioGroup,
   OnboardingTagInput,
 } from '@/components/onboarding/onboarding-cards';
+import { QuestionMarkIcon } from '@phosphor-icons/react/dist/ssr';
+import {
+  BoxIcon,
+  ChartLine,
+  HouseIcon,
+  PanelsTopLeftIcon,
+  SettingsIcon,
+  UsersRoundIcon,
+} from "lucide-react";
+
+import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
 
 type BrandSettingsFormProps = {
   initialAnswers: OnboardingAnswers;
@@ -38,8 +60,10 @@ function renderQuestionKeyValue(question: OnboardingQuestion, answers: Onboardin
   return <Badge variant="outline">Required</Badge>;
 }
 
-function getQuestionControlDescription(question: OnboardingQuestion) {
-  return `Saved as ${question.key}`;
+function getQuestionControlDescription(question: OnboardingQuestion, answers: OnboardingAnswers) {
+  const currentValue = getQuestionSummaryValue(question, answers);
+  // return `Current value: ${currentValue}`;
+  return ``;
 }
 
 export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormProps) {
@@ -54,6 +78,8 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
     ),
     [],
   );
+
+  const [activeStepId, setActiveStepId] = useState<string>(questionSteps[0]?.id || '');
 
   const updateAnswer = (key: string, value: OnboardingAnswers[string]) => {
     setSaveState('idle');
@@ -91,7 +117,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             key={question.key}
             label={question.label}
             description={question.description}
-            helperText={getQuestionControlDescription(question)}
+            helperText={getQuestionControlDescription(question, answers)}
             required={question.required}
           >
             <Input
@@ -109,7 +135,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             key={question.key}
             label={question.label}
             description={question.description}
-            helperText={getQuestionControlDescription(question)}
+            helperText={getQuestionControlDescription(question, answers)}
             required={question.required}
           >
             <Textarea
@@ -124,13 +150,13 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
       case 'single-select': {
         const options = question.otherOption
           ? [
-              ...question.options,
-              {
-                value: OTHER_OPTION_VALUE,
-                label: question.otherOption.optionLabel ?? 'Other',
-                description: 'Add a custom answer',
-              },
-            ]
+            ...question.options,
+            {
+              value: OTHER_OPTION_VALUE,
+              label: question.otherOption.optionLabel ?? 'Other',
+              description: 'Add a custom answer',
+            },
+          ]
           : question.options;
 
         return (
@@ -138,7 +164,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             <OnboardingField
               label={question.label}
               description={question.description}
-              helperText={getQuestionControlDescription(question)}
+              helperText={getQuestionControlDescription(question, answers)}
               required={question.required}
             >
               <OnboardingRadioGroup
@@ -167,13 +193,13 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
       case 'multi-select': {
         const options = question.otherOption
           ? [
-              ...question.options,
-              {
-                value: OTHER_OPTION_VALUE,
-                label: question.otherOption.optionLabel ?? 'Other',
-                description: 'Add a custom answer',
-              },
-            ]
+            ...question.options,
+            {
+              value: OTHER_OPTION_VALUE,
+              label: question.otherOption.optionLabel ?? 'Other',
+              description: 'Add a custom answer',
+            },
+          ]
           : question.options;
 
         return (
@@ -181,7 +207,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             <OnboardingField
               label={question.label}
               description={question.description}
-              helperText={getQuestionControlDescription(question)}
+              helperText={getQuestionControlDescription(question, answers)}
               required={question.required}
             >
               <OnboardingCheckboxGroup
@@ -214,7 +240,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             key={question.key}
             label={question.label}
             description={question.description}
-            helperText={getQuestionControlDescription(question)}
+            helperText={getQuestionControlDescription(question, answers)}
             required={question.required}
           >
             <OnboardingTagInput
@@ -244,24 +270,24 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
+      <div className="rounded-[32px] border border-slate-200 bg-[#1384FF] text-white p-6 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
-            <Badge variant="outline" className="w-fit border-slate-200 px-3 py-1 text-slate-600">
+            <Badge variant="secondary" className="">
               Brand settings
             </Badge>
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight text-slate-950">
+              <h1 className="text-3xl font-semibold tracking-tight ">
                 Edit your onboarding data
               </h1>
-              <p className="max-w-3xl text-sm leading-6 text-slate-600">
+              <p className="max-w-3xl text-sm leading-6 ">
                 This page loads the same onboarding questions and current saved answers, so you can
                 update your brand data in one place and save it back to the same storage shape.
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm text-slate-600">
+          <div className="flex flex-wrap items-center gap-3 text-sm ">
             <Badge variant="outline" className="border-slate-200 px-3 py-1">
               {answeredCount} saved values
             </Badge>
@@ -271,11 +297,86 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
           </div>
         </div>
 
-        <div className="mt-6 rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 text-slate-600">
+        {/* <div className="mt-6 rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 ">
           Text, select, multi-select, and tag fields are saved in the same JSON-backed onboarding
           format used by the onboarding flow, including custom "Other" values where present.
-        </div>
+        </div> */}
       </div>
+      <Tabs defaultValue="tab-1">
+        <ScrollArea>
+          <TabsList className="mb-3 h-auto gap-2 rounded-none border-b bg-transparent px-0 py-1 text-foreground">
+            <TabsTrigger
+              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
+              value="tab-1"
+            >
+              <HouseIcon
+                aria-hidden="true"
+                className="-ms-0.5 me-1.5 opacity-60"
+                size={16}
+              />
+              Overview
+            </TabsTrigger>
+            <TabsTrigger
+              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
+              value="tab-2"
+            >
+              <PanelsTopLeftIcon
+                aria-hidden="true"
+                className="-ms-0.5 me-1.5 opacity-60"
+                size={16}
+              />
+              Brand Voice
+              <Badge
+                className="ms-1.5 min-w-5 bg-primary/15 px-1"
+                variant="secondary"
+              >
+                3
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
+              value="tab-3"
+            >
+              <BoxIcon
+                aria-hidden="true"
+                className="-ms-0.5 me-1.5 opacity-60"
+                size={16}
+              />
+              Packages
+              <Badge className="ms-1.5">New</Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
+              value="tab-4"
+            >
+              <UsersRoundIcon
+                aria-hidden="true"
+                className="-ms-0.5 me-1.5 opacity-60"
+                size={16}
+              />
+              Team
+            </TabsTrigger>
+           
+          </TabsList>
+          <ScrollBar orientation="horizontal" />
+        </ScrollArea>
+        <TabsContent value="tab-1">
+          <p className="pt-1 text-center text-muted-foreground text-xs">
+            Content for Tab 1
+          </p>
+        </TabsContent>
+        <TabsContent value="tab-2">
+          <p className="pt-1 text-center text-muted-foreground text-xs">
+            Content for Tab 2
+          </p>
+        </TabsContent>
+        <TabsContent value="tab-3">
+          <p className="pt-1 text-center text-muted-foreground text-xs">
+            Content for Tab 3
+          </p>
+        </TabsContent>
+       
+      </Tabs>
 
       <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <form
@@ -290,30 +391,39 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
               key={step.id}
               className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] sm:p-7"
             >
-              <div className="mb-6 space-y-2">
-                <div className="text-xs font-semibold uppercase tracking-[0.24em] text-slate-400">
+              {/* <div className="mb-6 space-y-1">
+                <div className="text-xs font-semibold uppercase  text-slate-400">
                   {step.eyebrow}
                 </div>
                 <h2 className="text-2xl font-semibold tracking-tight text-slate-950">{step.title}</h2>
                 <p className="max-w-2xl text-sm leading-6 text-slate-600">{step.description}</p>
-              </div>
+              </div> */}
 
               <div className="space-y-6">
                 {step.questions.map((question) => (
                   <div key={question.key} className="space-y-3">
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3">
-                        <span className="text-base font-medium text-slate-950">{question.label}</span>
+                      {/* <div className="flex items-center gap-3">
+                        <span className="text-base font-medium text-slate-950">{question.label}---</span>
                         {renderQuestionKeyValue(question, answers)}
-                      </div>
+                      </div> */}
                     </div>
-                    {question.description ? (
-                      <p className="text-sm leading-6 text-slate-500">{question.description}</p>
-                    ) : null}
+
+                    {/* {question.description ? (
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Button variant="outline" size="icon-sm">
+                            <QuestionMarkIcon />
+                          </Button></TooltipTrigger>
+                        <TooltipContent>
+                          <p className="text-sm leading-6 text-slate-500">{question.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : null} */}
                     {renderQuestion(question)}
-                    <p className="text-xs text-slate-400">
+                    {/* <p className="text-xs text-slate-400">
                       Current value: {getQuestionSummaryValue(question, answers)}
-                    </p>
+                    </p> */}
                   </div>
                 ))}
               </div>
@@ -347,7 +457,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
           </div>
         </form>
 
-        <aside className="h-fit rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]">
+        {/* <aside className="h-fit rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]">
           <div className="space-y-2">
             <h3 className="text-lg font-semibold text-slate-950">How this saves</h3>
             <p className="text-sm leading-6 text-slate-600">
@@ -364,7 +474,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
               </div>
             ))}
           </div>
-        </aside>
+        </aside> */}
       </div>
     </div>
   );

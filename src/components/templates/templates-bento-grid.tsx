@@ -1,10 +1,27 @@
 'use client';
 
-import { useTransition } from 'react';
+import { useState, useTransition } from 'react';
 import Link from 'next/link';
-import { Plus, PushPin, Trash, SpinnerGap, TwitterLogo, YoutubeLogo, LinkedinLogo, Article } from '@phosphor-icons/react';
+import {
+    Plus,
+    PushPin,
+    Trash,
+    SpinnerGap,
+    TwitterLogo,
+    YoutubeLogo,
+    LinkedinLogo,
+    Article,
+    Eye,
+    EyeSlash,
+    Heart,
+} from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
-import { deleteTemplate, updateTemplate } from '@/actions/templates';
+import {
+    deleteTemplate,
+    toggleTemplateLike,
+    toggleTemplateVisibility,
+    updateTemplate,
+} from '@/actions/templates';
 import { PlaceholderRenderer } from './placeholder-renderer';
 import type { Template, PlatformType } from '@/types/database';
 
@@ -22,6 +39,9 @@ interface TemplateMasonryCardProps {
 
 function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCardProps) {
     const [isPending, startTransition] = useTransition();
+    const [isPublic, setIsPublic] = useState(Boolean(template.is_public));
+    const [likedByMe, setLikedByMe] = useState(Boolean(template.liked_by_me));
+    const [likesCount, setLikesCount] = useState(template.likes_count ?? 0);
     const config = platformConfig[template.platform_type];
     const Icon = config.icon;
 
@@ -47,6 +67,48 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
         });
     };
 
+    const handleToggleVisibility = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const nextVisibility = !isPublic;
+        setIsPublic(nextVisibility);
+
+        startTransition(async () => {
+            try {
+                const updated = await toggleTemplateVisibility(template.id, nextVisibility);
+                setIsPublic(updated.is_public);
+            } catch (error) {
+                setIsPublic(!nextVisibility);
+                console.error('Failed to toggle template visibility:', error);
+            }
+        });
+    };
+
+    const handleToggleLike = (e: React.MouseEvent) => {
+        e.preventDefault();
+        e.stopPropagation();
+
+        const previousLiked = likedByMe;
+        const previousLikesCount = likesCount;
+        const nextLiked = !previousLiked;
+
+        setLikedByMe(nextLiked);
+        setLikesCount(Math.max(0, previousLikesCount + (nextLiked ? 1 : -1)));
+
+        startTransition(async () => {
+            try {
+                const response = await toggleTemplateLike(template.id, nextLiked);
+                setLikedByMe(response.liked);
+                setLikesCount(response.likes_count);
+            } catch (error) {
+                setLikedByMe(previousLiked);
+                setLikesCount(previousLikesCount);
+                console.error('Failed to toggle template like:', error);
+            }
+        });
+    };
+
     const hasContent = template.template_text && template.template_text.trim().length > 0;
 
     return (
@@ -60,6 +122,28 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
                 <Icon className={`h-4 w-4 ${config.color}`} weight="fill" />
 
                 <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <button
+                        onClick={handleToggleLike}
+                        disabled={isPending}
+                        title={likedByMe ? 'Unlike' : 'Like'}
+                        className={`p-1 rounded-md transition-colors ${likedByMe
+                            ? 'bg-rose-500/15 text-rose-500'
+                            : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                            }`}
+                    >
+                        <Heart className="h-3.5 w-3.5" weight={likedByMe ? 'fill' : 'regular'} />
+                    </button>
+                    <button
+                        onClick={handleToggleVisibility}
+                        disabled={isPending}
+                        title={isPublic ? 'Make private' : 'Make public'}
+                        className={`p-1 rounded-md transition-colors ${isPublic
+                            ? 'bg-emerald-500/15 text-emerald-600'
+                            : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                            }`}
+                    >
+                        {isPublic ? <Eye className="h-3.5 w-3.5" /> : <EyeSlash className="h-3.5 w-3.5" />}
+                    </button>
                     <button
                         onClick={handlePin}
                         disabled={isPending}
@@ -104,6 +188,23 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
                 {hasContent && template.name && (
                     <p className="text-xs text-muted-foreground mt-2 truncate">{template.name}</p>
                 )}
+
+                <div className="mt-2 flex items-center justify-between gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 ${isPublic ? 'bg-emerald-500/10 text-emerald-700' : 'bg-muted text-muted-foreground'}`}>
+                            {isPublic ? 'Public' : 'Private'}
+                        </span>
+                        <span className="inline-flex items-center gap-1">
+                            <Heart className="h-3 w-3" weight={likedByMe ? 'fill' : 'regular'} />
+                            {likesCount}
+                        </span>
+                    </div>
+                    {(template.tags?.length ?? 0) > 0 && (
+                        <span className="truncate text-[11px] text-muted-foreground/80">
+                            #{template.tags[0]}
+                        </span>
+                    )}
+                </div>
             </div>
         </Link>
     );
