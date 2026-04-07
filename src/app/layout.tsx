@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, Inter_Tight, Source_Serif_4 } from "next/font/google";
+import { Geist, Geist_Mono, Inter, Inter_Tight, Source_Serif_4, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 
 // -----------------------------------------------------------------------------
@@ -38,6 +38,14 @@ const serif = Source_Serif_4({
   variable: "--font-serif",
   subsets: ["latin"],
 });
+
+const InstrumentalSerif = Instrument_Serif({
+  variable: "--font-serif-instrumental",
+  weight: ["400" ],
+  subsets: ["latin"],
+});
+
+
 
 // Unused but kept for reference
 const geistSans = Geist({

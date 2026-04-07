@@ -46,7 +46,7 @@ function ChoiceCard({
     return (
       <span
         className={cn(
-          'inline-flex min-h-11 items-center rounded-full border px-4 text-sm font-medium transition-all duration-200',
+          'inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium transition-all duration-200',
           active
             ? 'border-slate-900 bg-slate-900 text-white shadow-[0_10px_24px_-14px_rgba(15,23,42,0.85)]'
             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
@@ -61,7 +61,7 @@ function ChoiceCard({
   return (
     <div
       className={cn(
-        'rounded-xl border p-3.5 transition-all duration-200',
+        'rounded-lg border p-3.5 transition-all duration-200',
         active
           ? 'border-slate-900 bg-slate-900 text-white shadow-[0_14px_32px_-24px_rgba(15,23,42,0.8)]'
           : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50',
@@ -206,18 +206,18 @@ export function OnboardingTagInput({
   };
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-2.5 shadow-sm shadow-slate-950/5">
+    <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm shadow-slate-950/5">
       <div className="flex flex-wrap gap-2">
         {values.map((value) => (
           <span
             key={value}
-            className="inline-flex items-center gap-2 rounded-full bg-slate-900 px-3 py-1 text-sm text-white"
+            className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-3 py-1 text-sm text-white"
           >
             {value}
             <button
               type="button"
               onClick={() => removeTag(value)}
-              className="rounded-full text-white/70 transition hover:text-white"
+              className="rounded-md text-white/70 transition hover:text-white"
               aria-label={`Remove ${value}`}
             >
               <X className="size-3" weight="bold" />
@@ -242,7 +242,7 @@ export function OnboardingTagInput({
           }}
           onBlur={commitDraft}
           placeholder={placeholder}
-          className="h-10 rounded-xl border-slate-200 bg-slate-50"
+          className="h-10 rounded-md border-slate-200 bg-slate-50"
         />
       </div>
     </div>
@@ -330,7 +330,7 @@ export function OnboardingField({
                   <Question weight="bold" className="size-2.5" />
                 </div>
               </TooltipTrigger>
-              <TooltipContent className="max-w-[280px] p-3 text-xs leading-relaxed hidden sm:block" side="right">
+              <TooltipContent className="max-w-70 p-3 text-xs leading-relaxed hidden sm:block" side="right">
                 {description}
               </TooltipContent>
             </Tooltip>

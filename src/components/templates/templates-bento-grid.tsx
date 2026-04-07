@@ -15,6 +15,7 @@ import {
     EyeSlash,
     Heart,
 } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import {
     deleteTemplate,
@@ -25,7 +26,7 @@ import {
 import { PlaceholderRenderer } from './placeholder-renderer';
 import type { Template, PlatformType } from '@/types/database';
 
-const platformConfig: Record<PlatformType, { icon: React.ElementType; color: string; bgColor: string }> = {
+const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; bgColor: string }> = {
     x: { icon: TwitterLogo, color: 'text-sky-500', bgColor: 'bg-sky-500/5 border-sky-500/20 hover:border-sky-500/40' },
     linkedin: { icon: LinkedinLogo, color: 'text-blue-600', bgColor: 'bg-blue-600/5 border-blue-600/20 hover:border-blue-600/40' },
     youtube: { icon: YoutubeLogo, color: 'text-red-500', bgColor: 'bg-red-500/5 border-red-500/20 hover:border-red-500/40' },

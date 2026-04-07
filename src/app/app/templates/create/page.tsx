@@ -2,7 +2,18 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, TwitterLogo, YoutubeLogo, LinkedinLogo, Article, Plus, SpinnerGap, Eye, EyeSlash } from '@phosphor-icons/react';
+import {
+    ArrowLeft,
+    TwitterLogo,
+    YoutubeLogo,
+    LinkedinLogo,
+    Article,
+    Plus,
+    SpinnerGap,
+    Eye,
+    EyeSlash,
+    type Icon as PhosphorIcon,
+} from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
@@ -12,7 +23,7 @@ import { PlatformPreview } from '@/components/templates/platform-preview';
 import { generateId } from '@/lib/template-utils';
 import type { PlatformType, TemplateExample } from '@/types/database';
 
-const platforms: { value: PlatformType; icon: React.ElementType; label: string; color: string }[] = [
+const platforms: { value: PlatformType; icon: PhosphorIcon; label: string; color: string }[] = [
     { value: 'x', icon: TwitterLogo, label: 'X', color: 'hover:bg-sky-500/10 hover:text-sky-500 data-[active=true]:bg-sky-500/10 data-[active=true]:text-sky-500 data-[active=true]:border-sky-500/30' },
     { value: 'linkedin', icon: LinkedinLogo, label: 'LinkedIn', color: 'hover:bg-blue-600/10 hover:text-blue-600 data-[active=true]:bg-blue-600/10 data-[active=true]:text-blue-600 data-[active=true]:border-blue-600/30' },
     { value: 'youtube', icon: YoutubeLogo, label: 'YouTube Title', color: 'hover:bg-red-500/10 hover:text-red-500 data-[active=true]:bg-red-500/10 data-[active=true]:text-red-500 data-[active=true]:border-red-500/30' },

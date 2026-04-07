@@ -1,139 +1,91 @@
 import { NextRequest } from 'next/server';
-import { createAdminClient } from '@/lib/server-admin';
-import { publishTweetWithStoredConnection } from '@/lib/x';
+import { dispatchScheduledTweets } from '@/lib/generated-tweets-dispatch';
+
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+type DispatchPayload = {
+  limit?: number;
+  tweetId?: string;
+  tweetIds?: string[];
+};
+
+function parseLimit(rawLimit: string | number | null | undefined) {
+  if (rawLimit === null || rawLimit === undefined || rawLimit === '') {
+    return undefined;
+  }
+
+  const parsed = Number(rawLimit);
+  return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+function normalizeTweetIds(payload: DispatchPayload) {
+  const ids = [...(payload.tweetIds ?? [])];
+
+  if (payload.tweetId) {
+    ids.push(payload.tweetId);
+  }
+
+  return Array.from(new Set(ids.filter(Boolean)));
+}
 
 function isAuthorizedDispatchRequest(request: NextRequest) {
   const cronSecret = process.env.CRON_SECRET?.trim();
   const authHeader = request.headers.get('authorization')?.trim();
-  const hasVercelCronHeader = Boolean(request.headers.get('x-vercel-cron'));
 
   if (cronSecret) {
     return authHeader === `Bearer ${cronSecret}`;
   }
 
-  if (process.env.VERCEL) {
-    return hasVercelCronHeader;
-  }
-
   return process.env.NODE_ENV !== 'production';
 }
 
-export async function GET(request: NextRequest) {
+async function runDispatch(request: NextRequest, payload: DispatchPayload = {}) {
   if (!isAuthorizedDispatchRequest(request)) {
     return new Response('Unauthorized', { status: 401 });
   }
 
-  let supabase;
-
   try {
-    supabase = createAdminClient();
+    const result = await dispatchScheduledTweets({
+      limit: payload.limit,
+      tweetIds: normalizeTweetIds(payload),
+    });
+
+    return Response.json(result);
   } catch (error) {
     return Response.json(
       {
-        error: error instanceof Error ? error.message : 'Admin client is not configured.',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Unable to dispatch scheduled tweets.',
       },
       { status: 500 },
     );
   }
+}
 
-  const now = new Date().toISOString();
-  const { data: dueTweets, error } = await supabase
-    .from('generated_tweets')
-    .select('id, content, x_account_id')
-    .eq('status', 'scheduled')
-    .lte('scheduled_for', now)
-    .not('x_account_id', 'is', null)
-    .order('scheduled_for', { ascending: true })
-    .limit(20);
+export async function GET(request: NextRequest) {
+  const limitFromQuery = parseLimit(request.nextUrl.searchParams.get('limit'));
+  const tweetId = request.nextUrl.searchParams.get('tweetId') ?? undefined;
 
-  if (error) {
-    return Response.json(
-      {
-        error: 'Unable to load scheduled tweets.',
-        details: error.message,
-      },
-      { status: 500 },
-    );
+  return runDispatch(request, {
+    limit: limitFromQuery,
+    tweetId,
+  });
+}
+
+export async function POST(request: NextRequest) {
+  let payload: DispatchPayload = {};
+
+  try {
+    payload = (await request.json()) as DispatchPayload;
+  } catch {
+    payload = {};
   }
 
-  const results: Array<{ id: string; status: string; tweetId?: string; error?: string }> = [];
-
-  for (const tweet of dueTweets ?? []) {
-    const { data: claimedTweet, error: claimError } = await supabase
-      .from('generated_tweets')
-      .update({
-        status: 'publishing',
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', tweet.id)
-      .eq('status', 'scheduled')
-      .select('id')
-      .maybeSingle();
-
-    if (claimError) {
-      results.push({
-        id: tweet.id,
-        status: 'failed',
-        error: 'Unable to claim this scheduled tweet for publishing.',
-      });
-      continue;
-    }
-
-    if (!claimedTweet) {
-      results.push({
-        id: tweet.id,
-        status: 'skipped',
-      });
-      continue;
-    }
-
-    try {
-      const publishedTweet = await publishTweetWithStoredConnection(
-        tweet.x_account_id as string,
-        tweet.content,
-      );
-
-      await supabase
-        .from('generated_tweets')
-        .update({
-          published_at: new Date().toISOString(),
-          status: 'published',
-          x_tweet_id: publishedTweet.id,
-          error_message: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', tweet.id);
-
-      results.push({
-        id: tweet.id,
-        status: 'published',
-        tweetId: publishedTweet.id,
-      });
-    } catch (publishError) {
-      const message =
-        publishError instanceof Error
-          ? publishError.message
-          : 'Unable to publish the scheduled tweet.';
-
-      await supabase
-        .from('generated_tweets')
-        .update({
-          status: 'failed',
-          error_message: message,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', tweet.id);
-
-      results.push({
-        id: tweet.id,
-        status: 'failed',
-        error: message,
-      });
-    }
-  }
-
-  return Response.json({
-    processed: results.length,
-    results,
+  return runDispatch(request, {
+    ...payload,
+    limit: parseLimit(payload.limit),
   });
 }

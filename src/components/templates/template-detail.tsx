@@ -3,6 +3,7 @@
 import React, { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { ArrowLeft, Trash, Copy, Check, SpinnerGap, FloppyDisk, TwitterLogo, YoutubeLogo, LinkedinLogo, Article, Heart, ChatCircle, ArrowsClockwise, Share, ThumbsUp, ChatTeardropText, Repeat, Eye, EyeSlash } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { deleteTemplate, toggleTemplateLike, toggleTemplateVisibility, updateTemplate } from '@/actions/templates';
@@ -13,7 +14,7 @@ import { BrandTweetStudio } from './brand-tweet-studio';
 import type { GeneratedTweet, Template, PlatformType } from '@/types/database';
 import { cn } from '@/lib/utils';
 
-const platformConfig: Record<PlatformType, { icon: React.ElementType; color: string; label: string }> = {
+const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; label: string }> = {
     x: { icon: TwitterLogo, color: 'bg-sky-500/10 text-sky-600 border-sky-500/20', label: 'X (Twitter)' },
     youtube: { icon: YoutubeLogo, color: 'bg-red-500/10 text-red-600 border-red-500/20', label: 'YouTube' },
     linkedin: { icon: LinkedinLogo, color: 'bg-blue-600/10 text-blue-600 border-blue-600/20', label: 'LinkedIn' },

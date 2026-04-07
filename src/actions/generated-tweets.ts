@@ -128,37 +128,40 @@ export async function getGeneratedTweetCalendarEvents(): Promise<CalendarEventIn
     return [];
   }
 
-  return (data as GeneratedTweet[])
-    .map((tweet) => {
+  const events = (data as GeneratedTweet[]).flatMap(
+    (tweet): CalendarEventInput[] => {
       const anchorDate = getCalendarAnchorDate(tweet);
 
       if (!anchorDate) {
-        return null;
+        return [];
       }
 
       const start = new Date(anchorDate);
 
       if (Number.isNaN(start.getTime())) {
-        return null;
+        return [];
       }
 
       const end = new Date(start.getTime() + 30 * 60 * 1000);
 
-      return {
-        color: getCalendarEventColor(tweet.status),
-        description: buildCalendarDescription(tweet),
-        end: end.toISOString(),
-        id: tweet.id,
-        location: 'X',
-        start: start.toISOString(),
-        title: getCalendarTitle(tweet.content, tweet.status),
-      } satisfies CalendarEventInput;
-    })
-    .filter((event): event is CalendarEventInput => event !== null)
-    .sort(
-      (left, right) =>
-        new Date(left.start).getTime() - new Date(right.start).getTime(),
-    );
+      return [
+        {
+          color: getCalendarEventColor(tweet.status),
+          description: buildCalendarDescription(tweet),
+          end: end.toISOString(),
+          id: tweet.id,
+          location: 'X',
+          start: start.toISOString(),
+          title: getCalendarTitle(tweet.content, tweet.status),
+        },
+      ];
+    },
+  );
+
+  return events.sort(
+    (left, right) =>
+      new Date(left.start).getTime() - new Date(right.start).getTime(),
+  );
 }
 
 export async function generateTweetFromTemplate(templateId: string) {
@@ -235,14 +238,47 @@ export async function scheduleGeneratedTweet({
     throw new Error('Scheduled time must be in the future.');
   }
 
+  const { data: existingTweet, error: existingTweetError } = await supabase
+    .from('generated_tweets')
+    .select('id, status, template_id')
+    .eq('id', generatedTweetId)
+    .eq('user_id', user.id)
+    .single();
+
+  if (existingTweetError || !existingTweet) {
+    throw new Error('Unable to find this generated tweet.');
+  }
+
+  if (existingTweet.status === 'published') {
+    throw new Error('This tweet has already been published.');
+  }
+
+  if (existingTweet.status === 'publishing') {
+    throw new Error('This tweet is currently being published. Try again in a moment.');
+  }
+
   const { data: xAccount, error: xAccountError } = await supabase
     .from('x_accounts')
-    .select('id')
+    .select('id, refresh_token, expires_at')
     .eq('user_id', user.id)
     .single();
 
   if (xAccountError || !xAccount) {
     throw new Error('Connect X again before scheduling tweets for automatic publishing.');
+  }
+
+  const accountExpiresAt = xAccount.expires_at
+    ? new Date(xAccount.expires_at).getTime()
+    : null;
+
+  if (
+    !xAccount.refresh_token &&
+    accountExpiresAt !== null &&
+    accountExpiresAt <= scheduleDate.getTime() + 60_000
+  ) {
+    throw new Error(
+      'Reconnect X before scheduling this post so it can still publish when your current token expires.',
+    );
   }
 
   const { data: generatedTweet, error: generatedTweetError } = await supabase
@@ -263,7 +299,7 @@ export async function scheduleGeneratedTweet({
     throw new Error('Unable to schedule this tweet.');
   }
 
-  revalidateAppPaths(['/templates', `/templates/${generatedTweet.template_id}`]);
+  revalidateAppPaths(['/templates', `/templates/${existingTweet.template_id}`]);
 
   return generatedTweet as GeneratedTweet;
 }
@@ -306,6 +342,10 @@ export async function publishGeneratedTweetNow(generatedTweetId: string) {
     }
 
     xAccountId = xAccount.id;
+  }
+
+  if (!xAccountId) {
+    throw new Error('Connect X again before publishing tweets through the API.');
   }
 
   await supabase

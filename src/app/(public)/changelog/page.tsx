@@ -1,5 +1,5 @@
+import { ChangelogEntry } from '@/components/public/changelog/changelog-entry';
 import { changelog } from '@/data/changelog';
-import { ChangelogEntry } from '@/components/changelog/changelog-entry';
 import { Sparkle } from '@phosphor-icons/react/dist/ssr';
 
 export const metadata = {

@@ -114,12 +114,13 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
   const xConfig = getXConfigStatus();
   const connectionMetadata = await getXConnectionMetadata();
 
+  let accessToken: string | null = null;
   let user = null;
   let tweets: XTweet[] = [];
   let dataError: string | null = null;
 
   if (xConfig.configured) {
-    const accessToken = await ensureXAccessToken(origin);
+    accessToken = await ensureXAccessToken(origin, { persistCookies: false });
 
     if (accessToken) {
       try {
@@ -134,7 +135,9 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
 
   const tweetTotals = getTweetTotals(tweets);
   const bannerMessage = getFriendlyError(params.error) ?? dataError;
-  const isConnected = Boolean(user);
+  // Treat the account as connected when we have a valid token or known connection metadata,
+  // even if a live profile fetch temporarily fails.
+  const isConnected = Boolean(accessToken || connectionMetadata.connectedAt);
 
   return (
     <div className="space-y-6">
@@ -259,7 +262,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] border-red-500 border">
         <Card className="border-slate-200/80 bg-white/90">
           <CardHeader>
             <CardTitle>
@@ -339,169 +342,171 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 Connect an X account to render the authenticated user here and pull recent-post metrics from the user timeline endpoint.
               </div>
             )}
+            <div className="grid gap-6 border border-yellow-500">
+              <Card className="border-slate-200/80 bg-white/90">
+                <CardHeader>
+                  <CardTitle>
+                    <LabelTooltip
+                      label="Profile metrics"
+                      description="Public metrics returned directly on the authenticated user object."
+                    />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    {
+                      icon: Users,
+                      label: 'Followers',
+                      value: formatCompactNumber(user?.public_metrics?.followers_count),
+                    },
+                    {
+                      icon: TrendUp,
+                      label: 'Following',
+                      value: formatCompactNumber(user?.public_metrics?.following_count),
+                    },
+                    {
+                      icon: ChartLineUp,
+                      label: 'Posts',
+                      value: formatCompactNumber(user?.public_metrics?.tweet_count),
+                    },
+                    {
+                      icon: XLogo,
+                      label: 'Listed',
+                      value: formatCompactNumber(user?.public_metrics?.listed_count),
+                    },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                    >
+                      <div className="flex items-center gap-2 text-slate-400">
+                        <item.icon className="size-4" weight="fill" />
+                        <span className="text-xs uppercase tracking-[0.24em]">
+                          <LabelTooltip
+                            label={item.label}
+                            description={`The current X ${item.label.toLowerCase()} count for this authenticated account.`}
+                          />
+                        </span>
+                      </div>
+                      <p className="mt-3 text-2xl font-semibold text-slate-900">
+                        {user ? item.value : '--'}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card className="border-slate-200/80 bg-white/90">
+                <CardHeader>
+                  <CardTitle>
+                    <LabelTooltip
+                      label="Recent post snapshot"
+                      description="Latest five posts from the authenticated user timeline."
+                    />
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="grid gap-3 sm:grid-cols-2">
+                  {[
+                    { label: 'Likes', value: tweetTotals.likes },
+                    { label: 'Replies', value: tweetTotals.replies },
+                    { label: 'Retweets', value: tweetTotals.retweets },
+                    { label: 'Quotes', value: tweetTotals.quotes },
+                  ].map((item) => (
+                    <div
+                      key={item.label}
+                      className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(241,245,249,0.75),rgba(255,255,255,1))] p-4"
+                    >
+                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                        <LabelTooltip
+                          label={item.label}
+                          description={`The total number of ${item.label.toLowerCase()} across the latest five posts.`}
+                        />
+                      </p>
+                      <p className="mt-3 text-2xl font-semibold text-slate-900">
+                        {tweets.length > 0 ? formatCompactNumber(item.value) : '--'}
+                      </p>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
           </CardContent>
         </Card>
 
-        <div className="grid gap-6">
-          <Card className="border-slate-200/80 bg-white/90">
-            <CardHeader>
-              <CardTitle>
-                <LabelTooltip
-                  label="Profile metrics"
-                  description="Public metrics returned directly on the authenticated user object."
-                />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              {[
-                {
-                  icon: Users,
-                  label: 'Followers',
-                  value: formatCompactNumber(user?.public_metrics?.followers_count),
-                },
-                {
-                  icon: TrendUp,
-                  label: 'Following',
-                  value: formatCompactNumber(user?.public_metrics?.following_count),
-                },
-                {
-                  icon: ChartLineUp,
-                  label: 'Posts',
-                  value: formatCompactNumber(user?.public_metrics?.tweet_count),
-                },
-                {
-                  icon: XLogo,
-                  label: 'Listed',
-                  value: formatCompactNumber(user?.public_metrics?.listed_count),
-                },
-              ].map((item) => (
-                <div
-                  key={item.label}
+
+        <Card className="border-slate-200/80 bg-white/90">
+          <CardHeader>
+            <CardTitle>
+              <LabelTooltip
+                label="Latest posts"
+                description="Lightweight timeline preview using /2/users/:id/tweets with tweet.fields=created_at,public_metrics."
+              />
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {tweets.length > 0 ? (
+              tweets.map((tweet) => (
+                <article
+                  key={tweet.id}
                   className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="flex items-center gap-2 text-slate-400">
-                    <item.icon className="size-4" weight="fill" />
-                    <span className="text-xs uppercase tracking-[0.24em]">
-                      <LabelTooltip
-                        label={item.label}
-                        description={`The current X ${item.label.toLowerCase()} count for this authenticated account.`}
-                      />
-                    </span>
-                  </div>
-                  <p className="mt-3 text-2xl font-semibold text-slate-900">
-                    {user ? item.value : '--'}
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+                    <div className="space-y-2">
+                      <p className="text-sm leading-6 text-slate-700">
+                        {truncateTweet(tweet.text)}
+                      </p>
+                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
+                        <LabelTooltip
+                          label={formatDate(tweet.created_at)}
+                          description="The creation date of this post as returned by the X timeline API."
+                        />
+                      </p>
+                    </div>
 
-          <Card className="border-slate-200/80 bg-white/90">
-            <CardHeader>
-              <CardTitle>
-                <LabelTooltip
-                  label="Recent post snapshot"
-                  description="Latest five posts from the authenticated user timeline."
-                />
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-3 sm:grid-cols-2">
-              {[
-                { label: 'Likes', value: tweetTotals.likes },
-                { label: 'Replies', value: tweetTotals.replies },
-                { label: 'Retweets', value: tweetTotals.retweets },
-                { label: 'Quotes', value: tweetTotals.quotes },
-              ].map((item) => (
-                <div
-                  key={item.label}
-                  className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(241,245,249,0.75),rgba(255,255,255,1))] p-4"
-                >
-                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                    <LabelTooltip
-                      label={item.label}
-                      description={`The total number of ${item.label.toLowerCase()} across the latest five posts.`}
-                    />
-                  </p>
-                  <p className="mt-3 text-2xl font-semibold text-slate-900">
-                    {tweets.length > 0 ? formatCompactNumber(item.value) : '--'}
-                  </p>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        </div>
+                    <div className="grid min-w-55 grid-cols-2 gap-2 text-sm text-slate-500">
+                      <div>
+                        <LabelTooltip
+                          label={`Likes: ${formatCompactNumber(tweet.public_metrics?.like_count)}`}
+                          description="The number of likes on this post."
+                        />
+                      </div>
+                      <div>
+                        <LabelTooltip
+                          label={`Replies: ${formatCompactNumber(tweet.public_metrics?.reply_count)}`}
+                          description="The number of replies on this post."
+                        />
+                      </div>
+                      <div>
+                        <LabelTooltip
+                          label={`Retweets: ${formatCompactNumber(tweet.public_metrics?.retweet_count)}`}
+                          description="The number of reposts or retweets on this post."
+                        />
+                      </div>
+                      <div>
+                        <LabelTooltip
+                          label={`Quotes: ${formatCompactNumber(tweet.public_metrics?.quote_count)}`}
+                          description="The number of quote posts that reference this post."
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </article>
+              ))
+            ) : (
+              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
+                {isConnected
+                  ? 'No recent posts were returned for this account.'
+                  : 'Connect an X account to show recent posts and engagement totals here.'}
+              </div>
+            )}
+          </CardContent>
+          <CardFooter className="border-t border-slate-100 text-xs text-slate-400">
+            Scopes requested: users.read, tweet.read, tweet.write, offline.access
+          </CardFooter>
+        </Card>
       </div>
 
-      <Card className="border-slate-200/80 bg-white/90">
-        <CardHeader>
-          <CardTitle>
-            <LabelTooltip
-              label="Latest posts"
-              description="Lightweight timeline preview using /2/users/:id/tweets with tweet.fields=created_at,public_metrics."
-            />
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {tweets.length > 0 ? (
-            tweets.map((tweet) => (
-              <article
-                key={tweet.id}
-                className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-              >
-                <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                  <div className="space-y-2">
-                    <p className="text-sm leading-6 text-slate-700">
-                      {truncateTweet(tweet.text)}
-                    </p>
-                    <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                      <LabelTooltip
-                        label={formatDate(tweet.created_at)}
-                        description="The creation date of this post as returned by the X timeline API."
-                      />
-                    </p>
-                  </div>
 
-                  <div className="grid min-w-55 grid-cols-2 gap-2 text-sm text-slate-500">
-                    <div>
-                      <LabelTooltip
-                        label={`Likes: ${formatCompactNumber(tweet.public_metrics?.like_count)}`}
-                        description="The number of likes on this post."
-                      />
-                    </div>
-                    <div>
-                      <LabelTooltip
-                        label={`Replies: ${formatCompactNumber(tweet.public_metrics?.reply_count)}`}
-                        description="The number of replies on this post."
-                      />
-                    </div>
-                    <div>
-                      <LabelTooltip
-                        label={`Retweets: ${formatCompactNumber(tweet.public_metrics?.retweet_count)}`}
-                        description="The number of reposts or retweets on this post."
-                      />
-                    </div>
-                    <div>
-                      <LabelTooltip
-                        label={`Quotes: ${formatCompactNumber(tweet.public_metrics?.quote_count)}`}
-                        description="The number of quote posts that reference this post."
-                      />
-                    </div>
-                  </div>
-                </div>
-              </article>
-            ))
-          ) : (
-            <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-              {isConnected
-                ? 'No recent posts were returned for this account.'
-                : 'Connect an X account to show recent posts and engagement totals here.'}
-            </div>
-          )}
-        </CardContent>
-        <CardFooter className="border-t border-slate-100 text-xs text-slate-400">
-          Scopes requested: users.read, tweet.read, tweet.write, offline.access
-        </CardFooter>
-      </Card>
     </div>
   );
 }

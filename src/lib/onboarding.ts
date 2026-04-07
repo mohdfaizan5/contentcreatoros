@@ -17,6 +17,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
     title: 'Create your 30-day X content plan in 2 minutes',
     eyebrow: '30-day X planning',
     description: 'No strategy skills needed. AI will handle everything.',
+    
     screen: {
       variant: 'entry',
       ctaLabel: 'Start',

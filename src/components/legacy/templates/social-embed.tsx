@@ -2,10 +2,11 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { TwitterLogo, LinkedinLogo, InstagramLogo, Link as LinkIcon, ArrowSquareOut } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import type { TemplateReference, EmbedType } from '@/types/database';
 import { extractTweetId } from '@/lib/template-utils';
 
-const embedConfig: Record<EmbedType, { icon: React.ElementType; color: string; label: string }> = {
+const embedConfig: Record<EmbedType, { icon: PhosphorIcon; color: string; label: string }> = {
     x: { icon: TwitterLogo, color: 'text-sky-500 bg-sky-500/10 border-sky-500/20', label: 'X Post' },
     instagram: { icon: InstagramLogo, color: 'text-pink-500 bg-pink-500/10 border-pink-500/20', label: 'Instagram' },
     linkedin: { icon: LinkedinLogo, color: 'text-blue-600 bg-blue-600/10 border-blue-600/20', label: 'LinkedIn' },

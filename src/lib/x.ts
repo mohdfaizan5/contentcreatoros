@@ -2,8 +2,7 @@ import { cookies } from 'next/headers';
 import { TwitterApi } from 'twitter-api-v2';
 import { createClient } from '@/lib/server';
 import { createAdminClient } from '@/lib/server-admin';
-
-const X_SCOPE = ['users.read', 'tweet.read', 'tweet.write', 'offline.access'] as const;
+import { X_OAUTH_SCOPES, X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth';
 
 const X_STATE_COOKIE = 'x_oauth_state';
 const X_CODE_VERIFIER_COOKIE = 'x_oauth_code_verifier';
@@ -61,6 +60,10 @@ type XCookieTokens = {
   expiresAt?: number;
 };
 
+type EnsureXAccessTokenOptions = {
+  persistCookies?: boolean;
+};
+
 type StoredXAccount = {
   id: string;
   user_id: string;
@@ -70,7 +73,38 @@ type StoredXAccount = {
   refresh_token: string | null;
   expires_at: string | null;
   scope: string[] | null;
+  connected_at: string;
 };
+
+function getRequestedXScopes() {
+  const customScopes = process.env.X_OAUTH_SCOPES?.trim();
+
+  if (!customScopes) {
+    return [...X_OAUTH_SCOPES];
+  }
+
+  const parsedScopes = customScopes
+    .split(/[\s,]+/)
+    .map((scope) => scope.trim())
+    .filter(Boolean);
+
+  return parsedScopes.length > 0 ? parsedScopes : [...X_OAUTH_SCOPES];
+}
+
+function getExpiresInSeconds(expiresAt: string | null, fallbackSeconds = 7200) {
+  if (!expiresAt) {
+    return fallbackSeconds;
+  }
+
+  const expiresAtMs = new Date(expiresAt).getTime();
+
+  if (!Number.isFinite(expiresAtMs)) {
+    return fallbackSeconds;
+  }
+
+  const remainingSeconds = Math.floor((expiresAtMs - Date.now()) / 1000);
+  return Math.max(60, remainingSeconds);
+}
 
 function getXClientId() {
   return process.env.X_CLIENT_ID?.trim();
@@ -146,7 +180,7 @@ export async function createXAuthorizationUrl(origin: string) {
   const client = createXOAuthClient();
   const cookieStore = await cookies();
   const authLink = client.generateOAuth2AuthLink(getRedirectUri(origin), {
-    scope: [...X_SCOPE],
+    scope: getRequestedXScopes(),
   });
 
   cookieStore.set(X_STATE_COOKIE, authLink.state, createCookieOptions(60 * 10));
@@ -258,7 +292,7 @@ async function upsertStoredXAccountForUser(
     : null;
   const scope = tokenResponse.scope
     ? tokenResponse.scope.split(' ').filter(Boolean)
-    : [...X_SCOPE];
+    : getRequestedXScopes();
 
   const { error } = await supabase.from('x_accounts').upsert(
     {
@@ -318,9 +352,16 @@ export async function validateXOAuthState(state: string | null) {
 
 export async function getXConnectionMetadata() {
   const cookieStore = await cookies();
+  const connectedAt = cookieStore.get(X_CONNECTED_AT_COOKIE)?.value;
+
+  if (connectedAt) {
+    return { connectedAt };
+  }
+
+  const storedAccount = await getStoredXAccountForCurrentUser();
 
   return {
-    connectedAt: cookieStore.get(X_CONNECTED_AT_COOKIE)?.value,
+    connectedAt: storedAccount?.connected_at,
   };
 }
 
@@ -336,11 +377,79 @@ async function getXTokensFromCookies(): Promise<XCookieTokens> {
   };
 }
 
-export async function ensureXAccessToken(origin: string) {
+async function getStoredXAccountForCurrentUser() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data, error } = await supabase
+    .from('x_accounts')
+    .select('*')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (error || !data) {
+    return null;
+  }
+
+  return data as StoredXAccount;
+}
+
+async function persistStoredXAccountTokens(account: StoredXAccount) {
+  await persistXTokens({
+    access_token: account.access_token,
+    refresh_token: account.refresh_token ?? undefined,
+    expires_in: getExpiresInSeconds(account.expires_at),
+    scope: account.scope?.join(' ') || X_OAUTH_SCOPE_STRING,
+    token_type: 'bearer',
+  });
+}
+
+async function restoreXAccessTokenFromStoredConnection(persistCookies: boolean) {
+  let account = await getStoredXAccountForCurrentUser();
+
+  if (!account) {
+    return null;
+  }
+
+  const expiresAt = account.expires_at ? new Date(account.expires_at).getTime() : null;
+
+  if (!expiresAt || expiresAt > Date.now() + 60_000) {
+    if (persistCookies) {
+      await persistStoredXAccountTokens(account);
+    }
+    return account.access_token;
+  }
+
+  if (!account.refresh_token) {
+    return null;
+  }
+
+  try {
+    account = await refreshStoredXAccount(account);
+    if (persistCookies) {
+      await persistStoredXAccountTokens(account);
+    }
+    return account.access_token;
+  } catch {
+    return null;
+  }
+}
+
+export async function ensureXAccessToken(
+  origin: string,
+  options: EnsureXAccessTokenOptions = {},
+) {
+  const persistCookies = options.persistCookies ?? true;
   const { accessToken, expiresAt, refreshToken } = await getXTokensFromCookies();
 
   if (!accessToken) {
-    return null;
+    return restoreXAccessTokenFromStoredConnection(persistCookies);
   }
 
   if (!expiresAt || expiresAt > Date.now() + 60_000) {
@@ -348,20 +457,38 @@ export async function ensureXAccessToken(origin: string) {
   }
 
   if (!refreshToken) {
-    await clearXSession();
+    const restoredToken = await restoreXAccessTokenFromStoredConnection(persistCookies);
+
+    if (restoredToken) {
+      return restoredToken;
+    }
+
+    if (persistCookies) {
+      await clearXSession();
+    }
     return null;
   }
 
   try {
     const refreshedToken = await refreshXAccessToken(origin, refreshToken);
-    await persistXTokens({
-      ...refreshedToken,
-      refresh_token: refreshedToken.refresh_token ?? refreshToken,
-    });
+    if (persistCookies) {
+      await persistXTokens({
+        ...refreshedToken,
+        refresh_token: refreshedToken.refresh_token ?? refreshToken,
+      });
+    }
 
     return refreshedToken.access_token;
   } catch {
-    await clearXSession();
+    const restoredToken = await restoreXAccessTokenFromStoredConnection(persistCookies);
+
+    if (restoredToken) {
+      return restoredToken;
+    }
+
+    if (persistCookies) {
+      await clearXSession();
+    }
     return null;
   }
 }
@@ -447,7 +574,7 @@ async function updateStoredXAccountTokens(
     : null;
   const scope = tokenResponse.scope
     ? tokenResponse.scope.split(' ').filter(Boolean)
-    : [...X_SCOPE];
+    : getRequestedXScopes();
 
   const { data, error } = await supabase
     .from('x_accounts')

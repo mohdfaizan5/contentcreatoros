@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/client'
+import { X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -22,6 +23,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
   const [repeatPassword, setRepeatPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [isXAuthLoading, setIsXAuthLoading] = useState(false)
   const router = useRouter()
 
   const handleSignUp = async (e: React.FormEvent) => {
@@ -50,6 +52,27 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
       setIsLoading(false)
+    }
+  }
+
+  const handleXSignUp = async () => {
+    const supabase = createClient()
+    setError(null)
+    setIsXAuthLoading(true)
+
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'x',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+          scopes: X_OAUTH_SCOPE_STRING,
+        },
+      })
+
+      if (error) throw error
+    } catch (error: unknown) {
+      setError(error instanceof Error ? error.message : 'Unable to continue with X')
+      setIsXAuthLoading(false)
     }
   }
 
@@ -138,7 +161,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
             {/* Submit Button */}
             <Button
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isXAuthLoading}
               className="w-full h-12 bg-[#000100] text-white hover:bg-gray-800 rounded-xl font-medium text-base shadow-lg shadow-gray-300/30 transition-all hover:shadow-xl hover:shadow-gray-300/40"
             >
               {isLoading ? (
@@ -160,6 +183,35 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                 </span>
               )}
             </Button>
+
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleXSignUp}
+              disabled={isLoading || isXAuthLoading}
+              className="w-full h-12 rounded-xl border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+            >
+              {isXAuthLoading ? (
+                <span className="flex items-center gap-2">
+                  <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                  </svg>
+                  Redirecting to X...
+                </span>
+              ) : (
+                <span className="flex items-center justify-center gap-2">
+                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-black text-[11px] font-semibold text-white">
+                    X
+                  </span>
+                  Continue with X
+                </span>
+              )}
+            </Button>
+
+            <p className="text-xs leading-5 text-gray-500">
+              X will show its official consent screen with the permissions this app requests.
+            </p>
           </form>
 
           {/* Divider */}

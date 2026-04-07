@@ -3,10 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-    FileText,
     GearIcon,
     House,
-    Robot,
     XLogoIcon,
 } from '@phosphor-icons/react';
 import { VscCommentDiscussionSparkle } from "react-icons/vsc";
@@ -26,7 +24,7 @@ import {
     SidebarRail,
 } from '@/components/ui/sidebar';
 import { NavBadge } from './nav-badge';
-import { BriefcaseIcon, CalendarDotsIcon, ChatsTeardropIcon, FilesIcon } from '@phosphor-icons/react/dist/ssr';
+import { BriefcaseIcon, CalendarDotsIcon, FilesIcon } from '@phosphor-icons/react/dist/ssr';
 
 type NavBadgeType = 'new' | 'updated' | 'comingSoon';
 
@@ -89,7 +87,7 @@ const contentNavItems: SidebarNavItem[] = [
     },
     {
         title: 'Auto Replies',
-        // @ts-ignore
+        // @ts-expect-error react-icons component is not typed to match SidebarNavItem icon signature.
         icon: VscCommentDiscussionSparkle,
         // icon: ChatsTeardropIcon  ,
         // color: 'text-amber-500',
@@ -124,7 +122,13 @@ function SidebarNavSection({
     return (
         <SidebarMenu>
             {items.map((item) => {
-                const isActive = !item.disabled && pathname === item.url;
+                const isActive =
+                    !item.disabled &&
+                    Boolean(
+                        item.url &&
+                        (pathname === item.url ||
+                            (item.url !== '/app' && pathname.startsWith(`${item.url}/`))),
+                    );
                 const iconColor = item.color ?? DEFAULT_NAV_ICON_COLOR;
                 const hoverBg = item.hoverBg ?? DEFAULT_NAV_HOVER_BG;
                 const sharedClassName = `transition-all duration-200 ${!isActive && !item.disabled ? hoverBg : ''

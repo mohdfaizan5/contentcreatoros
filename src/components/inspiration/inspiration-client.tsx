@@ -3,13 +3,14 @@
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
 import { Plus, Sparkle, TwitterLogo, LinkedinLogo, YoutubeLogo, InstagramLogo, Link as LinkIcon } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { InspirationMasonryGrid } from './inspiration-components';
 import { detectUrlInfo, getPlatformColors, type Platform } from '@/lib/url-detector';
 import type { Inspiration } from '@/types/database';
 import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
-const platformIcons: Record<Platform, React.ElementType> = {
+const platformIcons: Record<Platform, PhosphorIcon> = {
     x: TwitterLogo,
     linkedin: LinkedinLogo,
     youtube: YoutubeLogo,

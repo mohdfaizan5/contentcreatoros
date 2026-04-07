@@ -1,24 +1,22 @@
 'use client';
 
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useMemo, useState, useTransition } from 'react';
 import { CheckCircle, SpinnerGap } from '@phosphor-icons/react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from "@/components/ui/tooltip"
 import { saveOnboarding } from '@/actions/onboarding';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import { getQuestionSteps } from '@/lib/onboarding';
 import {
-  CONTENT_ONBOARDING_STEPS,
-  OTHER_OPTION_VALUE,
-  getQuestionSummaryValue,
-  isOtherOptionSelected,
-} from '@/lib/onboarding';
+  buildOptionsWithOther,
+  countAnsweredFields,
+  countAnsweredQuestionsInStep,
+  shouldShowOtherInput,
+} from '@/lib/onboarding/question-ui-utils';
 import type {
   OnboardingAnswers,
   OnboardingQuestion,
@@ -30,56 +28,39 @@ import {
   OnboardingRadioGroup,
   OnboardingTagInput,
 } from '@/components/onboarding/onboarding-cards';
-import { QuestionMarkIcon } from '@phosphor-icons/react/dist/ssr';
 import {
-  BoxIcon,
-  ChartLine,
   HouseIcon,
+  PaletteIcon,
   PanelsTopLeftIcon,
-  SettingsIcon,
-  UsersRoundIcon,
 } from "lucide-react";
 
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
 
 type BrandSettingsFormProps = {
   initialAnswers: OnboardingAnswers;
+  showShell?: boolean;
+  view?: 'overview' | 'brand-voice';
 };
 
-function renderQuestionKeyValue(question: OnboardingQuestion, answers: OnboardingAnswers) {
-  if (!question.required) {
-    return <Badge variant="outline">Optional</Badge>;
-  }
-
-  return <Badge variant="outline">Required</Badge>;
-}
-
-function getQuestionControlDescription(question: OnboardingQuestion, answers: OnboardingAnswers) {
-  const currentValue = getQuestionSummaryValue(question, answers);
-  // return `Current value: ${currentValue}`;
+function getQuestionControlDescription() {
   return ``;
 }
 
-export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormProps) {
+export default function BrandSettingsForm({
+  initialAnswers,
+  showShell = true,
+  view = 'brand-voice',
+}: BrandSettingsFormProps) {
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
   const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const pathname = usePathname();
 
   const questionSteps = useMemo(
-    () => CONTENT_ONBOARDING_STEPS.filter(
-      (step): step is OnboardingQuestionStepDefinition => step.kind === 'questions',
-    ),
+    () => getQuestionSteps(),
     [],
   );
-
-  const [activeStepId, setActiveStepId] = useState<string>(questionSteps[0]?.id || '');
 
   const updateAnswer = (key: string, value: OnboardingAnswers[string]) => {
     setSaveState('idle');
@@ -108,7 +89,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
 
   const renderQuestion = (question: OnboardingQuestion) => {
     const rawValue = answers[question.key];
-    const otherInputVisible = isOtherOptionSelected(question, answers);
+    const otherInputVisible = shouldShowOtherInput(question, answers);
 
     switch (question.type) {
       case 'text':
@@ -117,7 +98,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             key={question.key}
             label={question.label}
             description={question.description}
-            helperText={getQuestionControlDescription(question, answers)}
+            helperText={getQuestionControlDescription()}
             required={question.required}
           >
             <Input
@@ -135,7 +116,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             key={question.key}
             label={question.label}
             description={question.description}
-            helperText={getQuestionControlDescription(question, answers)}
+            helperText={getQuestionControlDescription()}
             required={question.required}
           >
             <Textarea
@@ -143,28 +124,19 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
               onChange={(event) => updateAnswer(question.key, event.target.value)}
               placeholder={question.placeholder}
               rows={question.rows ?? 4}
-              className="rounded-[24px] border-slate-200 bg-white"
+              className="rounded-3xl border-slate-200 bg-white"
             />
           </OnboardingField>
         );
       case 'single-select': {
-        const options = question.otherOption
-          ? [
-            ...question.options,
-            {
-              value: OTHER_OPTION_VALUE,
-              label: question.otherOption.optionLabel ?? 'Other',
-              description: 'Add a custom answer',
-            },
-          ]
-          : question.options;
+        const options = buildOptionsWithOther(question);
 
         return (
           <div key={question.key} className="space-y-3">
             <OnboardingField
               label={question.label}
               description={question.description}
-              helperText={getQuestionControlDescription(question, answers)}
+              helperText={getQuestionControlDescription()}
               required={question.required}
             >
               <OnboardingRadioGroup
@@ -191,23 +163,14 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
         );
       }
       case 'multi-select': {
-        const options = question.otherOption
-          ? [
-            ...question.options,
-            {
-              value: OTHER_OPTION_VALUE,
-              label: question.otherOption.optionLabel ?? 'Other',
-              description: 'Add a custom answer',
-            },
-          ]
-          : question.options;
+        const options = buildOptionsWithOther(question);
 
         return (
           <div key={question.key} className="space-y-3">
             <OnboardingField
               label={question.label}
               description={question.description}
-              helperText={getQuestionControlDescription(question, answers)}
+              helperText={getQuestionControlDescription()}
               required={question.required}
             >
               <OnboardingCheckboxGroup
@@ -240,7 +203,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             key={question.key}
             label={question.label}
             description={question.description}
-            helperText={getQuestionControlDescription(question, answers)}
+            helperText={getQuestionControlDescription()}
             required={question.required}
           >
             <OnboardingTagInput
@@ -256,129 +219,175 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
     }
   };
 
-  const answeredCount = Object.entries(answers).filter(([key, value]) => {
-    if (key.endsWith('_other')) {
-      return typeof value === 'string' && value.trim().length > 0;
+  const answeredCount = countAnsweredFields(answers);
+
+  const totalQuestionCount = questionSteps.reduce(
+    (count, step) => count + step.questions.length,
+    0,
+  );
+
+  const isOverviewView = view === 'overview';
+
+  const isTabActive = (href: string) => {
+    if (href === '/app/brand-kit/voice') {
+      return pathname === href || pathname.startsWith(`${href}/`);
     }
 
-    return Array.isArray(value)
-      ? value.length > 0
-      : typeof value === 'string'
-        ? value.trim().length > 0
-        : false;
-  }).length;
+    if (href === '/app/brand-kit/visuals') {
+      return pathname === href || pathname.startsWith(`${href}/`);
+    }
+
+    return pathname === href;
+  };
+
+  const getStepAnsweredCount = (step: OnboardingQuestionStepDefinition) =>
+    countAnsweredQuestionsInStep(step, answers);
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[32px] border border-slate-200 bg-[#1384FF] text-white p-6 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-3">
-            <Badge variant="secondary" className="">
-              Brand settings
-            </Badge>
-            <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight ">
-                Edit your onboarding data
-              </h1>
-              <p className="max-w-3xl text-sm leading-6 ">
-                This page loads the same onboarding questions and current saved answers, so you can
-                update your brand data in one place and save it back to the same storage shape.
-              </p>
+      {showShell ? (
+        <>
+          <div className="rounded-4xl border border-slate-200 bg-[#1384FF] text-white p-6 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+              <div className="space-y-3">
+                <Badge variant="secondary" className="">
+                  Brand settings
+                </Badge>
+                <div className="space-y-2">
+                  <h1 className="text-3xl font-semibold tracking-tight ">
+                    {isOverviewView ? 'Brand kit overview' : 'Edit your onboarding data'}
+                  </h1>
+                  <p className="max-w-3xl text-sm leading-6 ">
+                    {isOverviewView
+                      ? 'Use this overview to review progress, then jump into Brand Voice or Visual Identity.'
+                      : 'This page loads the same onboarding questions and current saved answers, so you can update your brand data in one place and save it back to the same storage shape.'}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3 text-sm ">
+                <Badge variant="outline" className="border-slate-200 px-3 py-1">
+                  {answeredCount} saved values
+                </Badge>
+                <Badge variant="outline" className="border-slate-200 px-3 py-1">
+                  onboarding_answers
+                </Badge>
+              </div>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm ">
-            <Badge variant="outline" className="border-slate-200 px-3 py-1">
-              {answeredCount} saved values
-            </Badge>
-            <Badge variant="outline" className="border-slate-200 px-3 py-1">
-              onboarding_answers
-            </Badge>
-          </div>
-        </div>
-
-        {/* <div className="mt-6 rounded-[24px] border border-dashed border-slate-200 bg-slate-50/80 p-4 text-sm leading-6 ">
-          Text, select, multi-select, and tag fields are saved in the same JSON-backed onboarding
-          format used by the onboarding flow, including custom "Other" values where present.
-        </div> */}
-      </div>
-      <Tabs defaultValue="tab-1">
-        <ScrollArea>
-          <TabsList className="mb-3 h-auto gap-2 rounded-none border-b bg-transparent px-0 py-1 text-foreground">
-            <TabsTrigger
-              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
-              value="tab-1"
-            >
-              <HouseIcon
-                aria-hidden="true"
-                className="-ms-0.5 me-1.5 opacity-60"
-                size={16}
-              />
-              Overview
-            </TabsTrigger>
-            <TabsTrigger
-              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
-              value="tab-2"
-            >
-              <PanelsTopLeftIcon
-                aria-hidden="true"
-                className="-ms-0.5 me-1.5 opacity-60"
-                size={16}
-              />
-              Brand Voice
-              <Badge
-                className="ms-1.5 min-w-5 bg-primary/15 px-1"
-                variant="secondary"
+          <ScrollArea>
+            <div className="mb-3 flex h-auto gap-2 rounded-none border-b bg-transparent px-0 py-1 text-foreground">
+              <Link
+                href="/app/brand-kit"
+                className={cn(
+                  "after:-mb-1 relative inline-flex items-center rounded-md px-3 py-2 text-sm transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5",
+                  isTabActive('/app/brand-kit')
+                    ? "bg-transparent text-foreground shadow-none after:bg-primary"
+                    : "text-foreground/70 hover:bg-accent hover:text-foreground after:bg-transparent",
+                )}
               >
-                3
-              </Badge>
-            </TabsTrigger>
-            <TabsTrigger
-              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
-              value="tab-3"
-            >
-              <BoxIcon
-                aria-hidden="true"
-                className="-ms-0.5 me-1.5 opacity-60"
-                size={16}
-              />
-              Packages
-              <Badge className="ms-1.5">New</Badge>
-            </TabsTrigger>
-            <TabsTrigger
-              className="after:-mb-1 relative after:absolute after:inset-x-0 after:bottom-0 after:h-0.5 hover:bg-accent hover:text-foreground data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:hover:bg-accent data-[state=active]:after:bg-primary"
-              value="tab-4"
-            >
-              <UsersRoundIcon
-                aria-hidden="true"
-                className="-ms-0.5 me-1.5 opacity-60"
-                size={16}
-              />
-              Team
-            </TabsTrigger>
-           
-          </TabsList>
-          <ScrollBar orientation="horizontal" />
-        </ScrollArea>
-        <TabsContent value="tab-1">
-          <p className="pt-1 text-center text-muted-foreground text-xs">
-            Content for Tab 1
-          </p>
-        </TabsContent>
-        <TabsContent value="tab-2">
-          <p className="pt-1 text-center text-muted-foreground text-xs">
-            Content for Tab 2
-          </p>
-        </TabsContent>
-        <TabsContent value="tab-3">
-          <p className="pt-1 text-center text-muted-foreground text-xs">
-            Content for Tab 3
-          </p>
-        </TabsContent>
-       
-      </Tabs>
+                <HouseIcon
+                  aria-hidden="true"
+                  className="-ms-0.5 me-1.5 opacity-60"
+                  size={16}
+                />
+                Overview
+              </Link>
 
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
+              <Link
+                href="/app/brand-kit/voice"
+                className={cn(
+                  "after:-mb-1 relative inline-flex items-center rounded-md px-3 py-2 text-sm transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5",
+                  isTabActive('/app/brand-kit/voice')
+                    ? "bg-transparent text-foreground shadow-none after:bg-primary"
+                    : "text-foreground/70 hover:bg-accent hover:text-foreground after:bg-transparent",
+                )}
+              >
+                <PanelsTopLeftIcon
+                  aria-hidden="true"
+                  className="-ms-0.5 me-1.5 opacity-60"
+                  size={16}
+                />
+                Brand Voice
+                <Badge
+                  className="ms-1.5 min-w-5 bg-primary/15 px-1"
+                  variant="secondary"
+                >
+                  {totalQuestionCount}
+                </Badge>
+              </Link>
+
+              <Link
+                href="/app/brand-kit/visuals"
+                className={cn(
+                  "after:-mb-1 relative inline-flex items-center rounded-md px-3 py-2 text-sm transition-colors after:absolute after:inset-x-0 after:bottom-0 after:h-0.5",
+                  isTabActive('/app/brand-kit/visuals')
+                    ? "bg-transparent text-foreground shadow-none after:bg-primary"
+                    : "text-foreground/70 hover:bg-accent hover:text-foreground after:bg-transparent",
+                )}
+              >
+                <PaletteIcon
+                  aria-hidden="true"
+                  className="-ms-0.5 me-1.5 opacity-60"
+                  size={16}
+                />
+                Visual Identity
+              </Link>
+            </div>
+
+            <ScrollBar orientation="horizontal" />
+          </ScrollArea>
+        </>
+      ) : null}
+
+      {isOverviewView ? (
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {questionSteps.map((step) => {
+            const stepAnsweredCount = getStepAnsweredCount(step);
+
+            return (
+              <section
+                key={step.id}
+                className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]"
+              >
+                <div className="space-y-2">
+                  <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+                    {step.eyebrow ?? 'Section'}
+                  </p>
+                  <h2 className="text-lg font-semibold tracking-tight text-slate-950">{step.title}</h2>
+                  <p className="text-sm leading-6 text-slate-600">{step.description}</p>
+                </div>
+
+                <div className="mt-4 flex items-center justify-between">
+                  <Badge variant="outline" className="border-slate-200 px-3 py-1">
+                    {step.questions.length} questions
+                  </Badge>
+                  <span className="text-sm text-slate-600">
+                    {stepAnsweredCount}/{step.questions.length} answered
+                  </span>
+                </div>
+              </section>
+            );
+          })}
+
+          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] md:col-span-2 xl:col-span-3">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="space-y-1">
+                <h2 className="text-lg font-semibold tracking-tight text-slate-950">Continue editing your brand voice</h2>
+                <p className="text-sm leading-6 text-slate-600">
+                  You have completed {answeredCount} answers across {totalQuestionCount} Brand Voice questions.
+                </p>
+              </div>
+
+              <Button asChild className="h-11 rounded-full px-5 text-sm font-semibold">
+                <Link href="/app/brand-kit/voice">Open Brand Voice questions</Link>
+              </Button>
+            </div>
+          </section>
+        </div>
+      ) : (
+        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
         <form
           onSubmit={(event) => {
             event.preventDefault();
@@ -389,7 +398,7 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
           {questionSteps.map((step) => (
             <section
               key={step.id}
-              className="rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] sm:p-7"
+              className="rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] sm:p-7"
             >
               {/* <div className="mb-6 space-y-1">
                 <div className="text-xs font-semibold uppercase  text-slate-400">
@@ -475,7 +484,8 @@ export default function BrandSettingsForm({ initialAnswers }: BrandSettingsFormP
             ))}
           </div>
         </aside> */}
-      </div>
+        </div>
+      )}
     </div>
   );
 }

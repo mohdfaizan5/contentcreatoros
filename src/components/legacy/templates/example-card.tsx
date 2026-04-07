@@ -2,11 +2,12 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { TwitterLogo, LinkedinLogo, Link as LinkIcon, ArrowSquareOut, User, Trash, PencilSimple, Check, X, Plus } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import type { TemplateExample, PlatformType } from '@/types/database';
 import { Tweet } from 'react-tweet';
 import { Button } from '@/components/ui/button';
 
-const platformConfig: Record<PlatformType, { icon: React.ElementType; color: string; label: string }> = {
+const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; label: string }> = {
     x: { icon: TwitterLogo, color: 'text-sky-500 bg-sky-500/10', label: 'X' },
     youtube: { icon: LinkIcon, color: 'text-red-500 bg-red-500/10', label: 'YouTube' },
     linkedin: { icon: LinkedinLogo, color: 'text-blue-600 bg-blue-600/10', label: 'LinkedIn' },
@@ -121,7 +122,7 @@ export function ExampleCard({ example, templateText, onDelete, onUpdate }: Examp
                     value={editedContent}
                     onChange={(e) => setEditedContent(e.target.value)}
                     placeholder="Example content..."
-                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary min-h-[80px]"
+                    className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary min-h-20"
                 />
 
                 <div className="grid grid-cols-2 gap-2">
@@ -248,7 +249,7 @@ export function AddExampleForm({ onAdd, onCancel, defaultPlatform = 'generic' }:
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Paste an example of this template in action..."
-                className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary min-h-[100px]"
+                className="w-full px-3 py-2 rounded-lg border bg-background text-sm resize-none focus:outline-none focus:ring-2 focus:ring-primary min-h-25"
             />
 
             <div className="grid grid-cols-2 gap-2">

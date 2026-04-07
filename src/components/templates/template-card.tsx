@@ -2,13 +2,14 @@
 
 import { useTransition } from 'react';
 import { FileText, Trash, TwitterLogo, YoutubeLogo, LinkedinLogo, Article, SpinnerGap, Eye, Quotes, Link as LinkIcon } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { deleteTemplate } from '@/actions/templates';
 import { PlaceholderRenderer } from './placeholder-renderer';
 import type { Template, PlatformType } from '@/types/database';
 import Link from 'next/link';
 
-const platformIcons: Record<PlatformType, React.ElementType> = {
+const platformIcons: Record<PlatformType, PhosphorIcon> = {
     x: TwitterLogo,
     youtube: YoutubeLogo,
     linkedin: LinkedinLogo,

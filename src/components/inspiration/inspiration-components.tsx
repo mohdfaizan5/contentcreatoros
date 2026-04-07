@@ -4,13 +4,14 @@ import React, { useState, useTransition, Suspense } from 'react';
 import Link from 'next/link';
 import { Tweet } from 'react-tweet';
 import { Sparkle, Trash, Link as LinkIcon, User, TwitterLogo, LinkedinLogo, YoutubeLogo, InstagramLogo } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { createInspiration, deleteInspiration } from '@/actions/inspiration';
 import { detectUrlInfo, getPlatformColors, extractTweetId, type Platform } from '@/lib/url-detector';
 import type { Inspiration, InspirationType } from '@/types/database';
 import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
-const platformIcons: Record<Platform, React.ElementType> = {
+const platformIcons: Record<Platform, PhosphorIcon> = {
     x: TwitterLogo,
     linkedin: LinkedinLogo,
     youtube: YoutubeLogo,
@@ -157,7 +158,7 @@ export function InspirationCard({
                             X
                         </span>
                         {inspiration.title && (
-                            <span className="text-sm font-medium truncate max-w-[150px]">{inspiration.title}</span>
+                            <span className="text-sm font-medium truncate max-w-37.5">{inspiration.title}</span>
                         )}
                     </Link>
                     <Button
@@ -248,7 +249,7 @@ function TweetEmbed({ id }: { id: string }) {
 
 function TweetLoading() {
     return (
-        <div className="w-full max-w-[500px] p-8 flex items-center justify-center">
+        <div className="w-full max-w-125 p-8 flex items-center justify-center">
             <div className="animate-pulse flex flex-col items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-sky-500/20" />
                 <div className="h-4 w-48 rounded bg-muted" />
@@ -260,7 +261,7 @@ function TweetLoading() {
 
 function TweetFallback() {
     return (
-        <div className="w-full max-w-[500px] p-8 flex items-center justify-center">
+        <div className="w-full max-w-125 p-8 flex items-center justify-center">
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
                 <TwitterLogo className="h-10 w-10 text-sky-500/50" weight="fill" />
                 <span className="text-sm">Tweet preview unavailable</span>
