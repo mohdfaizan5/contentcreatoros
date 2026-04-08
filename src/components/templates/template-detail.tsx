@@ -2,17 +2,19 @@
 
 import React, { useState, useTransition, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Trash, Copy, Check, SpinnerGap, FloppyDisk, TwitterLogo, YoutubeLogo, LinkedinLogo, Article, Heart, ChatCircle, ArrowsClockwise, Share, ThumbsUp, ChatTeardropText, Repeat } from '@phosphor-icons/react';
+import { ArrowLeft, Trash, Copy, Check, SpinnerGap, FloppyDisk, TwitterLogo, YoutubeLogo, LinkedinLogo, Article, Heart, ChatCircle, ArrowsClockwise, Share, ThumbsUp, ChatTeardropText, Repeat, Eye, EyeSlash } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { deleteTemplate, updateTemplate } from '@/actions/templates';
+import { deleteTemplate, toggleTemplateLike, toggleTemplateVisibility, updateTemplate } from '@/actions/templates';
 import { PlaceholderList } from './placeholder-renderer';
 import { ExamplesList } from './example-card';
 import { SocialEmbed } from './social-embed';
-import type { Template, PlatformType } from '@/types/database';
+import { BrandTweetStudio } from './brand-tweet-studio';
+import type { GeneratedTweet, Template, PlatformType } from '@/types/database';
 import { cn } from '@/lib/utils';
 
-const platformConfig: Record<PlatformType, { icon: React.ElementType; color: string; label: string }> = {
+const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; label: string }> = {
     x: { icon: TwitterLogo, color: 'bg-sky-500/10 text-sky-600 border-sky-500/20', label: 'X (Twitter)' },
     youtube: { icon: YoutubeLogo, color: 'bg-red-500/10 text-red-600 border-red-500/20', label: 'YouTube' },
     linkedin: { icon: LinkedinLogo, color: 'bg-blue-600/10 text-blue-600 border-blue-600/20', label: 'LinkedIn' },
@@ -21,6 +23,8 @@ const platformConfig: Record<PlatformType, { icon: React.ElementType; color: str
 
 interface TemplateDetailProps {
     template: Template;
+    generatedTweets: GeneratedTweet[];
+    canAutoSchedule: boolean;
 }
 
 // Helper for auto-growing textarea
@@ -106,18 +110,36 @@ const HighlightedTextarea = ({ value, onChange, placeholder, minHeight = '100px'
     );
 };
 
-export function TemplateDetail({ template }: TemplateDetailProps) {
+export function TemplateDetail({
+    template,
+    generatedTweets,
+    canAutoSchedule,
+}: TemplateDetailProps) {
+    const normalizeTags = (rawTags: string) => {
+        return Array.from(
+            new Set(
+                rawTags
+                    .split(',')
+                    .map((tag) => tag.trim().toLowerCase())
+                    .filter(Boolean),
+            ),
+        );
+    };
+
     const router = useRouter();
     const [copied, setCopied] = useState(false);
     const [editedText, setEditedText] = useState(template.template_text || '');
     const [editedNotes, setEditedNotes] = useState(template.instructions || '');
     const [editedExamples, setEditedExamples] = useState(template.examples || []);
+    const [tagsInput, setTagsInput] = useState((template.tags || []).join(', '));
+    const [isPublic, setIsPublic] = useState(Boolean(template.is_public));
+    const [likedByMe, setLikedByMe] = useState(Boolean(template.liked_by_me));
+    const [likesCount, setLikesCount] = useState(template.likes_count ?? 0);
     const [hasChanges, setHasChanges] = useState(false);
     const [isPending, startTransition] = useTransition();
 
     const platform = platformConfig[template.platform_type];
     const Icon = platform.icon;
-    const examplesCount = template.examples?.length || 0;
     const referencesCount = template.reference_links?.length || 0;
 
     const notesRef = useAutoResize(editedNotes);
@@ -138,12 +160,17 @@ export function TemplateDetail({ template }: TemplateDetailProps) {
     };
 
     const handleSave = () => {
+        const normalizedTags = normalizeTags(tagsInput);
+
         startTransition(async () => {
             await updateTemplate(template.id, {
                 template_text: editedText.trim() || null,
                 instructions: editedNotes.trim() || null,
                 examples: editedExamples,
+                tags: normalizedTags,
+                is_public: isPublic,
             });
+            setTagsInput(normalizedTags.join(', '));
             setHasChanges(false);
         });
     };
@@ -161,6 +188,47 @@ export function TemplateDetail({ template }: TemplateDetailProps) {
     const handleNotesChange = (value: string) => {
         setEditedNotes(value);
         setHasChanges(true);
+    };
+
+    const handleTagsChange = (value: string) => {
+        setTagsInput(value);
+        setHasChanges(true);
+    };
+
+    const handleVisibilityToggle = () => {
+        const nextVisibility = !isPublic;
+        setIsPublic(nextVisibility);
+
+        startTransition(async () => {
+            try {
+                const updated = await toggleTemplateVisibility(template.id, nextVisibility);
+                setIsPublic(updated.is_public);
+            } catch (error) {
+                setIsPublic(!nextVisibility);
+                console.error('Failed to toggle template visibility:', error);
+            }
+        });
+    };
+
+    const handleLikeToggle = () => {
+        const previousLiked = likedByMe;
+        const previousLikesCount = likesCount;
+        const nextLiked = !previousLiked;
+
+        setLikedByMe(nextLiked);
+        setLikesCount(Math.max(0, previousLikesCount + (nextLiked ? 1 : -1)));
+
+        startTransition(async () => {
+            try {
+                const response = await toggleTemplateLike(template.id, nextLiked);
+                setLikedByMe(response.liked);
+                setLikesCount(response.likes_count);
+            } catch (error) {
+                setLikedByMe(previousLiked);
+                setLikesCount(previousLikesCount);
+                console.error('Failed to toggle template like:', error);
+            }
+        });
     };
 
     return (
@@ -184,6 +252,28 @@ export function TemplateDetail({ template }: TemplateDetailProps) {
                 </div>
 
                 <div className="flex items-center gap-2">
+                    <Button
+                        variant={isPublic ? 'secondary' : 'outline'}
+                        size="sm"
+                        onClick={handleVisibilityToggle}
+                        disabled={isPending}
+                        className="gap-2"
+                    >
+                        {isPublic ? <Eye className="h-4 w-4" /> : <EyeSlash className="h-4 w-4" />}
+                        {isPublic ? 'Public' : 'Private'}
+                    </Button>
+
+                    <Button
+                        variant={likedByMe ? 'secondary' : 'ghost'}
+                        size="sm"
+                        onClick={handleLikeToggle}
+                        disabled={isPending}
+                        className="gap-2"
+                    >
+                        <Heart className="h-4 w-4" weight={likedByMe ? 'fill' : 'regular'} />
+                        {likesCount}
+                    </Button>
+
                     <Button
                         variant="ghost"
                         size="sm"
@@ -231,12 +321,31 @@ export function TemplateDetail({ template }: TemplateDetailProps) {
                 </div>
             </div>
 
+            <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Tags</label>
+                <input
+                    type="text"
+                    value={tagsInput}
+                    onChange={(event) => handleTagsChange(event.target.value)}
+                    placeholder="e.g. hooks, storytelling, growth"
+                    className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <p className="text-xs text-muted-foreground">Separate tags with commas.</p>
+            </div>
+
             {/* Inline Edit Preview - platform specific */}
             {template.platform_type === 'x' && (
-                <TwitterInlineEditor
-                    content={editedText}
-                    onChange={handleTextChange}
-                />
+                <div className="space-y-6">
+                    <TwitterInlineEditor
+                        content={editedText}
+                        onChange={handleTextChange}
+                    />
+                    <BrandTweetStudio
+                        canAutoSchedule={canAutoSchedule}
+                        generatedTweets={generatedTweets}
+                        templateId={template.id}
+                    />
+                </div>
             )}
 
             {template.platform_type === 'linkedin' && (

@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAppPath } from '@/lib/revalidate-app-paths';
 import type { Inspiration, CreateInspirationInput, UpdateInspirationInput } from '@/types/database';
 
 export async function getInspirations(): Promise<Inspiration[]> {
@@ -50,7 +50,7 @@ export async function createInspiration(input: CreateInspirationInput): Promise<
 
     if (error) throw error;
 
-    revalidatePath('/app/inspiration');
+    revalidateAppPath('/inspiration');
     return data;
 }
 
@@ -66,7 +66,7 @@ export async function updateInspiration(id: string, input: UpdateInspirationInpu
 
     if (error) throw error;
 
-    revalidatePath('/app/inspiration');
+    revalidateAppPath('/inspiration');
     return data;
 }
 
@@ -80,5 +80,5 @@ export async function deleteInspiration(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/inspiration');
+    revalidateAppPath('/inspiration');
 }

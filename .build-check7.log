@@ -1,0 +1,25 @@
+
+> contentcreator_os@0.1.0 build
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · serverActions
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 17.6s
+  Running TypeScript ...
+Failed to compile.
+
+./src/components/legacy/templates/example-card.tsx:208:36
+Type error: Type 'string' is not assignable to type 'never'.
+
+[0m [90m 206 |[39m             {[90m/* Footer with platform icon */[39m}
+ [90m 207 |[39m             [33m<[39m[33mdiv[39m className[33m=[39m[32m"mt-auto pt-4 flex justify-end opacity-50"[39m[33m>[39m
+[31m[1m>[22m[39m[90m 208 |[39m                 {platform [33m&&[39m [33m<[39m[33mIcon[39m className[33m=[39m[32m"h-4 w-4"[39m [33m/[39m[33m>[39m}
+ [90m     |[39m                                    [31m[1m^[22m[39m
+ [90m 209 |[39m             [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 210 |[39m         [33m<[39m[33m/[39m[33mdiv[39m[33m>[39m
+ [90m 211 |[39m     )[33m;[39m[0m
+Next.js build worker exited with code: 1 and signal: null

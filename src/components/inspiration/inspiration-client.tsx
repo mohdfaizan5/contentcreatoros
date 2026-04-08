@@ -2,13 +2,15 @@
 
 import { useState, useMemo } from 'react';
 import Link from 'next/link';
-import { Plus, Sparkle, TwitterLogo, LinkedinLogo, YoutubeLogo, InstagramLogo, Link as LinkIcon, User, Article } from '@phosphor-icons/react';
+import { Plus, Sparkle, TwitterLogo, LinkedinLogo, YoutubeLogo, InstagramLogo, Link as LinkIcon } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { InspirationMasonryGrid } from './inspiration-components';
 import { detectUrlInfo, getPlatformColors, type Platform } from '@/lib/url-detector';
 import type { Inspiration } from '@/types/database';
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
-const platformIcons: Record<Platform, React.ElementType> = {
+const platformIcons: Record<Platform, PhosphorIcon> = {
     x: TwitterLogo,
     linkedin: LinkedinLogo,
     youtube: YoutubeLogo,
@@ -18,9 +20,13 @@ const platformIcons: Record<Platform, React.ElementType> = {
 
 interface InspirationClientProps {
     inspirations: Inspiration[];
+    appRoot?: AppShellRoot;
 }
 
-export function InspirationClient({ inspirations }: InspirationClientProps) {
+export function InspirationClient({
+    inspirations,
+    appRoot = MODERN_APP_ROOT,
+}: InspirationClientProps) {
     const [filter, setFilter] = useState<Platform | 'all'>('all');
 
     // Calculate platform counts
@@ -70,7 +76,7 @@ export function InspirationClient({ inspirations }: InspirationClientProps) {
                         </p>
                     </div>
                 </div>
-                <Link href="/app/inspiration/create">
+                <Link href={buildAppPath(appRoot, '/inspiration/create')}>
                     <Button className="gap-2 rounded-xl transition-all duration-200 hover:scale-105">
                         <Plus className="h-4 w-4" weight="bold" />
                         Add Inspiration
@@ -118,7 +124,7 @@ export function InspirationClient({ inspirations }: InspirationClientProps) {
             )}
 
             {/* Masonry Grid */}
-            <InspirationMasonryGrid inspirations={filteredInspirations} />
+            <InspirationMasonryGrid inspirations={filteredInspirations} appRoot={appRoot} />
         </div>
     );
 }

@@ -1,7 +1,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import type { Series, CreateSeriesInput, UpdateSeriesInput, SeriesWithIdeas } from '@/types/database';
 
 export async function getSeries(): Promise<SeriesWithIdeas[]> {
@@ -58,8 +58,7 @@ export async function createSeries(input: CreateSeriesInput): Promise<Series> {
 
     if (error) throw error;
 
-    revalidatePath('/app/series');
-    revalidatePath('/app/planning');
+    revalidateAppPaths(['/series', '/planning']);
     return data;
 }
 
@@ -75,8 +74,7 @@ export async function updateSeries(id: string, input: UpdateSeriesInput): Promis
 
     if (error) throw error;
 
-    revalidatePath('/app/series');
-    revalidatePath('/app/planning');
+    revalidateAppPaths(['/series', '/planning']);
     return data;
 }
 
@@ -96,9 +94,7 @@ export async function deleteSeries(id: string): Promise<void> {
 
     if (error) throw error;
 
-    revalidatePath('/app/series');
-    revalidatePath('/app/planning');
-    revalidatePath('/app/ideas');
+    revalidateAppPaths(['/series', '/planning', '/ideas']);
 }
 
 export async function expandSeriesConcept(
@@ -149,9 +145,7 @@ export async function expandSeriesConcept(
         .update({ linked_series_id: series.id })
         .eq('id', seriesConceptId);
 
-    revalidatePath('/app/series');
-    revalidatePath('/app/planning');
-    revalidatePath('/app/ideas');
+    revalidateAppPaths(['/series', '/planning', '/ideas']);
 
     return series;
 }
@@ -166,7 +160,5 @@ export async function attachIdeaToSeries(ideaId: string, seriesId: string): Prom
 
     if (error) throw error;
 
-    revalidatePath('/app/series');
-    revalidatePath('/app/planning');
-    revalidatePath('/app/ideas');
+    revalidateAppPaths(['/series', '/planning', '/ideas']);
 }

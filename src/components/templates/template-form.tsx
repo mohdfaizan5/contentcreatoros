@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { FileText, X, Plus, Trash, TwitterLogo, LinkedinLogo, YoutubeLogo, Heart, ChatCircle, ArrowsClockwise, Share, ThumbsUp, ChatTeardropText, Repeat } from '@phosphor-icons/react';
+import { FileText, X, Plus, Trash, TwitterLogo, LinkedinLogo, YoutubeLogo, Heart, ChatCircle, ArrowsClockwise, Share, ThumbsUp, ChatTeardropText, Repeat, Eye, EyeSlash } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { createTemplate } from '@/actions/templates';
 import { detectEmbedType, generateId } from '@/lib/template-utils';
@@ -26,6 +26,8 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
     // Step 1: Basic info
     const [name, setName] = useState('');
     const [platform, setPlatform] = useState<PlatformType>('generic');
+    const [isPublic, setIsPublic] = useState(false);
+    const [tagsInput, setTagsInput] = useState('');
 
     // Step 2: Template questions (legacy fields)
     const [hookStyle, setHookStyle] = useState('');
@@ -91,6 +93,15 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
     const handleSubmit = () => {
         if (!name.trim()) return;
 
+        const tags = Array.from(
+            new Set(
+                tagsInput
+                    .split(',')
+                    .map((tag) => tag.trim().toLowerCase())
+                    .filter(Boolean),
+            ),
+        );
+
         startTransition(async () => {
             try {
                 await createTemplate({
@@ -104,6 +115,8 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                     template_text: templateText.trim() || null,
                     examples: examples.length > 0 ? examples : undefined,
                     reference_links: references.length > 0 ? references : undefined,
+                    is_public: isPublic,
+                    tags,
                 });
                 onClose?.();
             } catch (error) {
@@ -182,6 +195,30 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                                 </button>
                             ))}
                         </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                            type="button"
+                            variant={isPublic ? 'secondary' : 'outline'}
+                            className="gap-2"
+                            onClick={() => setIsPublic((value) => !value)}
+                        >
+                            {isPublic ? <Eye className="h-4 w-4" /> : <EyeSlash className="h-4 w-4" />}
+                            {isPublic ? 'Public' : 'Private'}
+                        </Button>
+                        <p className="text-xs text-muted-foreground">Public templates can be discovered and liked.</p>
+                    </div>
+
+                    <div>
+                        <label className="text-sm font-medium mb-2 block">Tags</label>
+                        <input
+                            type="text"
+                            placeholder="Comma-separated tags (optional)"
+                            value={tagsInput}
+                            onChange={(e) => setTagsInput(e.target.value)}
+                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        />
                     </div>
                 </div>
             )}

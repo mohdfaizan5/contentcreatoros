@@ -27,7 +27,7 @@ const Logo = ({
         height={height}
         alt="ContentOS logo"
       />
-      {full && <span className={cn("-ml-[2px]", textClassName)}>ContentOS</span>}
+      {full && <span className={cn("-ml-0.5", textClassName)}>ContentOSX</span>}
     </>
   );
 

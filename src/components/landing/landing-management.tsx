@@ -34,7 +34,7 @@ const LandingManagement = () => {
             <div className="max-w-7xl mx-auto px-6">
                 {/* Section Title */}
                 <div className="text-center mb-16">
-                    <h2 className="text-3xl md:text-5xl lg:text-5xl font-medium from-[#2F92C7] to-[#3c5f6f] bg-gradient-to-br  inline-block text-transparent bg-clip-text leading-[2.8rem]">
+                    <h2 className="text-3xl md:text-5xl lg:text-5xl font-medium from-[#2F92C7] to-[#3c5f6f] bg-linear-to-br inline-block text-transparent bg-clip-text leading-[2.8rem]">
                         Templates act as
                         <br />
                         <span className="text-[#50B0FF] bg-[#DAE7F4]/80 px-1">thinking scaffolds</span>
@@ -77,7 +77,7 @@ const LandingManagement = () => {
                                 {platforms.map((platform, index) => (
                                     <div
                                         key={`${platform.name}-${index}`}
-                                        className={`w-[4.2rem] h-[4.2rem] rounded-full bg-gradient-to-br ${platform.color} flex items-center justify-center text-white font-bold text-sm shadow-lg`}
+                                        className={`w-[4.2rem] h-[4.2rem] rounded-full bg-linear-to-br ${platform.color} flex items-center justify-center text-white font-bold text-sm shadow-lg`}
                                     >
                                         {platform.letter}
                                     </div>
@@ -103,7 +103,7 @@ const LandingManagement = () => {
                         </div>
 
                         {/* Template Preview Inside */}
-                        <div className="bg-gradient-to-br from-[#2F92C7] to-[#1F92F9] rounded-2xl p-6 mb-6 relative overflow-hidden">
+                        <div className="bg-linear-to-br from-[#2F92C7] to-[#1F92F9] rounded-2xl p-6 mb-6 relative overflow-hidden">
                             <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full blur-xl" />
 
                             <div className="relative z-10">

@@ -1,0 +1,25 @@
+
+> contentcreator_os@0.1.0 build
+> next build
+
+▲ Next.js 16.1.1 (Turbopack)
+- Environments: .env.local
+- Experiments (use with caution):
+  · serverActions
+
+  Creating an optimized production build ...
+✓ Compiled successfully in 17.6s
+  Running TypeScript ...
+Failed to compile.
+
+./src/components/inspiration/inspiration-components.tsx:156:43
+Type error: Type 'string' is not assignable to type 'never'.
+
+[0m [90m 154 |[39m                     [33m<[39m[33mLink[39m href[33m=[39m{buildAppPath(appRoot[33m,[39m [32m`/inspiration/${inspiration.id}`[39m)} className[33m=[39m[32m"flex items-center gap-2"[39m[33m>[39m
+ [90m 155 |[39m                         [33m<[39m[33mspan[39m className[33m=[39m{[32m`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${colors.bg} ${colors.text}`[39m}[33m>[39m
+[31m[1m>[22m[39m[90m 156 |[39m                             [33m<[39m[33mPlatformIcon[39m className[33m=[39m[32m"h-3 w-3"[39m weight[33m=[39m[32m"fill"[39m [33m/[39m[33m>[39m
+ [90m     |[39m                                           [31m[1m^[22m[39m
+ [90m 157 |[39m                             [33mX[39m
+ [90m 158 |[39m                         [33m<[39m[33m/[39m[33mspan[39m[33m>[39m
+ [90m 159 |[39m                         {inspiration[33m.[39mtitle [33m&&[39m ([0m
+Next.js build worker exited with code: 1 and signal: null

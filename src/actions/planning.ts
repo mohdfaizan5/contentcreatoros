@@ -6,7 +6,7 @@
 'use server';
 
 import { createClient } from '@/lib/server';
-import { revalidatePath } from 'next/cache';
+import { revalidateAppPath } from '@/lib/revalidate-app-paths';
 import type {
     ContentCard,
     UserWorkflow,
@@ -67,7 +67,7 @@ export async function createUserWorkflow(input: CreateUserWorkflowInput): Promis
         throw new Error('Failed to create workflow');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
     return data;
 }
 
@@ -94,7 +94,7 @@ export async function updateUserWorkflow(input: UpdateUserWorkflowInput): Promis
         throw new Error('Failed to update workflow');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
     return data;
 }
 
@@ -171,7 +171,7 @@ export async function createContentCard(input: CreateContentCardInput): Promise<
         throw new Error('Failed to create content card');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
     return data;
 }
 
@@ -197,7 +197,7 @@ export async function updateContentCard(id: string, input: UpdateContentCardInpu
         throw new Error('Failed to update content card');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
     return data;
 }
 
@@ -226,7 +226,7 @@ export async function moveCardToColumn(id: string, columnId: string, order: numb
         throw new Error('Failed to move card');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
     return data;
 }
 
@@ -265,7 +265,7 @@ export async function toggleCardChecked(id: string): Promise<ContentCard> {
         throw new Error('Failed to toggle card');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
     return data;
 }
 
@@ -289,7 +289,7 @@ export async function deleteContentCard(id: string): Promise<void> {
         throw new Error('Failed to delete card');
     }
 
-    revalidatePath('/app/planning');
+    revalidateAppPath('/planning');
 }
 
 /**

@@ -4,12 +4,14 @@ import React, { useState, useTransition, Suspense } from 'react';
 import Link from 'next/link';
 import { Tweet } from 'react-tweet';
 import { Sparkle, Trash, Link as LinkIcon, User, TwitterLogo, LinkedinLogo, YoutubeLogo, InstagramLogo } from '@phosphor-icons/react';
+import type { Icon as PhosphorIcon } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { createInspiration, deleteInspiration } from '@/actions/inspiration';
 import { detectUrlInfo, getPlatformColors, extractTweetId, type Platform } from '@/lib/url-detector';
 import type { Inspiration, InspirationType } from '@/types/database';
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
-const platformIcons: Record<Platform, React.ElementType> = {
+const platformIcons: Record<Platform, PhosphorIcon> = {
     x: TwitterLogo,
     linkedin: LinkedinLogo,
     youtube: YoutubeLogo,
@@ -122,9 +124,13 @@ export function InspirationForm({ onClose }: InspirationFormProps) {
 
 interface InspirationCardProps {
     inspiration: Inspiration;
+    appRoot?: AppShellRoot;
 }
 
-export function InspirationCard({ inspiration }: InspirationCardProps) {
+export function InspirationCard({
+    inspiration,
+    appRoot = MODERN_APP_ROOT,
+}: InspirationCardProps) {
     const [isPending, startTransition] = useTransition();
     const urlInfo = detectUrlInfo(inspiration.url);
     const colors = getPlatformColors(urlInfo.platform);
@@ -146,13 +152,13 @@ export function InspirationCard({ inspiration }: InspirationCardProps) {
             <div className="group rounded-xl border bg-card overflow-hidden transition-all hover:shadow-md hover:border-primary/30">
                 {/* Header with actions */}
                 <div className="flex items-center justify-between p-3 border-b bg-muted/30">
-                    <Link href={`/app/inspiration/${inspiration.id}`} className="flex items-center gap-2">
+                    <Link href={buildAppPath(appRoot, `/inspiration/${inspiration.id}`)} className="flex items-center gap-2">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-xs font-medium ${colors.bg} ${colors.text}`}>
                             <PlatformIcon className="h-3 w-3" weight="fill" />
                             X
                         </span>
                         {inspiration.title && (
-                            <span className="text-sm font-medium truncate max-w-[150px]">{inspiration.title}</span>
+                            <span className="text-sm font-medium truncate max-w-37.5">{inspiration.title}</span>
                         )}
                     </Link>
                     <Button
@@ -184,7 +190,7 @@ export function InspirationCard({ inspiration }: InspirationCardProps) {
 
     // For other platforms, show simple card
     return (
-        <Link href={`/app/inspiration/${inspiration.id}`}>
+        <Link href={buildAppPath(appRoot, `/inspiration/${inspiration.id}`)}>
             <div className="group rounded-xl border bg-card p-4 transition-all hover:shadow-md hover:border-primary/30 cursor-pointer">
                 <div className="flex items-start justify-between gap-4">
                     <div className="flex-1 min-w-0">
@@ -243,7 +249,7 @@ function TweetEmbed({ id }: { id: string }) {
 
 function TweetLoading() {
     return (
-        <div className="w-full max-w-[500px] p-8 flex items-center justify-center">
+        <div className="w-full max-w-125 p-8 flex items-center justify-center">
             <div className="animate-pulse flex flex-col items-center gap-3">
                 <div className="h-10 w-10 rounded-full bg-sky-500/20" />
                 <div className="h-4 w-48 rounded bg-muted" />
@@ -255,7 +261,7 @@ function TweetLoading() {
 
 function TweetFallback() {
     return (
-        <div className="w-full max-w-[500px] p-8 flex items-center justify-center">
+        <div className="w-full max-w-125 p-8 flex items-center justify-center">
             <div className="flex flex-col items-center gap-2 text-muted-foreground">
                 <TwitterLogo className="h-10 w-10 text-sky-500/50" weight="fill" />
                 <span className="text-sm">Tweet preview unavailable</span>
@@ -288,9 +294,13 @@ class ErrorBoundary extends React.Component<
 
 interface InspirationListProps {
     inspirations: Inspiration[];
+    appRoot?: AppShellRoot;
 }
 
-export function InspirationList({ inspirations }: InspirationListProps) {
+export function InspirationList({
+    inspirations,
+    appRoot = MODERN_APP_ROOT,
+}: InspirationListProps) {
     if (inspirations.length === 0) {
         return (
             <div className="text-center py-12 rounded-xl border border-dashed">
@@ -306,14 +316,17 @@ export function InspirationList({ inspirations }: InspirationListProps) {
     return (
         <div className="grid gap-3">
             {inspirations.map((insp) => (
-                <InspirationCard key={insp.id} inspiration={insp} />
+                <InspirationCard key={insp.id} inspiration={insp} appRoot={appRoot} />
             ))}
         </div>
     );
 }
 
 // Masonry grid layout
-export function InspirationMasonryGrid({ inspirations }: InspirationListProps) {
+export function InspirationMasonryGrid({
+    inspirations,
+    appRoot = MODERN_APP_ROOT,
+}: InspirationListProps) {
     if (inspirations.length === 0) {
         return (
             <div className="text-center py-16 rounded-2xl border border-dashed bg-muted/20">
@@ -333,7 +346,7 @@ export function InspirationMasonryGrid({ inspirations }: InspirationListProps) {
         >
             {inspirations.map((insp) => (
                 <div key={insp.id} className="mb-4 break-inside-avoid">
-                    <InspirationCard inspiration={insp} />
+                    <InspirationCard inspiration={insp} appRoot={appRoot} />
                 </div>
             ))}
         </div>

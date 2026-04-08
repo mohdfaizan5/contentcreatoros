@@ -5,12 +5,17 @@ import { Plus, Stack } from '@phosphor-icons/react';
 import { Button } from '@/components/ui/button';
 import { SeriesMasonryGrid } from './series-components';
 import type { SeriesWithIdeas } from '@/types/database';
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
 interface SeriesClientProps {
     seriesList: SeriesWithIdeas[];
+    appRoot?: AppShellRoot;
 }
 
-export function SeriesClient({ seriesList }: SeriesClientProps) {
+export function SeriesClient({
+    seriesList,
+    appRoot = MODERN_APP_ROOT,
+}: SeriesClientProps) {
     // Calculate stats
     const totalIdeas = seriesList.reduce((acc, s) => acc + (s.ideas?.length || 0), 0);
     const completedSeries = seriesList.filter(s => {
@@ -33,7 +38,7 @@ export function SeriesClient({ seriesList }: SeriesClientProps) {
                         </p>
                     </div>
                 </div>
-                <Link href="/app/series/create">
+                <Link href={buildAppPath(appRoot, '/series/create')}>
                     <Button className="gap-2 rounded-xl transition-all duration-200 hover:scale-105">
                         <Plus className="h-4 w-4" weight="bold" />
                         New Series

@@ -9,12 +9,17 @@ import { Button } from '@/components/ui/button';
 import { deleteInspiration, updateInspiration } from '@/actions/inspiration';
 import { detectUrlInfo, extractTweetId, getPlatformColors } from '@/lib/url-detector';
 import type { Inspiration } from '@/types/database';
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
 interface InspirationDetailProps {
     inspiration: Inspiration;
+    appRoot?: AppShellRoot;
 }
 
-export function InspirationDetail({ inspiration }: InspirationDetailProps) {
+export function InspirationDetail({
+    inspiration,
+    appRoot = MODERN_APP_ROOT,
+}: InspirationDetailProps) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
     const [isEditing, setIsEditing] = useState(false);
@@ -30,7 +35,7 @@ export function InspirationDetail({ inspiration }: InspirationDetailProps) {
         if (!confirm('Delete this inspiration?')) return;
         startTransition(async () => {
             await deleteInspiration(inspiration.id);
-            router.push('/app/inspiration');
+            router.push(buildAppPath(appRoot, '/inspiration'));
         });
     };
 
@@ -57,7 +62,7 @@ export function InspirationDetail({ inspiration }: InspirationDetailProps) {
         <div className="max-w-3xl mx-auto space-y-6 animate-fade-in-up">
             {/* Back navigation */}
             <Link
-                href="/app/inspiration"
+                href={buildAppPath(appRoot, '/inspiration')}
                 className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
             >
                 <ArrowLeft className="h-4 w-4" />

@@ -10,12 +10,17 @@ import { MagnifyingGlass } from '@phosphor-icons/react';
 import { Input } from '@/components/ui/input';
 import { IdeaCard, IdeasList } from '@/components/ideas/idea-card';
 import type { Idea } from '@/types/database';
+import { AppShellRoot, MODERN_APP_ROOT } from '@/lib/app-shell';
 
 interface IdeasClientProps {
     initialIdeas: Idea[];
+    appRoot?: AppShellRoot;
 }
 
-export default function IdeasClient({ initialIdeas }: IdeasClientProps) {
+export default function IdeasClient({
+    initialIdeas,
+    appRoot = MODERN_APP_ROOT,
+}: IdeasClientProps) {
     const [searchQuery, setSearchQuery] = useState('');
 
     // Filter ideas based on search query
@@ -52,7 +57,7 @@ export default function IdeasClient({ initialIdeas }: IdeasClientProps) {
             {/* No search results */}
             {searchQuery && filteredIdeas.length === 0 ? (
                 <div className="text-center py-16 rounded-2xl border border-dashed bg-card/50">
-                    <p className="text-muted-foreground">No ideas found matching "{searchQuery}"</p>
+                    <p className="text-muted-foreground">No ideas found matching &quot;{searchQuery}&quot;</p>
                 </div>
             ) : (
                 /* Masonry Grid */
@@ -62,14 +67,14 @@ export default function IdeasClient({ initialIdeas }: IdeasClientProps) {
                 >
                     {filteredIdeas.map((idea) => (
                         <div key={idea.id} className="mb-4 break-inside-avoid">
-                            <IdeaCard idea={idea} />
+                            <IdeaCard idea={idea} appRoot={appRoot} />
                         </div>
                     ))}
                 </div>
             )}
 
             {/* Empty state */}
-            {filteredIdeas.length === 0 && !searchQuery && <IdeasList ideas={[]} />}
+            {filteredIdeas.length === 0 && !searchQuery && <IdeasList ideas={[]} appRoot={appRoot} />}
         </div>
     );
 }

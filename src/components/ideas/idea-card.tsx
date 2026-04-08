@@ -9,14 +9,19 @@ import Link from 'next/link';
 import { Lightbulb } from '@phosphor-icons/react';
 import type { Idea } from '@/types/database';
 import { Coolshape } from "coolshapes-react"
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
 interface IdeaCardProps {
     idea: Idea;
+    appRoot?: AppShellRoot;
 }
 
-export function IdeaCard({ idea }: IdeaCardProps) {
+export function IdeaCard({
+    idea,
+    appRoot = MODERN_APP_ROOT,
+}: IdeaCardProps) {
     return (
-        <Link href={`/app/ideas/${idea.id}`}>
+        <Link href={buildAppPath(appRoot, `/ideas/${idea.id}`)}>
             <div className="group relative rounded-xl overflow-hidden  bg-card p-4 transition-all duration-300 hover:shadow-md hover:border-primary/30 border cursor-pointer">
                 <Coolshape type={"flower"} random index={1} className='absolute opacity-20 -bottom-5 -right-5 size-20' />
                 <div className="flex items-start gap-3 relative ">
@@ -40,9 +45,13 @@ export function IdeaCard({ idea }: IdeaCardProps) {
 
 interface IdeasListProps {
     ideas: Idea[];
+    appRoot?: AppShellRoot;
 }
 
-export function IdeasList({ ideas }: IdeasListProps) {
+export function IdeasList({
+    ideas,
+    appRoot = MODERN_APP_ROOT,
+}: IdeasListProps) {
     if (ideas.length === 0) {
         return (
             <div className="empty-state text-center py-16 rounded-2xl border border-dashed bg-card/50 transition-all hover:bg-card">
@@ -62,7 +71,7 @@ export function IdeasList({ ideas }: IdeasListProps) {
         >
             {ideas.map((idea) => (
                 <div key={idea.id} className="mb-4 break-inside-avoid">
-                    <IdeaCard idea={idea} />
+                    <IdeaCard idea={idea} appRoot={appRoot} />
                 </div>
             ))}
         </div>

@@ -7,12 +7,17 @@ import { Button } from '@/components/ui/button';
 import { deleteMagnet, exportLeadsCsv } from '@/actions/lead-magnets';
 import type { LeadMagnetWithLeads } from '@/types/database';
 import { CompactStats } from '../analytics/compact-stats';
+import { AppShellRoot, buildAppPath, MODERN_APP_ROOT } from '@/lib/app-shell';
 
 interface LeadMagnetsClientProps {
     magnets: LeadMagnetWithLeads[];
+    appRoot?: AppShellRoot;
 }
 
-export function LeadMagnetsClient({ magnets }: LeadMagnetsClientProps) {
+export function LeadMagnetsClient({
+    magnets,
+    appRoot = MODERN_APP_ROOT,
+}: LeadMagnetsClientProps) {
     const totalLeads = magnets.reduce((acc, m) => acc + (m.lead_count || 0), 0);
     const activeMagnets = magnets.filter(m => m.is_active).length;
 
@@ -52,7 +57,7 @@ export function LeadMagnetsClient({ magnets }: LeadMagnetsClientProps) {
                         )}
                     </div>
                 </div>
-                <Link href="/app/lead-magnets/create">
+                <Link href={buildAppPath(appRoot, '/lead-magnets/create')}>
                     <Button className="gap-2 rounded-xl transition-all duration-200 hover:scale-105">
                         <Plus className="h-4 w-4" weight="bold" />
                         Create Lead Magnet
@@ -65,7 +70,7 @@ export function LeadMagnetsClient({ magnets }: LeadMagnetsClientProps) {
 
 
             {/* Masonry Grid */}
-            <MagnetsMasonryGrid magnets={magnets} />
+            <MagnetsMasonryGrid magnets={magnets} appRoot={appRoot} />
         </div>
     );
 }
@@ -140,7 +145,13 @@ function MagnetCard({ magnet }: { magnet: LeadMagnetWithLeads }) {
     );
 }
 
-function MagnetsMasonryGrid({ magnets }: { magnets: LeadMagnetWithLeads[] }) {
+function MagnetsMasonryGrid({
+    magnets,
+    appRoot,
+}: {
+    magnets: LeadMagnetWithLeads[];
+    appRoot: AppShellRoot;
+}) {
     if (magnets.length === 0) {
         return (
             <div className="text-center py-16 rounded-2xl border border-dashed bg-muted/20">
@@ -149,7 +160,7 @@ function MagnetsMasonryGrid({ magnets }: { magnets: LeadMagnetWithLeads[] }) {
                 <p className="text-sm text-muted-foreground mt-1 max-w-sm mx-auto mb-4">
                     Create a lead magnet to start collecting emails
                 </p>
-                <Link href="/app/lead-magnets/create">
+                <Link href={buildAppPath(appRoot, '/lead-magnets/create')}>
                     <Button className="gap-2">
                         <Plus className="h-4 w-4" />
                         Create Lead Magnet

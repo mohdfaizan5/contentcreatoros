@@ -5,9 +5,10 @@ import { Badge } from '@/components/ui/badge';
 interface NavBadgeProps {
     isNew?: boolean;
     isUpdated?: boolean;
+    isComingSoon?: boolean;
 }
 
-export function NavBadge({ isNew, isUpdated }: NavBadgeProps) {
+export function NavBadge({ isNew, isUpdated, isComingSoon }: NavBadgeProps) {
     if (isNew) {
         return (
             <Badge
@@ -26,6 +27,17 @@ export function NavBadge({ isNew, isUpdated }: NavBadgeProps) {
                 className="ml-2 h-5 px-1.5 text-[10px] font-semibold bg-sky-500/10 text-sky-600 dark:text-sky-400 border border-sky-500/30"
             >
                 UPDATED
+            </Badge>
+        );
+    }
+
+    if (isComingSoon) {
+        return (
+            <Badge
+                variant="secondary"
+                className="ml-2 h-5 px-1.5 text-[10px] font-semibold "
+            >
+                COMING SOON
             </Badge>
         );
     }
