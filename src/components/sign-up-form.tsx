@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/client'
+import { getEmailRedirectTo, getOAuthRedirectTo } from '@/lib/auth-redirect'
 import { X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -43,7 +44,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/app`,
+          emailRedirectTo: getEmailRedirectTo('/app'),
         },
       })
       if (error) throw error
@@ -64,7 +65,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'x',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+          redirectTo: getOAuthRedirectTo('/app'),
           scopes: X_OAUTH_SCOPE_STRING,
         },
       })

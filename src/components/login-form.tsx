@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/client'
+import { getOAuthRedirectTo } from '@/lib/auth-redirect'
 import { X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -54,7 +55,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'x',
         options: {
-          redirectTo: `${window.location.origin}/auth/callback?next=/app`,
+          redirectTo: getOAuthRedirectTo('/app'),
           scopes: X_OAUTH_SCOPE_STRING,
         },
       })
