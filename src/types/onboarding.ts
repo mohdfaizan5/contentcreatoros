@@ -1,7 +1,9 @@
 /**
  * Types for the onboarding flow
  */
-import type { ReactNode } from 'react';
+import type { ComponentType, ReactNode } from 'react';
+
+type OnboardingIconComponent = ComponentType<{ className?: string }>;
 
 export type OnboardingFieldValue = string | string[];
 export type OnboardingAnswers = Record<string, OnboardingFieldValue | undefined>;
@@ -20,7 +22,7 @@ export interface OnboardingOption {
   value: string;
   label: string;
   description?: string;
-  icon?: ReactNode;
+  icon?: ReactNode | OnboardingIconComponent;
 }
 
 export interface OnboardingOtherOptionConfig {

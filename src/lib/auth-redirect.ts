@@ -29,14 +29,14 @@ function getBrowserOrigin() {
 }
 
 export function getAuthOrigin() {
-  const configuredOrigin = getConfiguredPublicOrigin();
-  if (configuredOrigin) {
-    return configuredOrigin;
-  }
-
   const browserOrigin = getBrowserOrigin();
   if (browserOrigin) {
     return browserOrigin;
+  }
+
+  const configuredOrigin = getConfiguredPublicOrigin();
+  if (configuredOrigin) {
+    return configuredOrigin;
   }
 
   return 'http://localhost:3000';

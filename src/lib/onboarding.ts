@@ -6,6 +6,11 @@ import type {
   OnboardingStepDefinition,
   OnboardingStage,
 } from '@/types/onboarding';
+import { IoIosPeople } from "react-icons/io";
+import { MdOutlineWeb } from "react-icons/md";
+import { VscWorkspaceTrusted } from "react-icons/vsc";
+import { FaHandshakeAngle } from "react-icons/fa6";
+import { TbChartFunnel } from "react-icons/tb";
 
 export const OTHER_OPTION_VALUE = '__other';
 export const ONBOARDING_FLOW_KEY = 'x_content_strategy_v2';
@@ -17,7 +22,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
     title: 'Create your 30-day X content plan in 2 minutes',
     eyebrow: '30-day X planning',
     description: 'No strategy skills needed. AI will handle everything.',
-    
+
     screen: {
       variant: 'entry',
       ctaLabel: 'Start',
@@ -52,6 +57,25 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
     description: 'Give the system enough context to understand what you sell and why it matters.',
     questions: [
       {
+        key: 'x_account',
+        type: 'text',
+        inputType: 'url',
+        label: 'Add your X account',
+        description: 'Optional. Paste an @handle or full X profile URL.',
+        placeholder: 'https://x.com/yourhandle',
+
+      },
+      {
+        key: 'website_url',
+        type: 'text',
+        inputType: 'url',
+        label: 'Add your website URL',
+        description: 'Optional. Paste your website URL.',
+        placeholder: 'https://yourwebsite.com',
+
+      },
+
+      {
         key: 'company_description',
         type: 'textarea',
         label: 'What does your company do?',
@@ -68,14 +92,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         required: true,
         rows: 4,
       },
-      {
-        key: 'x_account',
-        type: 'text',
-        inputType: 'url',
-        label: 'Add your X account',
-        description: 'Optional. Paste an @handle or full X profile URL.',
-        placeholder: 'https://x.com/yourhandle',
-      },
+
     ],
   },
   {
@@ -167,236 +184,237 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
           placeholder: 'Type another content goal',
           optionLabel: 'Other',
         },
-        options: [
-          { value: 'build_audience', label: 'Build audience', description: 'Grow reach and followers' },
-          { value: 'drive_traffic', label: 'Drive traffic', description: 'Send people to your site or offer' },
-          { value: 'generate_leads', label: 'Generate leads', description: 'Turn attention into pipeline' },
-          { value: 'sell_product', label: 'Sell product', description: 'Support conversion-focused campaigns' },
-          { value: 'build_authority', label: 'Build authority', description: 'Become the trusted voice in your niche' },
-        ],
+
+      options: [
+        { value: 'build_audience', label: 'Build audience', description: 'Grow reach and followers', icon: IoIosPeople },
+        { value: 'drive_traffic', label: 'Drive traffic', description: 'Send people to your site or offer', icon:MdOutlineWeb  },
+        { value: 'generate_leads', label: 'Generate leads', description: 'Turn attention into pipeline', icon: TbChartFunnel },
+        { value: 'sell_product', label: 'Sell product', description: 'Support conversion-focused campaigns', icon: FaHandshakeAngle },
+        { value: 'build_authority', label: 'Build authority', description: 'Become the trusted voice in your niche' , icon: VscWorkspaceTrusted},
+      ],
       },
-      {
-        key: 'cta_style',
-        type: 'single-select',
-        layout: 'cards',
-        label: 'What CTA style fits best?',
-        required: true,
-        options: [
-          { value: 'no_cta', label: 'No CTA', description: 'Pure value, no ask' },
-          { value: 'soft_cta', label: 'Soft CTA', description: 'Follow, like, reply, or bookmark' },
-          { value: 'hard_cta', label: 'Hard CTA', description: 'Sign up, buy, or book a call' },
-        ],
-      },
-    ],
-  },
   {
-    id: 'style',
-    kind: 'questions',
-    title: 'Style & Personality',
-    eyebrow: 'Step 4',
-    description: 'Shape how the content sounds so it feels like your brand, not a random AI voice.',
-    questions: [
-      {
-        key: 'tone',
-        type: 'single-select',
-        layout: 'cards',
-        label: 'What tone should the content use?',
-        required: true,
-        options: [
-          { value: 'professional', label: 'Professional', description: 'Polished and credible' },
-          { value: 'casual', label: 'Casual', description: 'Friendly and relaxed' },
-          { value: 'witty', label: 'Witty', description: 'Sharp and memorable' },
-          { value: 'bold', label: 'Bold', description: 'Opinionated and punchy' },
-          { value: 'educational', label: 'Educational', description: 'Useful, clear, and practical' },
-        ],
-      },
-      {
-        key: 'writing_style',
-        type: 'single-select',
-        layout: 'cards',
-        label: 'What writing style do you want most?',
-        required: true,
-        options: [
-          { value: 'short_posts', label: 'Short tweets', description: 'Fast, lightweight, and frequent' },
-          { value: 'threads', label: 'Threads', description: 'Deeper educational breakdowns' },
-          { value: 'mixed', label: 'Mixed', description: 'A blend of short posts and threads' },
-        ],
-      },
-      {
-        key: 'inspiration_accounts',
-        type: 'tag-input',
-        label: 'Paste 1-2 X accounts you like',
-        description: 'Optional. These help guide voice and structure.',
-        placeholder: '@account or https://x.com/account',
-        maxItems: 2,
-      },
+    key: 'cta_style',
+    type: 'single-select',
+    layout: 'cards',
+    label: 'What CTA style fits best?',
+    required: true,
+    options: [
+      { value: 'no_cta', label: 'No CTA', description: 'Pure value, no ask' },
+      { value: 'soft_cta', label: 'Soft CTA', description: 'Follow, like, reply, or bookmark' },
+      { value: 'hard_cta', label: 'Hard CTA', description: 'Sign up, buy, or book a call' },
     ],
   },
-  {
-    id: 'strategy',
-    kind: 'questions',
-    title: 'Content Strategy',
-    eyebrow: 'Step 5',
-    description: 'Set the rhythm, pillars, and formats so the plan is realistic and repeatable.',
-    questions: [
-      {
-        key: 'posting_frequency',
-        type: 'single-select',
-        layout: 'cards',
-        label: 'How often do you want to post?',
-        required: true,
-        options: [
-          { value: '2_per_week', label: '2/week', description: 'Easy mode' },
-          { value: '3_per_week', label: '3/week', description: 'Balanced pace' },
-          { value: '5_per_week', label: '5/week', description: 'Recommended' },
-          { value: 'daily', label: 'Daily', description: 'Highest volume' },
-        ],
-      },
-      {
-        key: 'content_pillars',
-        type: 'multi-select',
-        layout: 'cards',
-        label: 'Which content pillars should anchor the plan?',
-        description: 'Pick three to five categories you want to post about repeatedly.',
-        required: true,
-        minSelections: 3,
-        maxSelections: 5,
-        options: [
-          { value: 'educational', label: 'Educational', description: 'Teach useful ideas and frameworks' },
-          { value: 'product', label: 'Product', description: 'Show what the product does and why it matters' },
-          { value: 'industry_insights', label: 'Industry insights', description: 'Comment on market shifts and lessons' },
-          { value: 'entertaining', label: 'Entertaining', description: 'Keep the feed lively and human' },
-          { value: 'behind_the_scenes', label: 'Behind-the-scenes', description: 'Build trust with process and progress' },
-          { value: 'case_studies', label: 'Case studies', description: 'Use proof and examples' },
-          { value: 'trends', label: 'Trends', description: 'React to timely moments' },
-          { value: 'memes', label: 'Memes', description: 'Lightweight culture-driven content' },
-        ],
-      },
-      {
-        key: 'content_formats',
-        type: 'multi-select',
-        layout: 'pills',
-        label: 'What formats can the plan include?',
-        required: true,
-        minSelections: 1,
-        maxSelections: 4,
-        otherOption: {
-          answerKey: 'content_formats_other',
-          label: 'Other format',
-          placeholder: 'Type another content format',
-          optionLabel: 'Other',
-        },
-        options: [
-          { value: 'text', label: 'Text' },
-          { value: 'image_text', label: 'Image + text' },
-          { value: 'video_text', label: 'Video + text' },
-          { value: 'motion_graphics', label: 'Motion graphics' },
-        ],
-      },
-    ],
+],
   },
-  {
-    id: 'product-details',
+{
+  id: 'style',
     kind: 'questions',
-    title: 'Product Details',
-    eyebrow: 'Step 6',
-    description: 'Give the planner proof points so the content is grounded in a real offer.',
-    questions: [
-      {
-        key: 'key_features',
-        type: 'tag-input',
-        label: 'Key features',
-        description: 'Add short bullet-style feature points.',
-        placeholder: 'Type a feature and press Enter',
-        maxItems: 6,
-      },
-      {
-        key: 'unique_value_prop',
-        type: 'textarea',
-        label: 'What makes you different?',
-        description: 'Describe the core differentiator or USP.',
-        placeholder: 'We turn messy content ideas into a structured 30-day X plan in minutes.',
-        rows: 4,
-      },
-      {
-        key: 'pricing_model',
-        type: 'single-select',
-        layout: 'pills',
-        label: 'What is your pricing model?',
-        required: true,
-        otherOption: {
-          answerKey: 'pricing_model_other',
-          label: 'Other pricing model',
-          placeholder: 'Type another pricing model',
-          optionLabel: 'Other',
-        },
-        options: [
-          { value: 'free', label: 'Free' },
-          { value: 'freemium', label: 'Freemium' },
-          { value: 'paid', label: 'Paid' },
-        ],
-      },
-      {
-        key: 'business_stage',
-        type: 'single-select',
-        layout: 'pills',
-        label: 'What stage is the product in?',
-        required: true,
-        options: [
-          { value: 'just_launched', label: 'Just launched' },
-          { value: 'growing', label: 'Growing' },
-          { value: 'established', label: 'Established' },
-        ],
-      },
-    ],
+      title: 'Style & Personality',
+        eyebrow: 'Step 4',
+          description: 'Shape how the content sounds so it feels like your brand, not a random AI voice.',
+            questions: [
+              {
+                key: 'tone',
+                type: 'single-select',
+                layout: 'cards',
+                label: 'What tone should the content use?',
+                required: true,
+                options: [
+                  { value: 'professional', label: 'Professional', description: 'Polished and credible' },
+                  { value: 'casual', label: 'Casual', description: 'Friendly and relaxed' },
+                  { value: 'witty', label: 'Witty', description: 'Sharp and memorable' },
+                  { value: 'bold', label: 'Bold', description: 'Opinionated and punchy' },
+                  { value: 'educational', label: 'Educational', description: 'Useful, clear, and practical' },
+                ],
+              },
+              {
+                key: 'writing_style',
+                type: 'single-select',
+                layout: 'cards',
+                label: 'What writing style do you want most?',
+                required: true,
+                options: [
+                  { value: 'short_posts', label: 'Short tweets', description: 'Fast, lightweight, and frequent' },
+                  { value: 'threads', label: 'Threads', description: 'Deeper educational breakdowns' },
+                  { value: 'mixed', label: 'Mixed', description: 'A blend of short posts and threads' },
+                ],
+              },
+              {
+                key: 'inspiration_accounts',
+                type: 'tag-input',
+                label: 'Paste 1-2 X accounts you like',
+                description: 'Optional. These help guide voice and structure.',
+                placeholder: '@account or https://x.com/account',
+                maxItems: 2,
+              },
+            ],
   },
-  {
-    id: 'competitors',
+{
+  id: 'strategy',
     kind: 'questions',
-    title: 'Competitors',
-    eyebrow: 'Step 7',
-    description: 'Optional context that helps the system avoid generic messaging and identify your angle.',
-    questions: [
-      {
-        key: 'competitor_accounts',
-        type: 'tag-input',
-        label: 'Add competitor X accounts',
-        description: 'Optional. Use handles or profile URLs.',
-        placeholder: '@competitor',
-        maxItems: 5,
-      },
-      {
-        key: 'competitor_notes',
-        type: 'textarea',
-        label: 'What do you like about them?',
-        description: 'Optional. Note anything you want to learn from or avoid.',
-        placeholder: 'They explain complex ideas clearly and their product posts feel useful, not salesy.',
-        rows: 3,
-      },
-    ],
+      title: 'Content Strategy',
+        eyebrow: 'Step 5',
+          description: 'Set the rhythm, pillars, and formats so the plan is realistic and repeatable.',
+            questions: [
+              {
+                key: 'posting_frequency',
+                type: 'single-select',
+                layout: 'cards',
+                label: 'How often do you want to post?',
+                required: true,
+                options: [
+                  { value: '2_per_week', label: '2/week', description: 'Easy mode' },
+                  { value: '3_per_week', label: '3/week', description: 'Balanced pace' },
+                  { value: '5_per_week', label: '5/week', description: 'Recommended' },
+                  { value: 'daily', label: 'Daily', description: 'Highest volume' },
+                ],
+              },
+              {
+                key: 'content_pillars',
+                type: 'multi-select',
+                layout: 'cards',
+                label: 'Which content pillars should anchor the plan?',
+                description: 'Pick three to five categories you want to post about repeatedly.',
+                required: true,
+                minSelections: 3,
+                maxSelections: 5,
+                options: [
+                  { value: 'educational', label: 'Educational', description: 'Teach useful ideas and frameworks' },
+                  { value: 'product', label: 'Product', description: 'Show what the product does and why it matters' },
+                  { value: 'industry_insights', label: 'Industry insights', description: 'Comment on market shifts and lessons' },
+                  { value: 'entertaining', label: 'Entertaining', description: 'Keep the feed lively and human' },
+                  { value: 'behind_the_scenes', label: 'Behind-the-scenes', description: 'Build trust with process and progress' },
+                  { value: 'case_studies', label: 'Case studies', description: 'Use proof and examples' },
+                  { value: 'trends', label: 'Trends', description: 'React to timely moments' },
+                  { value: 'memes', label: 'Memes', description: 'Lightweight culture-driven content' },
+                ],
+              },
+              {
+                key: 'content_formats',
+                type: 'multi-select',
+                layout: 'pills',
+                label: 'What formats can the plan include?',
+                required: true,
+                minSelections: 1,
+                maxSelections: 4,
+                otherOption: {
+                  answerKey: 'content_formats_other',
+                  label: 'Other format',
+                  placeholder: 'Type another content format',
+                  optionLabel: 'Other',
+                },
+                options: [
+                  { value: 'text', label: 'Text' },
+                  { value: 'image_text', label: 'Image + text' },
+                  { value: 'video_text', label: 'Video + text' },
+                  { value: 'motion_graphics', label: 'Motion graphics' },
+                ],
+              },
+            ],
   },
-  {
-    id: 'capability',
+{
+  id: 'product-details',
     kind: 'questions',
-    title: 'Content Capability',
-    eyebrow: 'Step 8',
-    description: 'This keeps the final plan realistic instead of asking you to produce assets you cannot make yet.',
-    questions: [
-      {
-        key: 'content_capability',
-        type: 'single-select',
-        layout: 'cards',
-        label: 'What can you realistically create?',
-        required: true,
-        options: [
-          { value: 'text_only', label: 'Only text', description: 'Keep the plan simple and fast' },
-          { value: 'simple_graphics', label: 'Simple graphics', description: 'Basic designed assets are doable' },
-          { value: 'high_quality_visuals', label: 'High-quality visuals', description: 'Polished visual content is realistic' },
-          { value: 'videos', label: 'Videos', description: 'You can support video-heavy content' },
-        ],
-      },
-    ],
+      title: 'Product Details',
+        eyebrow: 'Step 6',
+          description: 'Give the planner proof points so the content is grounded in a real offer.',
+            questions: [
+              // {
+              //   key: 'key_features',
+              //   type: 'tag-input',
+              //   label: 'Key features',
+              //   description: 'Add short bullet-style feature points.',
+              //   placeholder: 'Type a feature and press Enter',
+              //   maxItems: 6,
+              // },
+              {
+                key: 'unique_value_prop',
+                type: 'textarea',
+                label: 'What makes you different?',
+                description: 'Describe the core differentiator or USP.',
+                placeholder: 'We turn messy content ideas into a structured 30-day X plan in minutes.',
+                rows: 4,
+              },
+              {
+                key: 'pricing_model',
+                type: 'single-select',
+                layout: 'pills',
+                label: 'What is your pricing model?',
+                required: true,
+                otherOption: {
+                  answerKey: 'pricing_model_other',
+                  label: 'Other pricing model',
+                  placeholder: 'Type another pricing model',
+                  optionLabel: 'Other',
+                },
+                options: [
+                  { value: 'free', label: 'Free' },
+                  { value: 'freemium', label: 'Freemium' },
+                  { value: 'paid', label: 'Paid' },
+                ],
+              },
+              {
+                key: 'business_stage',
+                type: 'single-select',
+                layout: 'pills',
+                label: 'What stage is the product in?',
+                required: true,
+                options: [
+                  { value: 'just_launched', label: 'Just launched' },
+                  { value: 'growing', label: 'Growing' },
+                  { value: 'established', label: 'Established' },
+                ],
+              },
+            ],
   },
+{
+  id: 'competitors',
+    kind: 'questions',
+      title: 'Competitors',
+        eyebrow: 'Step 7',
+          description: 'Optional context that helps the system avoid generic messaging and identify your angle.',
+            questions: [
+              {
+                key: 'competitor_accounts',
+                type: 'tag-input',
+                label: 'Add competitor X accounts',
+                description: 'Optional. Use handles or profile URLs.',
+                placeholder: '@competitor',
+                maxItems: 5,
+              },
+              {
+                key: 'competitor_notes',
+                type: 'textarea',
+                label: 'What do you like about them?',
+                description: 'Optional. Note anything you want to learn from or avoid.',
+                placeholder: 'They explain complex ideas clearly and their product posts feel useful, not salesy.',
+                rows: 3,
+              },
+            ],
+  },
+// {
+//   id: 'capability',
+//     kind: 'questions',
+//       title: 'Content Capability',
+//         eyebrow: 'Step 8',
+//           description: 'This keeps the final plan realistic instead of asking you to produce assets you cannot make yet.',
+//             questions: [
+//               {
+//                 key: 'content_capability',
+//                 type: 'single-select',
+//                 layout: 'cards',
+//                 label: 'What can you realistically create?',
+//                 required: true,
+//                 options: [
+//                   { value: 'text_only', label: 'Only text', description: 'Keep the plan simple and fast' },
+//                   { value: 'simple_graphics', label: 'Simple graphics', description: 'Basic designed assets are doable' },
+//                   { value: 'high_quality_visuals', label: 'High-quality visuals', description: 'Polished visual content is realistic' },
+//                   { value: 'videos', label: 'Videos', description: 'You can support video-heavy content' },
+//                 ],
+//               },
+//             ],
+//   },
 ];
 
 function normalizeSelectionLabels(
@@ -650,14 +668,14 @@ export function getPersistedAnswerEntries(answers: OnboardingAnswers) {
 
       const answer =
         (question.type === 'single-select' || question.type === 'multi-select') &&
-        'otherOption' in question &&
-        question.otherOption
+          'otherOption' in question &&
+          question.otherOption
           ? {
-              value: rawValue,
-              otherText: isOtherOptionSelected(question, answers)
-                ? String(answers[question.otherOption.answerKey] ?? '').trim() || null
-                : null,
-            }
+            value: rawValue,
+            otherText: isOtherOptionSelected(question, answers)
+              ? String(answers[question.otherOption.answerKey] ?? '').trim() || null
+              : null,
+          }
           : rawValue;
 
       return [

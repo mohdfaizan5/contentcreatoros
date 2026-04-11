@@ -96,14 +96,8 @@ export interface UseScribeReturn {
   getConnection: () => RealtimeConnection | null
 }
 
-type StreamEvent = {
-  type?: string
-  delta?: string
-  text?: string
-}
-
 const TRANSCRIBE_ENDPOINT = "/api/speech/transcribe"
-const DEFAULT_MODEL_ID = "gpt-4o-mini-transcribe"
+const DEFAULT_MODEL_ID = "whisper-1"
 
 function toErrorMessage(error: unknown): string {
   if (error instanceof Error) {
@@ -115,33 +109,6 @@ function toErrorMessage(error: unknown): string {
   }
 
   return "Transcription failed"
-}
-
-function parseEventsChunk(rawEventChunk: string): StreamEvent[] {
-  const events: StreamEvent[] = []
-  const lines = rawEventChunk.split("\n")
-
-  for (const line of lines) {
-    const trimmed = line.trim()
-
-    if (!trimmed.startsWith("data:")) {
-      continue
-    }
-
-    const payload = trimmed.slice(5).trim()
-
-    if (!payload || payload === "[DONE]") {
-      continue
-    }
-
-    try {
-      events.push(JSON.parse(payload) as StreamEvent)
-    } catch {
-      // Ignore malformed chunks from upstream stream.
-    }
-  }
-
-  return events
 }
 
 function base64ToBlob(base64Audio: string): Blob {
@@ -191,74 +158,21 @@ async function transcribeBlobWithServer({
     throw new Error(details || "Transcription request failed")
   }
 
-  if (!response.body) {
-    return ""
+  const payload = (await response.json()) as {
+    text?: string
+    error?: string
   }
 
-  const reader = response.body.getReader()
-  const decoder = new TextDecoder()
-  let buffer = ""
-  let partialText = ""
-  let doneText = ""
-
-  while (true) {
-    const { done, value } = await reader.read()
-
-    if (done) {
-      break
-    }
-
-    buffer += decoder.decode(value, { stream: true })
-
-    while (true) {
-      const delimiterIndex = buffer.indexOf("\n\n")
-
-      if (delimiterIndex < 0) {
-        break
-      }
-
-      const rawChunk = buffer.slice(0, delimiterIndex)
-      buffer = buffer.slice(delimiterIndex + 2)
-
-      const events = parseEventsChunk(rawChunk)
-      for (const event of events) {
-        if (event.type === "transcript.text.delta" && event.delta) {
-          partialText += event.delta
-          onDelta(partialText)
-          continue
-        }
-
-        if (
-          (event.type === "transcript.text.done" ||
-            event.type === "transcript.done") &&
-          event.text
-        ) {
-          doneText = event.text
-        }
-      }
-    }
+  if (payload.error) {
+    throw new Error(payload.error)
   }
 
-  if (buffer.trim()) {
-    const tailEvents = parseEventsChunk(buffer)
-    for (const event of tailEvents) {
-      if (event.type === "transcript.text.delta" && event.delta) {
-        partialText += event.delta
-        onDelta(partialText)
-        continue
-      }
-
-      if (
-        (event.type === "transcript.text.done" ||
-          event.type === "transcript.done") &&
-        event.text
-      ) {
-        doneText = event.text
-      }
-    }
+  const text = payload.text?.trim() || ""
+  if (text) {
+    onDelta(text)
   }
 
-  return (doneText || partialText).trim()
+  return text
 }
 
 export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {

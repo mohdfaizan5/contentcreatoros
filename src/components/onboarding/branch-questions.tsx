@@ -3,8 +3,8 @@
 import { useEffect, useRef } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { OnboardingCheckboxGroup, OnboardingRadioGroup } from './onboarding-cards';
-import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { SpeechInputPro } from '@/components/ui/speech-input-pro';
 import {
   LightbulbFilament,
   Code,
@@ -146,11 +146,11 @@ export function BranchAQuestions({
         <Label className="mb-2 block text-lg font-semibold text-foreground" htmlFor="monthly-win">
           What would make this month a win for you?
         </Label>
-        <Input
+        <SpeechInputPro
           id="monthly-win"
           placeholder="e.g., Ship a landing page, validate with 5 users..."
           value={answers.monthly_win ?? ''}
-          onChange={(e) => onChange({ ...answers, monthly_win: e.target.value })}
+          onValueChange={(nextValue) => onChange({ ...answers, monthly_win: nextValue })}
           className="h-11"
         />
       </RevealedQuestion>

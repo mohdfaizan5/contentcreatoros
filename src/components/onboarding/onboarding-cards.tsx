@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useState } from 'react';
+import { createElement, isValidElement, useId, useState } from 'react';
 import { AnimatePresence, motion } from 'motion/react';
 import { Check, X, Question } from '@phosphor-icons/react';
 
@@ -9,6 +9,22 @@ import { Input } from '@/components/ui/input';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { OnboardingOption, OnboardingQuestionLayout } from '@/types/onboarding';
+
+function renderChoiceIcon(icon: OnboardingOption['icon']) {
+  if (!icon) {
+    return null;
+  }
+
+  if (isValidElement(icon)) {
+    return icon;
+  }
+
+  if (typeof icon === 'function') {
+    return createElement(icon, { className: 'size-4' });
+  }
+
+  return icon;
+}
 
 type ChoiceGroupProps = {
   layout?: OnboardingQuestionLayout;
@@ -38,10 +54,12 @@ function ChoiceCard({
 }: {
   active: boolean;
   description?: string;
-  icon?: React.ReactNode;
+  icon?: OnboardingOption['icon'];
   label: string;
   layout?: OnboardingQuestionLayout;
 }) {
+  const renderedIcon = renderChoiceIcon(icon);
+
   if (layout === 'pills') {
     return (
       <span
@@ -52,7 +70,7 @@ function ChoiceCard({
             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
         )}
       >
-        {icon ? <span className="mr-2 inline-flex shrink-0">{icon}</span> : null}
+        {renderedIcon ? <span className="mr-2 inline-flex shrink-0">{renderedIcon}</span> : null}
         {label}
       </span>
     );
@@ -70,7 +88,7 @@ function ChoiceCard({
       <div className="flex items-start justify-between gap-3">
         <div className="space-y-1.5">
           <div className="flex items-center gap-2">
-            {icon ? <span className="inline-flex shrink-0">{icon}</span> : null}
+            {renderedIcon ? <span className="inline-flex shrink-0">{renderedIcon}</span> : null}
             <p className="text-sm font-semibold">{label}</p>
           </div>
           {description && (
@@ -316,9 +334,9 @@ export function OnboardingField({
   required?: boolean;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Label className="text-sm font-semibold text-slate-900">
+        <Label className="text-lg font-semibold text-slate-900">
           {label}
           {required && <span className="ml-1 text-slate-400">*</span>}
         </Label>

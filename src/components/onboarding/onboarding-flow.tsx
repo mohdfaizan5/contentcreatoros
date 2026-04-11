@@ -56,10 +56,14 @@ import {
   OnboardingTagInput,
 } from './onboarding-cards';
 import {
+  OnboardingXAccountInput,
   OnboardingSpeechInput,
   OnboardingSpeechTextarea,
+  OnboardingWebsiteSearchInput,
 } from './onboarding-speech-fields';
 import { useOptionClickSound } from '@/hooks/use-option-click-sound';
+import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
+import { FaInfoCircle } from "react-icons/fa";
 
 type OnboardingStepRendererProps = {
   answers: OnboardingAnswers;
@@ -148,9 +152,9 @@ export default function OnboardingFlow({
   );
   const activeQuestionIndex = activeQuestionStep
     ? Math.min(
-        questionIndexByStep[activeQuestionStep.id] ?? 0,
-        Math.max(activeQuestionStep.questions.length - 1, 0),
-      )
+      questionIndexByStep[activeQuestionStep.id] ?? 0,
+      Math.max(activeQuestionStep.questions.length - 1, 0),
+    )
     : 0;
   const currentQuestion = activeQuestionStep
     ? activeQuestionStep.questions[activeQuestionIndex]
@@ -294,13 +298,29 @@ export default function OnboardingFlow({
             helperText={question.helperText}
             required={question.required}
           >
-            <OnboardingSpeechInput
-              type={question.inputType ?? 'text'}
-              value={typeof rawValue === 'string' ? rawValue : ''}
-              onValueChange={(value) => updateAnswer(question.key, value)}
-              placeholder={question.placeholder}
-              className="h-12 rounded-md border-slate-200 bg-white"
-            />
+            {question.key === 'website_url' ? (
+              <OnboardingWebsiteSearchInput
+                value={typeof rawValue === 'string' ? rawValue : ''}
+                onValueChange={(value) => updateAnswer(question.key, value)}
+                placeholder={question.placeholder}
+                className="w-full max-w-none"
+              />
+            ) : question.key === 'x_account' ? (
+              <OnboardingXAccountInput
+                value={typeof rawValue === 'string' ? rawValue : ''}
+                onValueChange={(value) => updateAnswer(question.key, value)}
+                placeholder={question.placeholder}
+                className="h-12 rounded-md border-slate-200 bg-white"
+              />
+            ) : (
+              <OnboardingSpeechInput
+                type={question.inputType ?? 'text'}
+                value={typeof rawValue === 'string' ? rawValue : ''}
+                onValueChange={(value) => updateAnswer(question.key, value)}
+                placeholder={question.placeholder}
+                className="h-12 rounded-md border-slate-200 bg-white"
+              />
+            )}
           </OnboardingField>
         );
       case 'textarea':
@@ -459,9 +479,297 @@ export default function OnboardingFlow({
     activeStep?.kind === 'screen' ? stepRenderers?.[activeStep.id] : undefined;
 
   return (
-    <div className="min-h-svh bg-[#e8edf5]">
-      <div className="mx-auto w-full max-w-7xl md:min-h-svh">
-        <div className="grid md:min-h-svh md:grid-cols-[296px_1fr]">
+    <section className="mx-auto   max-w-2xl h-screen flex  justify-between max-h-screen flex-col w-4xl  -bg-[#f4f6fa] md:min-h-0">
+      <header className=" py-4  md:py-6">
+        <div className="flex items-center justify-between gap-4">
+          <div className="">
+            <Logo
+              height={20}
+              width={20}
+              full
+              textClassName="ml-[1px] text-sm font-semibold text-slate-950"
+            />
+          </div>
+          <p className="ml-auto text-sm text-slate-500">
+            Having troubles?{' '}
+            <a
+              href="mailto:support@contentosx.com"
+              className="font-semibold text-[#1f6fff] hover:underline"
+            >
+              Get Help
+            </a>
+          </p>
+        </div>
+
+        {activeQuestionStep && !isReviewStep ? (
+          <div className="mt-4 space-y-2">
+            {/* <div className="flex items-center justify-between gap-4 text-xs uppercase tracking-[0.14em] text-slate-500 md:text-sm md:tracking-[0.08em]">
+                <p>
+                  Question Step {questionStepNumber} of {QUESTION_STEPS.length}
+                </p>
+                <p className="hidden md:block">{activeQuestionStep.title}</p>
+              </div> */}
+            <div className="h-2 max-w-3xl overflow-hidden rounded-full bg-slate-200">
+              <div
+                className="h-full  rounded-full bg-[linear-gradient(90deg,#1f6fff,#39a8ff)] transition-all duration-300"
+                style={{ width: `${progressPercentage}%` }}
+              />
+            </div>
+          </div>
+        ) : null}
+      </header>
+
+      <main className="flex-1  pb-6  md:pb-10">
+        <div className="mx-auto w-full max-w-3xl">
+          <AnimatePresence mode="wait" custom={direction}>
+            <motion.div
+              key={currentStepIndex}
+              custom={direction}
+              variants={slideVariants}
+              initial="enter"
+              animate="center"
+              exit="exit"
+              transition={{ duration: 0.2, ease: 'easeOut' }}
+            >
+              {activeStep?.kind === 'screen'
+                ? renderer?.({
+                  answers,
+                  currentStepIndex,
+                  onBack: goBack,
+                  onNext: goNext,
+                  progressPercentage,
+                  step: activeStep,
+                  totalSteps: CONTENT_ONBOARDING_STEPS.length,
+                  updateAnswer,
+                }) ?? <DefaultEntryStep onNext={goNext} step={activeStep} />
+                : null}
+
+              {activeQuestionStep ? (
+                <section className=" ">
+                  <div className=" pb-5 flex items-center gap-2">
+                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1f6fff]">
+                      {activeQuestionStep.eyebrow}
+                    </p>
+                    <h2 className=" font-medium text-base  text-slate-900 md:text-">
+                      {activeQuestionStep.title} 
+                    </h2>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon-sm">
+                          <FaInfoCircle />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p>{activeQuestionStep.description}</p>
+                      </TooltipContent>
+                    </Tooltip>
+                    {/* <p className="text-sm  text-slate-500 ">
+                      
+                    </p> */}
+                    {/* <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                            Question {activeQuestionIndex + 1} of {activeQuestionStep.questions.length}
+                          </div> */}
+                  </div>
+
+                  <div className="space-y-7">
+                    {currentQuestion ? renderQuestion(currentQuestion) : null}
+                  </div>
+
+                  {isStepSkippable(activeQuestionStep) ? (
+                    <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                      <Lifebuoy className="size-3.5" weight="bold" />
+                      Optional section
+                    </div>
+                  ) : null}
+                </section>
+              ) : null}
+
+              {isReviewStep ? (
+                <section className="space-y-6">
+                  <div className="max-w-2xl space-y-3">
+                    <div className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-700">
+                      Review
+                    </div>
+                    <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
+                      Review your onboarding answers
+                    </h2>
+                    <p className="text-sm leading-7 text-slate-600">
+                      Everything here is editable. This is the structured context the product
+                      will use when generating a 30-day X strategy.
+                    </p>
+                  </div>
+
+                  <div className="grid gap-4 lg:grid-cols-2">
+                    {summaryCards.map((card) => (
+                      <div
+                        key={card.id}
+                        className="rounded-xl border border-white/80 bg-white/88 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.32)]"
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div>
+                            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                              {card.eyebrow}
+                            </p>
+                            <h3 className="mt-2 text-lg font-semibold text-slate-950">
+                              {card.title}
+                            </h3>
+                          </div>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            className="rounded-md text-slate-500"
+                            onClick={() => {
+                              setSaveError(null);
+                              setDirection(-1);
+                              setCurrentStepIndex(card.stepIndex);
+                            }}
+                          >
+                            <PencilSimple className="size-4" />
+                            Edit
+                          </Button>
+                        </div>
+                        <div className="mt-5 space-y-4">
+                          {card.entries.map((entry) => (
+                            <div key={entry.key} className="rounded-lg bg-slate-50 p-4">
+                              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
+                                {entry.label}
+                              </p>
+                              <p className="mt-2 text-sm leading-6 text-slate-700">
+                                {entry.value}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  <div className="rounded-xl border border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(37,99,235,0.92))] p-6 text-white shadow-[0_28px_80px_-42px_rgba(15,23,42,0.5)]">
+                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+                      <div className="space-y-2">
+                        <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-white/70">
+                          <TrendUp className="size-3.5" weight="fill" />
+                          Ready to generate
+                        </p>
+                        <p className="text-lg font-semibold">
+                          Save this profile and move into the X planning workspace.
+                        </p>
+                        {saveError ? (
+                          <p className="inline-flex items-center gap-2 text-sm text-rose-200">
+                            <WarningCircle className="size-4" weight="fill" />
+                            {saveError}
+                          </p>
+                        ) : null}
+                      </div>
+                      <Button
+                        type="button"
+                        onClick={handleSubmit}
+                        disabled={isPending}
+                        className="h-11 rounded-full bg-white px-6 text-slate-950 hover:bg-slate-100"
+                      >
+                        {isPending ? (
+                          <>
+                            <SpinnerGap className="size-4 animate-spin" />
+                            Saving
+                          </>
+                        ) : (
+                          <>
+                            Generate my 30-day strategy
+                            <ArrowRight className="size-4" />
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                </section>
+              ) : null}
+            </motion.div>
+          </AnimatePresence>
+        </div>
+      </main>
+
+      {activeStep?.kind !== 'screen' ? (
+        <footer className="  py-4  end-0">
+          <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4">
+            <Button
+              type="button"
+              variant="ghost"
+              size={"sm"}
+
+              onClick={goToPreviousQuestion}
+              disabled={currentStepIndex <= 0 || isPending}
+              className="rounded-md text-slate-600"
+            >
+              <ArrowLeft className="size-4" />
+              {activeQuestionStep && activeQuestionIndex > 0 ? 'Previous question' : 'Back'}
+            </Button>
+
+            <div className="flex items-center gap-3">
+              {activeQuestionStep && isStepSkippable(activeQuestionStep) ? (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size={"sm"}
+                  onClick={goNext}
+                  disabled={isPending}
+                  className="rounded-md text-slate-500"
+                >
+                  Skip for now
+                </Button>
+              ) : null}
+
+              {!isReviewStep ? (
+                <Button
+                  type="button"
+                  size={"sm"}
+                  onClick={goToNextQuestion}
+                  disabled={
+                    activeQuestionStep
+                      ? isLastQuestionInStep
+                        ? !canContinue
+                        : !isCurrentQuestionComplete
+                      : false
+                  }
+                  className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
+                >
+                  {activeQuestionStep && !isLastQuestionInStep
+                    ? 'Next question'
+                    : 'Continue'}
+                  <ArrowRight className="size-4" />
+                </Button>
+              ) : (
+                <Button
+                  size={"sm"}
+
+                  type="button"
+                  onClick={handleSubmit}
+                  disabled={isPending}
+                  className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
+                >
+                  {isPending ? (
+                    <>
+                      <SpinnerGap className="size-4 animate-spin" />
+                      Saving
+                    </>
+                  ) : (
+                    <>
+                      Save and continue
+                      <CheckCircle className="size-4" weight="fill" />
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
+        </footer>
+      ) : null}
+    </section>
+  )
+  return (
+    <div className="max-h-svh -bg-[#e8edf5]">
+
+      {/* <div className=" ">
+        <div className="grid hidden md:grid-cols-[296px_1fr] ">
           <aside className="hidden flex-col bg-[linear-gradient(180deg,#1f6fff_0%,#184dc0_100%)] text-white md:flex">
             <div className="px-7 pt-7">
               <Logo
@@ -490,278 +798,8 @@ export default function OnboardingFlow({
               </div>
             </div>
           </aside>
-
-          <section className="flex min-h-svh flex-col bg-[#f4f6fa] md:min-h-0">
-            <header className="px-5 py-4 md:px-10 md:py-6">
-              <div className="flex items-center justify-between gap-4">
-                <div className="md:hidden">
-                  <Logo
-                    height={22}
-                    width={22}
-                    full
-                    textClassName="ml-[1px] text-sm font-semibold text-slate-950"
-                  />
-                </div>
-                <p className="ml-auto text-sm text-slate-500">
-                  Having troubles?{' '}
-                  <a
-                    href="mailto:support@contentosx.com"
-                    className="font-semibold text-[#1f6fff] hover:underline"
-                  >
-                    Get Help
-                  </a>
-                </p>
-              </div>
-
-              {activeQuestionStep && !isReviewStep ? (
-                <div className="mt-4 space-y-2">
-                  <div className="flex items-center justify-between gap-4 text-xs uppercase tracking-[0.14em] text-slate-500 md:text-sm md:tracking-[0.08em]">
-                    <p>
-                      Question Step {questionStepNumber} of {QUESTION_STEPS.length}
-                    </p>
-                    <p className="hidden md:block">{activeQuestionStep.title}</p>
-                  </div>
-                  <div className="h-2 overflow-hidden rounded-full bg-slate-200">
-                    <div
-                      className="h-full rounded-full bg-[linear-gradient(90deg,#1f6fff,#39a8ff)] transition-all duration-300"
-                      style={{ width: `${progressPercentage}%` }}
-                    />
-                  </div>
-                </div>
-              ) : null}
-            </header>
-
-            <main className="flex-1 px-4 pb-6 md:px-10 md:pb-10">
-              <div className="mx-auto w-full max-w-3xl">
-                <AnimatePresence mode="wait" custom={direction}>
-                  <motion.div
-                    key={currentStepIndex}
-                    custom={direction}
-                    variants={slideVariants}
-                    initial="enter"
-                    animate="center"
-                    exit="exit"
-                    transition={{ duration: 0.2, ease: 'easeOut' }}
-                  >
-                    {activeStep?.kind === 'screen'
-                      ? renderer?.({
-                        answers,
-                        currentStepIndex,
-                        onBack: goBack,
-                        onNext: goNext,
-                        progressPercentage,
-                        step: activeStep,
-                        totalSteps: CONTENT_ONBOARDING_STEPS.length,
-                        updateAnswer,
-                      }) ?? <DefaultEntryStep onNext={goNext} step={activeStep} />
-                      : null}
-
-                    {activeQuestionStep ? (
-                      <section className="rounded-xl border border-slate-200 bg-white p-5 shadow-[0_20px_40px_-35px_rgba(15,23,42,0.65)] md:p-7">
-                        <div className="space-y-3 pb-5">
-                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1f6fff]">
-                            {activeQuestionStep.eyebrow}
-                          </p>
-                          <h2 className="text-3xl font-semibold tracking-tight text-slate-900 md:text-4xl">
-                            {activeQuestionStep.title}
-                          </h2>
-                          <p className="text-sm leading-7 text-slate-500 md:text-base">
-                            {activeQuestionStep.description}
-                          </p>
-                          <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                            Question {activeQuestionIndex + 1} of {activeQuestionStep.questions.length}
-                          </div>
-                        </div>
-
-                        <div className="space-y-7">
-                          {currentQuestion ? renderQuestion(currentQuestion) : null}
-                        </div>
-
-                        {isStepSkippable(activeQuestionStep) ? (
-                          <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
-                            <Lifebuoy className="size-3.5" weight="bold" />
-                            Optional section
-                          </div>
-                        ) : null}
-                      </section>
-                    ) : null}
-
-                    {isReviewStep ? (
-                      <section className="space-y-6">
-                        <div className="max-w-2xl space-y-3">
-                          <div className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-700">
-                            Review
-                          </div>
-                          <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-                            Review your onboarding answers
-                          </h2>
-                          <p className="text-sm leading-7 text-slate-600">
-                            Everything here is editable. This is the structured context the product
-                            will use when generating a 30-day X strategy.
-                          </p>
-                        </div>
-
-                        <div className="grid gap-4 lg:grid-cols-2">
-                          {summaryCards.map((card) => (
-                            <div
-                              key={card.id}
-                              className="rounded-xl border border-white/80 bg-white/88 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.32)]"
-                            >
-                              <div className="flex items-start justify-between gap-3">
-                                <div>
-                                  <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                                    {card.eyebrow}
-                                  </p>
-                                  <h3 className="mt-2 text-lg font-semibold text-slate-950">
-                                    {card.title}
-                                  </h3>
-                                </div>
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  className="rounded-md text-slate-500"
-                                  onClick={() => {
-                                    setSaveError(null);
-                                    setDirection(-1);
-                                    setCurrentStepIndex(card.stepIndex);
-                                  }}
-                                >
-                                  <PencilSimple className="size-4" />
-                                  Edit
-                                </Button>
-                              </div>
-                              <div className="mt-5 space-y-4">
-                                {card.entries.map((entry) => (
-                                  <div key={entry.key} className="rounded-lg bg-slate-50 p-4">
-                                    <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                                      {entry.label}
-                                    </p>
-                                    <p className="mt-2 text-sm leading-6 text-slate-700">
-                                      {entry.value}
-                                    </p>
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-
-                        <div className="rounded-xl border border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(37,99,235,0.92))] p-6 text-white shadow-[0_28px_80px_-42px_rgba(15,23,42,0.5)]">
-                          <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                            <div className="space-y-2">
-                              <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-white/70">
-                                <TrendUp className="size-3.5" weight="fill" />
-                                Ready to generate
-                              </p>
-                              <p className="text-lg font-semibold">
-                                Save this profile and move into the X planning workspace.
-                              </p>
-                              {saveError ? (
-                                <p className="inline-flex items-center gap-2 text-sm text-rose-200">
-                                  <WarningCircle className="size-4" weight="fill" />
-                                  {saveError}
-                                </p>
-                              ) : null}
-                            </div>
-                            <Button
-                              type="button"
-                              onClick={handleSubmit}
-                              disabled={isPending}
-                              className="h-11 rounded-full bg-white px-6 text-slate-950 hover:bg-slate-100"
-                            >
-                              {isPending ? (
-                                <>
-                                  <SpinnerGap className="size-4 animate-spin" />
-                                  Saving
-                                </>
-                              ) : (
-                                <>
-                                  Generate my 30-day strategy
-                                  <ArrowRight className="size-4" />
-                                </>
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </section>
-                    ) : null}
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </main>
-
-            {activeStep?.kind !== 'screen' ? (
-              <footer className="border-t border-slate-200/80 bg-white px-4 py-4 md:px-10">
-                <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4">
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    onClick={goToPreviousQuestion}
-                    disabled={currentStepIndex <= 0 || isPending}
-                    className="rounded-md text-slate-600"
-                  >
-                    <ArrowLeft className="size-4" />
-                    {activeQuestionStep && activeQuestionIndex > 0 ? 'Previous question' : 'Back'}
-                  </Button>
-
-                  <div className="flex items-center gap-3">
-                    {activeQuestionStep && isStepSkippable(activeQuestionStep) ? (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        onClick={goNext}
-                        disabled={isPending}
-                        className="rounded-md text-slate-500"
-                      >
-                        Skip for now
-                      </Button>
-                    ) : null}
-
-                    {!isReviewStep ? (
-                      <Button
-                        type="button"
-                        onClick={goToNextQuestion}
-                        disabled={
-                          activeQuestionStep
-                            ? isLastQuestionInStep
-                              ? !canContinue
-                              : !isCurrentQuestionComplete
-                            : false
-                        }
-                        className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
-                      >
-                        {activeQuestionStep && !isLastQuestionInStep
-                          ? 'Next question'
-                          : 'Continue'}
-                        <ArrowRight className="size-4" />
-                      </Button>
-                    ) : (
-                      <Button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={isPending}
-                        className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
-                      >
-                        {isPending ? (
-                          <>
-                            <SpinnerGap className="size-4 animate-spin" />
-                            Saving
-                          </>
-                        ) : (
-                          <>
-                            Save and continue
-                            <CheckCircle className="size-4" weight="fill" />
-                          </>
-                        )}
-                      </Button>
-                    )}
-                  </div>
-                </div>
-              </footer>
-            ) : null}
-          </section>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

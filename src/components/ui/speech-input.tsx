@@ -152,7 +152,7 @@ const SpeechInput = forwardRef<HTMLDivElement, SpeechInputProps>(
       onStop,
       className,
       size = "default",
-      modelId = "gpt-4o-mini-transcribe",
+      modelId = "whisper-1",
       baseUri,
       commitStrategy,
       vadSilenceThresholdSecs,
@@ -323,7 +323,7 @@ const SpeechInputRecordButton = forwardRef<
       disabled={disabled ?? speechInput.isConnecting}
       className={cn(
         buttonVariants({ size: speechInput.size }),
-        "relative flex flex-shrink-0 items-center justify-center transition-all",
+        "relative flex shrink-0 items-center justify-center transition-all",
         speechInput.isConnected && "scale-[80%]",
         className
       )}
@@ -379,13 +379,12 @@ const SpeechInputPreview = forwardRef<HTMLDivElement, SpeechInputPreviewProps>(
     return (
       <div
         ref={ref}
-        // @ts-expect-error inert is not yet in React types
-        inert={speechInput.isConnected ? undefined : ""}
+        inert={!speechInput.isConnected}
         className={cn(
-          "relative flex h-8 flex-shrink-0 items-center overflow-hidden text-sm transition-[opacity,transform,width] duration-200 ease-out",
+          "relative flex h-8 shrink-0 items-center overflow-hidden text-sm transition-[opacity,transform,width] duration-200 ease-out",
           showPlaceholder
             ? "text-muted-foreground italic"
-            : "text-muted-foreground [mask-image:linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]",
+            : "text-muted-foreground mask-[linear-gradient(to_right,transparent,black_16px,black_calc(100%-16px),transparent)]",
           speechInput.isConnected ? "w-28 opacity-100" : "w-0 opacity-0",
           className
         )}
@@ -424,15 +423,14 @@ const SpeechInputCancelButton = forwardRef<
     <Button
       ref={ref}
       variant={variant}
-      // @ts-expect-error inert is not yet in React types
-      inert={speechInput.isConnected ? undefined : ""}
+      inert={!speechInput.isConnected}
       onClick={(e) => {
         speechInput.cancel()
         onClick?.(e)
       }}
       className={cn(
         buttonVariants({ size: speechInput.size }),
-        "flex-shrink-0 transition-[opacity,transform,width] duration-200 ease-out",
+        "shrink-0 transition-[opacity,transform,width] duration-200 ease-out",
         speechInput.isConnected
           ? "scale-[80%] opacity-100"
           : "pointer-events-none w-0 scale-100 opacity-0",

@@ -1,105 +1,189 @@
-'use client';
-
-import { Lightbulb, FileText, Sparkle, Stack, LinkSimple, Magnet, ArrowRight, Lightning } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { formatDistanceToNowStrict } from 'date-fns';
+import {
+    CalendarClock,
+    Flame,
+    MessageSquareHeart,
+    PenSquare,
+    TrendingUp,
+    TriangleAlert,
+    Users,
+} from 'lucide-react';
+
+import { getDashboardSnapshot } from '@/actions/dashboard';
+import { SevenDayPlanner } from '@/components/dashboard/seven-day-planner';
+import { Badge } from '@/components/ui/badge';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Progress } from '@/components/ui/progress';
 
 const quickActions = [
     {
-        title: 'Dump an Idea',
-        description: 'Capture a raw thought before it escapes',
+        title: 'Capture Idea',
+        description: 'Drop a raw idea before it disappears.',
         href: '/app/ideas',
-        icon: Lightbulb,
-        gradient: 'from-amber-500 to-orange-600',
-        bgGlow: 'bg-amber-500',
-        iconBg: 'bg-amber-500/10',
-        iconColor: 'text-amber-600 dark:text-amber-400',
+        icon: PenSquare,
     },
     {
-        title: 'Create Template',
-        description: 'Build a thinking scaffold for content',
-        href: '/app/templates',
-        icon: FileText,
-        gradient: 'from-blue-500 to-indigo-600',
-        bgGlow: 'bg-blue-500',
-        iconBg: 'bg-blue-500/10',
-        iconColor: 'text-blue-600 dark:text-blue-400',
+        title: 'Content Calendar',
+        description: 'View and refine your upcoming schedule.',
+        href: '/app/calendar',
+        icon: CalendarClock,
     },
     {
-        title: 'Save Inspiration',
-        description: 'Collect content that inspires you',
-        href: '/app/inspiration',
-        icon: Sparkle,
-        gradient: 'from-purple-500 to-pink-600',
-        bgGlow: 'bg-purple-500',
-        iconBg: 'bg-purple-500/10',
-        iconColor: 'text-purple-600 dark:text-purple-400',
-    },
-    {
-        title: 'Start a Series',
-        description: 'Think in systems, not random posts',
-        href: '/app/series',
-        icon: Stack,
-        gradient: 'from-green-500 to-emerald-600',
-        bgGlow: 'bg-green-500',
-        iconBg: 'bg-green-500/10',
-        iconColor: 'text-green-600 dark:text-green-400',
-    },
-    {
-        title: 'Public Profile',
-        description: 'Create your public profile page',
-        href: '/app/public-profile',
-        icon: LinkSimple,
-        gradient: 'from-sky-500 to-blue-600',
-        bgGlow: 'bg-sky-500',
-        iconBg: 'bg-sky-500/10',
-        iconColor: 'text-sky-600 dark:text-sky-400',
-    },
-    {
-        title: 'Lead Magnet',
-        description: 'Grow your email list',
-        href: '/app/lead-magnets',
-        icon: Magnet,
-        gradient: 'from-rose-500 to-red-600',
-        bgGlow: 'bg-rose-500',
-        iconBg: 'bg-rose-500/10',
-        iconColor: 'text-rose-600 dark:text-rose-400',
+        title: 'X Workspace',
+        description: 'Track generated posts and publishing.',
+        href: '/app/x',
+        icon: TrendingUp,
     },
 ];
 
-function getGreeting(): string {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good morning';
-    if (hour < 17) return 'Good afternoon';
-    return 'Good evening';
+function scoreTone(score: number) {
+    if (score >= 80) {
+        return 'text-emerald-600';
+    }
+
+    if (score >= 60) {
+        return 'text-sky-600';
+    }
+
+    if (score >= 40) {
+        return 'text-amber-600';
+    }
+
+    return 'text-red-600';
 }
 
-export default function DashboardPage() {
-    const [greeting, setGreeting] = useState('Welcome');
+export default async function DashboardPage() {
+    const snapshot = await getDashboardSnapshot();
 
-    useEffect(() => {
-        setGreeting(getGreeting());
-    }, []);
+    const relativeNextScheduled = snapshot.nextScheduledAt
+        ? formatDistanceToNowStrict(new Date(snapshot.nextScheduledAt), { addSuffix: true })
+        : null;
 
     return (
-        <div className="space-y-8 max-w-6xl mx-auto">
-            {/* Welcome Section */}
-            <div className="animate-fade-in-up">
-                {/* <div className="flex items-center gap-2 mb-2">
-                    <Lightning weight="fill" className="h-5 w-5 text-amber-500" />
-                    <span className="text-sm font-medium text-muted-foreground">{greeting}</span>
-                </div> */}
-                <h1 className="text-4xl font-bold tracking-tight text-gradient-cool">
-                    Content OS
-                </h1>
-                <p className="text-muted-foreground mt-2 text-lg">
-                    Your daily system for capturing ideas and creating consistent content.
-                </p>
-            </div>
+        <div className="mx-auto grid w-full max-w-6xl gap-6 pb-8">
+            <section className="grid gap-4 lg:grid-cols-[1.8fr_1fr]">
+                <Card className="border-slate-200/80 bg-linear-to-br from-white to-slate-50">
+                    <CardHeader>
+                        <CardTitle className="text-2xl">Content Health Score</CardTitle>
+                        <CardDescription>
+                            Momentum score based on posting cadence, scheduling coverage, and engagement.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="flex items-end justify-between gap-4">
+                            <div>
+                                <p className={`text-5xl font-semibold leading-none ${scoreTone(snapshot.score)}`}>
+                                    {snapshot.score}
+                                </p>
+                                <p className="mt-2 text-sm text-muted-foreground">{snapshot.scoreLabel}</p>
+                            </div>
 
-    
+                            <Badge variant={snapshot.score >= 60 ? 'default' : 'destructive'}>
+                                {snapshot.score >= 60 ? 'On track' : 'Needs attention'}
+                            </Badge>
+                        </div>
 
-           
+                        <Progress value={snapshot.score} className="h-2" />
+
+                        <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                                <p className="text-xs text-muted-foreground">Published (7d)</p>
+                                <p className="mt-1 text-xl font-semibold">{snapshot.publishedLast7DaysCount}</p>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                                <p className="text-xs text-muted-foreground">Scheduled</p>
+                                <p className="mt-1 text-xl font-semibold">{snapshot.scheduledUpcomingCount}</p>
+                            </div>
+
+                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                                <p className="text-xs text-muted-foreground">Engagement (7d)</p>
+                                <p className="mt-1 text-xl font-semibold">{snapshot.engagementLast7DaysCount}</p>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="text-base">Audience Pulse</CardTitle>
+                        <CardDescription>Live account snapshot from X.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        <div className="rounded-md border bg-muted/30 p-3">
+                            <p className="text-xs text-muted-foreground">Followers</p>
+                            <p className="mt-1 inline-flex items-center gap-2 text-xl font-semibold">
+                                <Users className="h-4 w-4 text-muted-foreground" />
+                                {snapshot.followersCount?.toLocaleString() ?? '--'}
+                            </p>
+                        </div>
+
+                        <div className="rounded-md border bg-muted/30 p-3">
+                            <p className="text-xs text-muted-foreground">Next scheduled post</p>
+                            <p className="mt-1 inline-flex items-center gap-2 text-sm font-medium">
+                                <CalendarClock className="h-4 w-4 text-muted-foreground" />
+                                {relativeNextScheduled || 'No upcoming post scheduled'}
+                            </p>
+                        </div>
+
+                        <SevenDayPlanner />
+                    </CardContent>
+                </Card>
+            </section>
+
+            <section className="grid gap-4 lg:grid-cols-[1.35fr_1fr]">
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="inline-flex items-center gap-2 text-base">
+                            <TriangleAlert className="h-4 w-4 text-amber-600" />
+                            Posting and Activity Alerts
+                        </CardTitle>
+                        <CardDescription>
+                            Flags for inactivity and weak engagement so you can correct quickly.
+                        </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="space-y-2">
+                            {snapshot.activityAlerts.map((alert) => (
+                                <li key={alert} className="flex items-start gap-2 rounded-md border bg-muted/20 p-3">
+                                    <MessageSquareHeart className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                    <span className="text-sm">{alert}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </CardContent>
+                </Card>
+
+                <Card>
+                    <CardHeader>
+                        <CardTitle className="inline-flex items-center gap-2 text-base">
+                            <Flame className="h-4 w-4 text-rose-500" />
+                            Quick Actions
+                        </CardTitle>
+                        <CardDescription>Jump into the highest-leverage workflows.</CardDescription>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {quickActions.map((action) => {
+                            const Icon = action.icon;
+
+                            return (
+                                <Link
+                                    key={action.href}
+                                    href={action.href}
+                                    className="flex items-center justify-between rounded-md border border-border px-3 py-2 text-sm transition-colors hover:bg-muted"
+                                >
+                                    <div className="space-y-0.5">
+                                        <p className="font-medium">{action.title}</p>
+                                        <p className="text-xs text-muted-foreground">{action.description}</p>
+                                    </div>
+                                    <Icon className="h-4 w-4 text-muted-foreground" />
+                                </Link>
+                            );
+                        })}
+                    </CardContent>
+                </Card>
+            </section>
         </div>
     );
 }
