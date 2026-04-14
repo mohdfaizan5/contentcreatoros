@@ -4,6 +4,7 @@ import BrandKitShell from '@/components/settings/brand-kit-shell';
 import { getBrandKitPageData } from '@/lib/brand-kit-page-data';
 import { buildBrandVisualIdentity, type BrandVisualIdentity } from '@/lib/brand-visuals';
 import { cn } from '@/lib/utils';
+import { SiLeaflet } from "react-icons/si";
 
 export const metadata: Metadata = {
   title: 'Brand Visuals | ContentOSX',
@@ -32,6 +33,13 @@ type ResolvedPalette = {
   textOnPrimary: string;
   textOnSecondary: string;
 };
+
+const LAUREL_LEAVES = [
+  { inward: 30, rotate: -30, top: 14 },
+  { inward: 36, rotate: -16, top: 32 },
+  { inward: 43, rotate: -2, top: 50 },
+  { inward: 52, rotate: 12, top: 68 },
+] as const;
 
 function toVisualPalette(identity: BrandVisualIdentity): VisualPalette {
   const [link, accent, primary, background, textPrimary] = identity.colors;
@@ -391,9 +399,44 @@ export default async function BrandVisualsPage() {
               >
                 <div className="relative overflow-hidden p-6 text-center sm:p-7">
                   <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(560px_180px_at_50%_110%,rgba(255,255,255,0.08),transparent_80%)]" />
-                  <p className="text-lg tracking-[0.4em]" style={{ color: theme.primary }}>
-                    *****
-                  </p>
+                  <div className="pointer-events-none absolute inset-y-0 left-0 hidden w-24 sm:block" aria-hidden="true">
+                    {LAUREL_LEAVES.map((leaf) => (
+                      <span
+                        key={`left-${leaf.top}-${leaf.inward}`}
+                        className="absolute opacity-50"
+                        style={{
+                          color: hexToRgba(theme.foreground, 0.45),
+                          left: `${leaf.inward}%`,
+                          top: `${leaf.top}%`,
+                          transform: `translate(-50%, -50%) rotate(${leaf.rotate}deg)`,
+                        }}
+                      >
+                        <SiLeaflet className="h-10 w-10" />
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="pointer-events-none absolute inset-y-0 right-0 hidden w-24 sm:block" aria-hidden="true">
+                    {LAUREL_LEAVES.map((leaf) => (
+                      <span
+                        key={`right-${leaf.top}-${leaf.inward}`}
+                        className="absolute opacity-50"
+                        style={{
+                          color: hexToRgba(theme.foreground, 0.45),
+                          left: `${100 - leaf.inward}%`,
+                          top: `${leaf.top}%`,
+                          transform: `translate(-50%, -50%) rotate(${-leaf.rotate}deg)`,
+                        }}
+                      >
+                        <SiLeaflet className="h-10 w-10" />
+                      </span>
+                    ))}
+                  </div>
+
+                  <div className="relative z-10">
+                    <p className="text-lg tracking-[0.4em]" style={{ color: theme.primary }}>
+                      *****
+                    </p>
                   {logoUrl ? (
                     <img
                       src={logoUrl}
@@ -407,6 +450,7 @@ export default async function BrandVisualsPage() {
                   <p className="mt-2 text-3xl" style={{ color: theme.mutedSurfaceText }}>
                     400+ 5 star reviews
                   </p>
+                  </div>
                 </div>
               </Panel>
             </div>

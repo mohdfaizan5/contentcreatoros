@@ -3,6 +3,9 @@ import { TwitterApi } from 'twitter-api-v2';
 import { createClient } from '@/lib/server';
 import { createAdminClient } from '@/lib/server-admin';
 import { X_OAUTH_SCOPES, X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth';
+import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
+import { extractXHandle } from '@/lib/x-handle';
+import { getConfiguredPublicOrigin } from '@/lib/request-origin';
 
 const X_STATE_COOKIE = 'x_oauth_state';
 const X_CODE_VERIFIER_COOKIE = 'x_oauth_code_verifier';
@@ -114,6 +117,10 @@ function getXClientSecret() {
   return process.env.X_CLIENT_SECRET?.trim() || process.env.Secret_Key?.trim();
 }
 
+function normalizeOrigin(rawOrigin: string) {
+  return rawOrigin.endsWith('/') ? rawOrigin.slice(0, -1) : rawOrigin;
+}
+
 function createCookieOptions(maxAge?: number) {
   return {
     httpOnly: true,
@@ -124,8 +131,22 @@ function createCookieOptions(maxAge?: number) {
   };
 }
 
-function getRedirectUri(origin: string) {
-  return `${origin}/api/x/callback`;
+export function getXRedirectUri(origin: string) {
+  const configuredCallback =
+    process.env.X_CALLBACK_URL?.trim() ||
+    process.env.X_REDIRECT_URI?.trim();
+
+  if (configuredCallback) {
+    return configuredCallback;
+  }
+
+  const configuredOrigin = getConfiguredPublicOrigin();
+
+  if (configuredOrigin) {
+    return `${configuredOrigin}/api/x/callback`;
+  }
+
+  return `${normalizeOrigin(origin)}/api/x/callback`;
 }
 
 function createXOAuthClient() {
@@ -179,7 +200,7 @@ export function getXConfigStatus() {
 export async function createXAuthorizationUrl(origin: string) {
   const client = createXOAuthClient();
   const cookieStore = await cookies();
-  const authLink = client.generateOAuth2AuthLink(getRedirectUri(origin), {
+  const authLink = client.generateOAuth2AuthLink(getXRedirectUri(origin), {
     scope: getRequestedXScopes(),
   });
 
@@ -205,7 +226,7 @@ export async function exchangeXCodeForToken(code: string, origin: string) {
     const client = createXOAuthClient();
     const tokenResult = await client.loginWithOAuth2({
       code,
-      redirectUri: getRedirectUri(origin),
+      redirectUri: getXRedirectUri(origin),
       codeVerifier,
     });
 
@@ -355,13 +376,14 @@ export async function getXConnectionMetadata() {
   const connectedAt = cookieStore.get(X_CONNECTED_AT_COOKIE)?.value;
 
   if (connectedAt) {
-    return { connectedAt };
+    return { connectedAt, username: null };
   }
 
   const storedAccount = await getStoredXAccountForCurrentUser();
 
   return {
     connectedAt: storedAccount?.connected_at,
+    username: storedAccount?.username ?? null,
   };
 }
 
@@ -546,6 +568,62 @@ export async function hasStoredXConnectionForCurrentUser() {
     .eq('user_id', user.id);
 
   return !error && (count ?? 0) > 0;
+}
+
+function normalizeOnboardingAnswerToString(answer: unknown) {
+  if (typeof answer === 'string') {
+    return answer.trim();
+  }
+
+  if (answer && typeof answer === 'object') {
+    const record = answer as Record<string, unknown>;
+    const value = record.value;
+    return typeof value === 'string' ? value.trim() : '';
+  }
+
+  return '';
+}
+
+export async function getCurrentUserLinkedXHandle() {
+  const storedAccount = await getStoredXAccountForCurrentUser();
+
+  if (storedAccount?.username) {
+    return storedAccount.username;
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return null;
+  }
+
+  const { data: onboardingAnswer } = await supabase
+    .from('onboarding_answers')
+    .select('answer')
+    .eq('user_id', user.id)
+    .eq('flow_key', ONBOARDING_FLOW_KEY)
+    .eq('question_key', 'x_account')
+    .maybeSingle();
+
+  const linkedHandle = extractXHandle(
+    normalizeOnboardingAnswerToString(onboardingAnswer?.answer),
+  );
+
+  if (linkedHandle) {
+    return linkedHandle;
+  }
+
+  const { data: autofillProfile } = await supabase
+    .from('onboarding_autofill_profiles')
+    .select('x_handle')
+    .eq('user_id', user.id)
+    .eq('flow_key', ONBOARDING_FLOW_KEY)
+    .maybeSingle();
+
+  return extractXHandle(autofillProfile?.x_handle ?? null);
 }
 
 async function getStoredXAccountById(accountId: string) {

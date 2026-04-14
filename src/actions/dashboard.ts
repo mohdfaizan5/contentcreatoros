@@ -564,6 +564,12 @@ export async function scheduleSevenDayContentPlan(params: {
     .eq('user_id', user.id)
     .maybeSingle();
 
+  if (!xAccount?.id) {
+    throw new Error(
+      'Connect X before scheduling this plan. No active X account was found for automatic posting.',
+    );
+  }
+
   const now = new Date().toISOString();
 
   const insertRows = approvedItems.map((item, index) => {
@@ -583,7 +589,7 @@ export async function scheduleSevenDayContentPlan(params: {
     return {
       user_id: user.id,
       template_id: template.id,
-      x_account_id: xAccount?.id ?? null,
+      x_account_id: xAccount.id,
       content,
       character_count: content.length,
       status: 'scheduled' as const,

@@ -5,6 +5,7 @@ import {
   persistXTokens,
   validateXOAuthState,
 } from '@/lib/x';
+import { getRequestOrigin } from '@/lib/request-origin';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -12,11 +13,15 @@ export async function GET(request: NextRequest) {
   const code = searchParams.get('code');
   const state = searchParams.get('state');
   const xError = searchParams.get('error');
+  const xErrorDescription = searchParams.get('error_description');
 
   if (xError) {
     await clearXSession();
     return NextResponse.redirect(
-      new URL(`/app/analytics?error=${encodeURIComponent(xError)}`, request.url),
+      new URL(
+        `/app/analytics?error=${encodeURIComponent(xErrorDescription || xError)}`,
+        request.url,
+      ),
     );
   }
 
@@ -37,7 +42,7 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokenResponse = await exchangeXCodeForToken(code, request.nextUrl.origin);
+    const tokenResponse = await exchangeXCodeForToken(code, getRequestOrigin(request));
     await persistXTokens(tokenResponse);
     await persistXConnectionForCurrentUser(tokenResponse);
 

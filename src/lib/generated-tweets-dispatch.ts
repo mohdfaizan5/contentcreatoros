@@ -5,6 +5,7 @@ import type { ScheduledDispatchRunStatus } from '@/types/database';
 type ScheduledTweetRow = {
   id: string;
   content: string;
+  user_id: string;
   x_account_id: string | null;
 };
 
@@ -173,12 +174,37 @@ export async function dispatchScheduledTweets(
   });
 
   try {
+    const fallbackAccountByUserId = new Map<string, string | null>();
+
+    const resolveFallbackAccountId = async (userId: string) => {
+      if (fallbackAccountByUserId.has(userId)) {
+        return fallbackAccountByUserId.get(userId) ?? null;
+      }
+
+      const { data: fallbackAccount, error: fallbackAccountError } = await supabase
+        .from('x_accounts')
+        .select('id')
+        .eq('user_id', userId)
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+
+      if (fallbackAccountError) {
+        throw new Error(
+          `Unable to resolve a connected X account for user ${userId}. ${fallbackAccountError.message}`,
+        );
+      }
+
+      const fallbackAccountId = fallbackAccount?.id ?? null;
+      fallbackAccountByUserId.set(userId, fallbackAccountId);
+      return fallbackAccountId;
+    };
+
     let dueTweetsQuery = supabase
       .from('generated_tweets')
-      .select('id, content, x_account_id')
+      .select('id, content, user_id, x_account_id')
       .eq('status', 'scheduled')
       .lte('scheduled_for', now)
-      .not('x_account_id', 'is', null)
       .order('scheduled_for', { ascending: true })
       .limit(limit);
 
@@ -224,12 +250,65 @@ export async function dispatchScheduledTweets(
     const results: ScheduledTweetDispatchResult[] = [];
 
     for (const row of (dueTweets ?? []) as ScheduledTweetRow[]) {
+      let accountId = row.x_account_id;
+
+      if (!accountId) {
+        try {
+          accountId = await resolveFallbackAccountId(row.user_id);
+        } catch (accountLookupError) {
+          const message =
+            accountLookupError instanceof Error
+              ? accountLookupError.message
+              : 'Unable to resolve an X account for scheduled publishing.';
+
+          await supabase
+            .from('generated_tweets')
+            .update({
+              error_message: message,
+              status: 'failed',
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', row.id)
+            .eq('status', 'scheduled');
+
+          results.push({
+            error: message,
+            id: row.id,
+            status: 'failed',
+          });
+          continue;
+        }
+      }
+
+      if (!accountId) {
+        const message =
+          'Missing x_account_id for this scheduled tweet and no connected X account was found. Reconnect X and reschedule this post.';
+
+        await supabase
+          .from('generated_tweets')
+          .update({
+            error_message: message,
+            status: 'failed',
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', row.id)
+          .eq('status', 'scheduled');
+
+        results.push({
+          error: message,
+          id: row.id,
+          status: 'failed',
+        });
+        continue;
+      }
+
       const { data: claimedTweet, error: claimError } = await supabase
         .from('generated_tweets')
         .update({
           error_message: null,
           status: 'publishing',
           updated_at: new Date().toISOString(),
+          x_account_id: accountId,
         })
         .eq('id', row.id)
         .eq('status', 'scheduled')
@@ -255,11 +334,11 @@ export async function dispatchScheduledTweets(
 
       try {
         const publishedTweet = await publishTweetWithStoredConnection(
-          row.x_account_id as string,
+          accountId,
           row.content,
         );
 
-        await supabase
+        const { error: publishUpdateError } = await supabase
           .from('generated_tweets')
           .update({
             error_message: null,
@@ -270,6 +349,12 @@ export async function dispatchScheduledTweets(
             x_tweet_id: publishedTweet.id,
           })
           .eq('id', row.id);
+
+        if (publishUpdateError) {
+          throw new Error(
+            `Tweet published on X but local status update failed. ${publishUpdateError.message}`,
+          );
+        }
 
         results.push({
           id: row.id,
@@ -282,7 +367,7 @@ export async function dispatchScheduledTweets(
             ? publishError.message
             : 'Unable to publish the scheduled tweet.';
 
-        await supabase
+        const { error: failedUpdateError } = await supabase
           .from('generated_tweets')
           .update({
             error_message: message,
@@ -290,6 +375,15 @@ export async function dispatchScheduledTweets(
             updated_at: new Date().toISOString(),
           })
           .eq('id', row.id);
+
+        if (failedUpdateError) {
+          results.push({
+            error: `${message} Also failed to persist failure status: ${failedUpdateError.message}`,
+            id: row.id,
+            status: 'failed',
+          });
+          continue;
+        }
 
         results.push({
           error: message,

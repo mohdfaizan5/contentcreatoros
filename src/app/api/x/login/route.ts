@@ -1,9 +1,10 @@
 import { createXAuthorizationUrl } from '@/lib/x';
+import { getRequestOrigin } from '@/lib/request-origin';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const authorizationUrl = await createXAuthorizationUrl(request.nextUrl.origin);
+    const authorizationUrl = await createXAuthorizationUrl(getRequestOrigin(request));
     return NextResponse.redirect(authorizationUrl);
   } catch (error) {
     const message =

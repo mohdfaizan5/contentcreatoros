@@ -28,12 +28,19 @@ import {
 } from '@/components/ui/tooltip';
 import {
   ensureXAccessToken,
+  getCurrentUserLinkedXHandle,
   getAuthenticatedUserTweets,
   getAuthenticatedXUser,
+  getXRedirectUri,
   getXConfigStatus,
   getXConnectionMetadata,
   type XTweet,
 } from '@/lib/x';
+import {
+  hasPublicXLookupConfigured,
+  lookupPublicXTweetsByUserId,
+  lookupPublicXUserByHandle,
+} from '@/lib/x-public';
 
 type PageProps = {
   searchParams: Promise<{
@@ -83,6 +90,10 @@ function getFriendlyError(error?: string) {
     return 'Add X_CLIENT_ID to your environment first. The older API key and bearer token are not enough for user login.';
   }
 
+  if (error.includes('access_denied')) {
+    return 'X denied the connection request. This usually means the callback URL or requested scopes do not match your X app configuration.';
+  }
+
   return error;
 }
 
@@ -112,13 +123,17 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
   const host = headersList.get('host') ?? 'localhost:3000';
   const protocol = headersList.get('x-forwarded-proto') ?? 'http';
   const origin = `${protocol}://${host}`;
+  const callbackUrl = getXRedirectUri(origin);
   const xConfig = getXConfigStatus();
   const connectionMetadata = await getXConnectionMetadata();
+  const linkedHandle = await getCurrentUserLinkedXHandle();
+  const canUsePublicFallback = Boolean(linkedHandle);
 
   let accessToken: string | null = null;
   let user = null;
   let tweets: XTweet[] = [];
   let dataError: string | null = null;
+  let usingPublicFallback = false;
 
   if (xConfig.configured) {
     accessToken = await ensureXAccessToken(origin, { persistCookies: false });
@@ -134,11 +149,35 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
     }
   }
 
+  if (!user && linkedHandle) {
+    const publicUser = await lookupPublicXUserByHandle(linkedHandle);
+
+    if (publicUser) {
+      user = publicUser;
+      usingPublicFallback = true;
+
+      if (publicUser.id) {
+        tweets = await lookupPublicXTweetsByUserId(publicUser.id);
+      }
+    }
+  }
+
   const tweetTotals = getTweetTotals(tweets);
-  const bannerMessage = getFriendlyError(params.error) ?? dataError;
+  const bannerMessage =
+    getFriendlyError(params.error) ??
+    (!usingPublicFallback ? dataError : null);
   // Treat the account as connected when we have a valid token or known connection metadata,
   // even if a live profile fetch temporarily fails.
-  const isConnected = Boolean(accessToken || connectionMetadata.connectedAt);
+  const isConnected = Boolean(
+    accessToken || connectionMetadata.connectedAt || usingPublicFallback,
+  );
+  const connectionLabel = accessToken
+    ? 'Authenticated'
+    : usingPublicFallback
+      ? 'Linked handle'
+      : isConnected
+        ? 'Reconnect needed'
+        : 'Not connected';
 
   return (
     <div className="space-y-6">
@@ -167,7 +206,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {!isConnected ? (
+            {!accessToken ? (
               <Button
                 asChild
                 className="h-11 rounded-full border border-sky-300/30 bg-white px-5 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_-12px_rgba(14,165,233,0.8)] hover:bg-sky-400"
@@ -257,15 +296,30 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
             </p>
             <p>
               Callback URL to register in the X developer portal:
-              <code className="ml-1 rounded bg-amber-100 px-1.5 py-0.5">
-                {origin}/api/x/callback
-              </code>
+              <code className="ml-1 rounded bg-amber-100 px-1.5 py-0.5">{callbackUrl}</code>
             </p>
           </CardContent>
         </Card>
       )}
 
-      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] border-red-500 border">
+      {usingPublicFallback && (
+        <Card className="border-sky-200/80 bg-sky-50/80">
+          <CardContent className="flex flex-col gap-2 pt-6 text-sm text-sky-950/80">
+            <p className="font-medium text-sky-900">Showing public X analytics from your saved handle</p>
+            <p>
+              We found <code>@{linkedHandle}</code> from your saved brand profile and loaded public profile data.
+              Connect X to unlock the direct user-authenticated connection and automatic token refresh.
+            </p>
+            {!hasPublicXLookupConfigured() && (
+              <p>
+                Add an app bearer token if you want public-handle fallback to work without a direct X connection.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card className="border-slate-200/80 bg-white/90">
           <CardHeader>
             <CardTitle>
@@ -285,7 +339,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                   />
                 </p>
                 <p className="mt-2 text-xl font-semibold text-slate-900">
-                  {isConnected ? 'Connected' : 'Not connected'}
+                  {connectionLabel}
                 </p>
               </div>
 
@@ -301,6 +355,18 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 </p>
               </div>
             </div>
+
+            {!accessToken && linkedHandle && (
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                  <LabelTooltip
+                    label="Linked handle"
+                    description="This handle is loaded from your stored X connection or onboarding answers."
+                  />
+                </p>
+                <p className="mt-2 text-xl font-semibold text-slate-900">@{linkedHandle}</p>
+              </div>
+            )}
 
             {user ? (
               <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,0.7))] p-5">
@@ -342,10 +408,12 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
               </div>
             ) : (
               <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
-                Connect an X account to render the authenticated user here and pull recent-post metrics from the user timeline endpoint.
+                {linkedHandle
+                  ? 'We found your linked X handle, but could not load the profile right now.'
+                  : 'Connect an X account or save your X handle in onboarding to render profile analytics here.'}
               </div>
             )}
-            <div className="grid gap-6 border border-yellow-500">
+            <div className="grid gap-6">
               <Card className="border-slate-200/80 bg-white/90">
                 <CardHeader>
                   <CardTitle>
@@ -499,7 +567,9 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
               <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
                 {isConnected
                   ? 'No recent posts were returned for this account.'
-                  : 'Connect an X account to show recent posts and engagement totals here.'}
+                  : canUsePublicFallback
+                    ? 'We know your X handle, but could not load recent posts right now.'
+                    : 'Connect an X account or save your X handle to show recent posts and engagement totals here.'}
               </div>
             )}
           </CardContent>
