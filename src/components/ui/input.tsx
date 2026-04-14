@@ -43,14 +43,23 @@ export function Input({
       data-size={size}
       data-slot="input-control"
     >
-      {nativeInput ? (
-        <input
-          className={inputClassName}
-          data-slot="input"
-          size={typeof size === "number" ? size : undefined}
-          {...props}
-        />
-      ) : (
+      {nativeInput ? (() => {
+        const { style, ...nativeRestProps } = props as {
+          style?:
+            | React.CSSProperties
+            | ((state: unknown) => React.CSSProperties | undefined);
+        } & React.InputHTMLAttributes<HTMLInputElement>;
+
+        return (
+          <input
+            className={inputClassName}
+            data-slot="input"
+            size={typeof size === "number" ? size : undefined}
+            style={typeof style === "function" ? undefined : style}
+            {...nativeRestProps}
+          />
+        );
+      })() : (
         <InputPrimitive
           className={inputClassName}
           data-slot="input"
