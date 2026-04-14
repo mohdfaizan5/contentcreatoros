@@ -163,7 +163,10 @@ export default function CreateContentDialog({
                     {/* Pick from ideas or start fresh */}
                     <div className="space-y-2">
                         <Label>Pick from ideas or start fresh</Label>
-                        <Select value={selectedIdea || 'none'} onValueChange={handleIdeaSelect}>
+                        <Select
+                            value={selectedIdea || 'none'}
+                            onValueChange={(value) => handleIdeaSelect(value ?? 'none')}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="Start fresh or pick an idea" />
                             </SelectTrigger>
@@ -224,7 +227,10 @@ export default function CreateContentDialog({
                     {availableContentTypes.length > 0 && (
                         <div className="space-y-2">
                             <Label htmlFor="contentType">Content Type</Label>
-                            <Select value={contentType} onValueChange={setContentType}>
+                            <Select
+                                value={contentType}
+                                onValueChange={(value) => setContentType(value ?? '')}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="Select content type" />
                                 </SelectTrigger>
@@ -245,7 +251,10 @@ export default function CreateContentDialog({
                     {/* Series */}
                     <div className="space-y-2">
                         <Label htmlFor="series">Series (optional)</Label>
-                        <Select value={selectedSeries || 'none'} onValueChange={(v) => setSelectedSeries(v === 'none' ? null : v)}>
+                        <Select
+                            value={selectedSeries || 'none'}
+                            onValueChange={(v) => setSelectedSeries(!v || v === 'none' ? null : v)}
+                        >
                             <SelectTrigger>
                                 <SelectValue placeholder="None" />
                             </SelectTrigger>

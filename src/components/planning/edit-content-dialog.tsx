@@ -159,14 +159,7 @@ export default function EditContentDialog({
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="!max-w-2xl max-h-[90vh] overflow-y-auto" onPointerDownOutside={(e) => {
-                if (hasChanges) {
-                    e.preventDefault();
-                    if (confirm('You have unsaved changes. Are you sure you want to discard them?')) {
-                        onOpenChange(false);
-                    }
-                }
-            }}>
+            <DialogContent className="!max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="text-center space-y-1">
                     <DialogTitle className="text-xl font-bold">Edit Content</DialogTitle>
                     <DialogDescription className="text-sm">
@@ -231,7 +224,11 @@ export default function EditContentDialog({
                         {/* Content Type */}
                         <div className="space-y-2">
                             <Label htmlFor="edit-contentType" className="font-semibold">Content Type</Label>
-                            <Select value={contentType} onValueChange={setContentType} disabled={availableContentTypes.length === 0}>
+                            <Select
+                                value={contentType}
+                                onValueChange={(value) => setContentType(value ?? '')}
+                                disabled={availableContentTypes.length === 0}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder={availableContentTypes.length === 0 ? "Select platforms first" : "Select type"} />
                                 </SelectTrigger>
@@ -248,7 +245,10 @@ export default function EditContentDialog({
                         {/* Series */}
                         <div className="space-y-2">
                             <Label htmlFor="edit-series" className="font-semibold">Series</Label>
-                            <Select value={selectedSeries || 'none'} onValueChange={(v) => setSelectedSeries(v === 'none' ? null : v)}>
+                            <Select
+                                value={selectedSeries || 'none'}
+                                onValueChange={(v) => setSelectedSeries(!v || v === 'none' ? null : v)}
+                            >
                                 <SelectTrigger>
                                     <SelectValue placeholder="None" />
                                 </SelectTrigger>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'motion/react';
 import {
@@ -16,6 +16,7 @@ import {
 
 import Logo from '@/components/logo';
 import { Button } from '@/components/ui/button';
+import { runOnboardingAutofill } from '@/actions/onboarding-autofill';
 import {
   VerticalStepperExample,
   type VerticalStepperStep,
@@ -64,12 +65,17 @@ import {
 import { useOptionClickSound } from '@/hooks/use-option-click-sound';
 import { Tooltip, TooltipContent, TooltipTrigger } from '../ui/tooltip';
 import { FaInfoCircle } from "react-icons/fa";
+import { BenfitsAnimatedBeam } from './benefits-animated-beam';
+import { OnboardingTerminal } from './onboarding-end-animation-terminal';
+import { XLogoIcon } from '@phosphor-icons/react/dist/ssr';
+import { BrandVisualOverview } from '../brand-kit/brand-visual-overview';
+import type { BrandVisualIdentity } from '@/lib/brand-visuals';
 
 type OnboardingStepRendererProps = {
   answers: OnboardingAnswers;
   currentStepIndex: number;
   onBack: () => void;
-  onNext: () => void;
+  onNext: () => void; 
   progressPercentage: number;
   step: OnboardingScreenStepDefinition;
   totalSteps: number;
@@ -77,6 +83,7 @@ type OnboardingStepRendererProps = {
 };
 
 type OnboardingFlowProps = {
+  initialXHandle?: string | null;
   redirectTo?: string;
   stepRenderers?: Partial<
     Record<string, (props: OnboardingStepRendererProps) => React.ReactNode>
@@ -118,6 +125,7 @@ function withOptionVisuals(options: OnboardingOption[]) {
 
 
 export default function OnboardingFlow({
+  initialXHandle,
   redirectTo = '/app/analytics',
   stepRenderers,
 }: OnboardingFlowProps) {
@@ -125,22 +133,34 @@ export default function OnboardingFlow({
   const playOptionClick = useOptionClickSound();
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [answers, setAnswers] = useState<OnboardingAnswers>(() =>
-    getInitialOnboardingAnswers(),
-  );
+  const [answers, setAnswers] = useState<OnboardingAnswers>(() => {
+    const initialAnswers = getInitialOnboardingAnswers();
+
+    if (initialXHandle && typeof initialAnswers.x_account === 'string') {
+      initialAnswers.x_account = initialXHandle;
+    }
+
+    return initialAnswers;
+  });
   const [questionIndexByStep, setQuestionIndexByStep] = useState<
     Record<string, number>
   >({});
   const [showSuccess, setShowSuccess] = useState(false);
+  const [isAutofillProcessing, setIsAutofillProcessing] = useState(false);
+  const [autofillApplied, setAutofillApplied] = useState(false);
+  const [autofillHint, setAutofillHint] = useState<string | null>(null);
+  const [autofillSourceDomain, setAutofillSourceDomain] = useState<string | null>(null);
+  const [autofillBrandIdentity, setAutofillBrandIdentity] = useState<BrandVisualIdentity | null>(null);
+  const [showBrandGuidelinesOnly, setShowBrandGuidelinesOnly] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isAutofillPending, startAutofillTransition] = useTransition();
 
   const activeStep =
     currentStepIndex >= 0 && currentStepIndex < CONTENT_ONBOARDING_STEPS.length
       ? CONTENT_ONBOARDING_STEPS[currentStepIndex]
       : null;
   const activeQuestionStep = activeStep?.kind === 'questions' ? activeStep : null;
-  const isReviewStep = currentStepIndex === CONTENT_ONBOARDING_STEPS.length;
   const canContinue = activeQuestionStep ? isStepComplete(activeQuestionStep, answers) : true;
   const progressPercentage = getProgressPercentage(currentStepIndex);
   const questionStepNumber = activeQuestionStep
@@ -148,7 +168,7 @@ export default function OnboardingFlow({
     : 0;
   const activeMilestoneStep = getActiveMilestoneStep(
     activeQuestionStep?.id,
-    isReviewStep,
+    false,
   );
   const activeQuestionIndex = activeQuestionStep
     ? Math.min(
@@ -162,9 +182,22 @@ export default function OnboardingFlow({
   const isLastQuestionInStep = activeQuestionStep
     ? activeQuestionIndex >= activeQuestionStep.questions.length - 1
     : true;
+  const isLastStepInFlow = currentStepIndex >= CONTENT_ONBOARDING_STEPS.length - 1;
+  const isFinalQuestionInFlow =
+    Boolean(activeQuestionStep) && isLastStepInFlow && isLastQuestionInStep;
   const isCurrentQuestionComplete = currentQuestion
     ? isQuestionComplete(currentQuestion, answers)
     : true;
+  const isSourceSetupStep = activeQuestionStep?.id === 'source-setup';
+  const websiteUrlValue =
+    typeof answers.website_url === 'string' ? answers.website_url : '';
+  const xAccountValue =
+    typeof answers.x_account === 'string' ? answers.x_account : '';
+  const isBusy = isPending || isAutofillPending;
+  const isBrandGuidelinesOnlyView =
+    activeQuestionStep?.id === 'company-basics' &&
+    showBrandGuidelinesOnly &&
+    Boolean(autofillBrandIdentity);
 
   const summaryCards = useMemo(
     () => getOnboardingSummaryCards(answers),
@@ -175,7 +208,6 @@ export default function OnboardingFlow({
     () =>
       ONBOARDING_IMPORTANT_MILESTONES.map((milestone, index) => {
         const completed =
-          isReviewStep ||
           milestone.stepIds.every((stepId) => {
             const step = QUESTION_STEP_MAP.get(stepId);
             return step ? isStepComplete(step, answers) : false;
@@ -188,8 +220,20 @@ export default function OnboardingFlow({
           completed,
         };
       }),
-    [answers, isReviewStep],
+    [answers],
   );
+
+  useEffect(() => {
+    if (!showSuccess) {
+      return;
+    }
+
+    const timeout = setTimeout(() => {
+      router.push(redirectTo);
+    }, 4800);
+
+    return () => clearTimeout(timeout);
+  }, [redirectTo, router, showSuccess]);
 
   const updateAnswer = (key: string, value: OnboardingAnswers[string]) => {
     setSaveError(null);
@@ -212,9 +256,15 @@ export default function OnboardingFlow({
 
   const goNext = () => {
     setSaveError(null);
+
+    if (activeQuestionStep && currentStepIndex >= CONTENT_ONBOARDING_STEPS.length - 1) {
+      handleSubmit();
+      return;
+    }
+
     setDirection(1);
     setCurrentStepIndex((currentIndex) =>
-      Math.min(CONTENT_ONBOARDING_STEPS.length, currentIndex + 1),
+      Math.min(CONTENT_ONBOARDING_STEPS.length - 1, currentIndex + 1),
     );
   };
 
@@ -226,6 +276,11 @@ export default function OnboardingFlow({
 
   const goToNextQuestion = () => {
     if (!activeQuestionStep) {
+      return;
+    }
+
+    if (isSourceSetupStep) {
+      runSourceAutofill();
       return;
     }
 
@@ -246,6 +301,58 @@ export default function OnboardingFlow({
 
     setSaveError(null);
     setActiveQuestionIndex(activeQuestionIndex - 1);
+  };
+
+  const runSourceAutofill = () => {
+    const trimmedWebsite = websiteUrlValue.trim();
+
+    if (!trimmedWebsite) {
+      setSaveError('Add your website URL before continuing.');
+      return;
+    }
+
+    setSaveError(null);
+    setAutofillHint(null);
+    setIsAutofillProcessing(true);
+
+    startAutofillTransition(async () => {
+      try {
+        const result = await runOnboardingAutofill({
+          websiteUrl: trimmedWebsite,
+          xAccount: xAccountValue,
+        });
+
+        if (!result.success || result.error) {
+          setSaveError(result.error ?? 'Unable to prefill your onboarding answers right now.');
+          return;
+        }
+
+        const mergedAnswers: OnboardingAnswers = {
+          ...result.inferredAnswers,
+          website_url: result.source?.normalizedUrl ?? trimmedWebsite,
+          x_account: result.source?.xAccount || xAccountValue,
+        };
+
+        setAnswers((currentAnswers) => ({
+          ...currentAnswers,
+          ...mergedAnswers,
+        }));
+        setAutofillBrandIdentity(result.brandIdentity ?? null);
+        setAutofillSourceDomain(result.source?.domain ?? null);
+        setAutofillApplied(true);
+        setShowBrandGuidelinesOnly(Boolean(result.brandIdentity));
+        setAutofillHint('We prefilled your onboarding using your website. Review and edit anything before saving.');
+
+        setDirection(1);
+        setCurrentStepIndex((currentIndex) =>
+          Math.min(CONTENT_ONBOARDING_STEPS.length - 1, currentIndex + 1),
+        );
+      } catch {
+        setSaveError('Unexpected issue while prefilling onboarding. Please try again.');
+      } finally {
+        setIsAutofillProcessing(false);
+      }
+    });
   };
 
   const goToMilestone = (milestoneStep: number) => {
@@ -282,6 +389,12 @@ export default function OnboardingFlow({
 
       setShowSuccess(true);
     });
+  };
+
+  const continueFromBrandGuidelines = () => {
+    setSaveError(null);
+    setShowBrandGuidelinesOnly(false);
+    setActiveQuestionIndex(0);
   };
 
   const renderQuestion = (question: OnboardingQuestion) => {
@@ -445,31 +558,44 @@ export default function OnboardingFlow({
     }
   };
 
+  if (isAutofillProcessing) {
+    return (
+      <div className="flex min-h-svh items-center justify-center bg-[#eef2f8] p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-3xl space-y-5"
+        >
+          <OnboardingTerminal mode="processing" />
+
+          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+            Analyzing your website, extracting brand signals, and prefilling your answers...
+          </div>
+        </motion.div>
+      </div>
+    );
+  }
+
   if (showSuccess) {
     return (
       <div className="flex min-h-svh items-center justify-center bg-[#eef2f8] p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-xl rounded-4xl border border-slate-200 bg-white p-8 text-center shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]"
+          className="w-full max-w-3xl space-y-5"
         >
-          <div className="mx-auto flex size-16 items-center justify-center rounded-full bg-slate-900 text-white">
-            <CheckCircle className="size-8" weight="fill" />
+          <OnboardingTerminal mode="complete" />
+
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+            <p className="text-sm text-slate-600">Finalizing your setup and taking you to the workspace...</p>
+            <Button
+              className="h-10 rounded-full px-5"
+              onClick={() => router.push(redirectTo)}
+            >
+              Continue now
+              <ArrowRight className="size-4" />
+            </Button>
           </div>
-          <h2 className="mt-6 text-3xl font-semibold tracking-tight text-slate-950">
-            Your onboarding profile is ready
-          </h2>
-          <p className="mt-3 text-sm leading-6 text-slate-500">
-            We saved your content strategy inputs in a structured format so the next
-            step can generate a sharper 30-day X plan.
-          </p>
-          <Button
-            className="mt-8 h-11 rounded-full px-6"
-            onClick={() => router.push(redirectTo)}
-          >
-            Continue to workspace
-            <ArrowRight className="size-4" />
-          </Button>
         </motion.div>
       </div>
     );
@@ -487,21 +613,21 @@ export default function OnboardingFlow({
               height={20}
               width={20}
               full
-              textClassName="ml-[1px] text-sm font-semibold text-slate-950"
+              textClassName="ml-[1px] text-base font-semibold text-slate-950"
             />
           </div>
-          <p className="ml-auto text-sm text-slate-500">
+          <p className="ml-auto text-xs text-slate-500">
             Having troubles?{' '}
             <a
               href="mailto:support@contentosx.com"
-              className="font-semibold text-[#1f6fff] hover:underline"
+              className="f text-[#1f6fff] hover:underline"
             >
               Get Help
             </a>
           </p>
         </div>
 
-        {activeQuestionStep && !isReviewStep ? (
+        {activeQuestionStep ? (
           <div className="mt-4 space-y-2">
             {/* <div className="flex items-center justify-between gap-4 text-xs uppercase tracking-[0.14em] text-slate-500 md:text-sm md:tracking-[0.08em]">
                 <p>
@@ -546,141 +672,109 @@ export default function OnboardingFlow({
 
               {activeQuestionStep ? (
                 <section className=" ">
-                  <div className=" pb-5 flex items-center gap-2">
-                    <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1f6fff]">
-                      {activeQuestionStep.eyebrow}
-                    </p>
-                    <h2 className=" font-medium text-base  text-slate-900 md:text-">
-                      {activeQuestionStep.title} 
-                    </h2>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="ghost" size="icon-sm">
-                          <FaInfoCircle />
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>{activeQuestionStep.description}</p>
-                      </TooltipContent>
-                    </Tooltip>
-                    {/* <p className="text-sm  text-slate-500 ">
-                      
-                    </p> */}
-                    {/* <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                            Question {activeQuestionIndex + 1} of {activeQuestionStep.questions.length}
-                          </div> */}
-                  </div>
-
-                  <div className="space-y-7">
-                    {currentQuestion ? renderQuestion(currentQuestion) : null}
-                  </div>
-
-                  {isStepSkippable(activeQuestionStep) ? (
-                    <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
-                      <Lifebuoy className="size-3.5" weight="bold" />
-                      Optional section
+                  {!isBrandGuidelinesOnlyView ? (
+                    <div className=" pb-5 flex items-center gap-2">
+                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1f6fff]">
+                        {activeQuestionStep.eyebrow}
+                      </p>
+                      <h2 className=" font-medium text-base  text-slate-900 md:text-">
+                        {activeQuestionStep.title}
+                      </h2>
+                      <Tooltip>
+                        <TooltipTrigger>
+                          <Button variant="ghost" size="icon-sm">
+                            <FaInfoCircle />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>{activeQuestionStep.description}</p>
+                        </TooltipContent>
+                      </Tooltip>
+                      {/* <p className="text-sm  text-slate-500 ">
+                        
+                      </p> */}
+                      {/* <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                              Question {activeQuestionIndex + 1} of {activeQuestionStep.questions.length}
+                            </div> */}
                     </div>
                   ) : null}
-                </section>
-              ) : null}
 
-              {isReviewStep ? (
-                <section className="space-y-6">
-                  <div className="max-w-2xl space-y-3">
-                    <div className="inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs uppercase tracking-[0.24em] text-emerald-700">
-                      Review
-                    </div>
-                    <h2 className="text-3xl font-semibold tracking-tight text-slate-950">
-                      Review your onboarding answers
-                    </h2>
-                    <p className="text-sm leading-7 text-slate-600">
-                      Everything here is editable. This is the structured context the product
-                      will use when generating a 30-day X strategy.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-4 lg:grid-cols-2">
-                    {summaryCards.map((card) => (
-                      <div
-                        key={card.id}
-                        className="rounded-xl border border-white/80 bg-white/88 p-6 shadow-[0_28px_80px_-42px_rgba(15,23,42,0.32)]"
+                  {isSourceSetupStep ? (
+                    <div className="space-y-5">
+                      <OnboardingField
+                        label="Add your website URL"
+                        description="We scan this site and prefill most onboarding answers."
+                        required
                       >
-                        <div className="flex items-start justify-between gap-3">
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
-                              {card.eyebrow}
+                        <OnboardingWebsiteSearchInput
+                          value={websiteUrlValue}
+                          onValueChange={(value) => updateAnswer('website_url', value)}
+                          placeholder="https://yourwebsite.com"
+                          className="w-full max-w-none"
+                        />
+                      </OnboardingField>
+
+                      <OnboardingField
+                        label="Add your X account"
+                        description="Optional. We can use this for better voice alignment."
+                      >
+                        <div className="space-y-2">
+                          {initialXHandle ? (
+                            <p className="text-xs text-slate-500">
+                              Auto-detected from your account connection. You can keep it as-is or edit it.
                             </p>
-                            <h3 className="mt-2 text-lg font-semibold text-slate-950">
-                              {card.title}
-                            </h3>
-                          </div>
-                          <Button
-                            type="button"
-                            variant="ghost"
-                            className="rounded-md text-slate-500"
-                            onClick={() => {
-                              setSaveError(null);
-                              setDirection(-1);
-                              setCurrentStepIndex(card.stepIndex);
-                            }}
-                          >
-                            <PencilSimple className="size-4" />
-                            Edit
-                          </Button>
+                          ) : null}
+                          <OnboardingXAccountInput
+                            value={xAccountValue}
+                            onValueChange={(value) => updateAnswer('x_account', value)}
+                            placeholder="https://x.com/yourhandle"
+                            className="h-12 rounded-md border-slate-200 bg-white"
+                          />
                         </div>
-                        <div className="mt-5 space-y-4">
-                          {card.entries.map((entry) => (
-                            <div key={entry.key} className="rounded-lg bg-slate-50 p-4">
-                              <p className="text-xs uppercase tracking-[0.2em] text-slate-400">
-                                {entry.label}
-                              </p>
-                              <p className="mt-2 text-sm leading-6 text-slate-700">
-                                {entry.value}
-                              </p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
+                      </OnboardingField>
 
-                  <div className="rounded-xl border border-slate-200 bg-[linear-gradient(135deg,rgba(15,23,42,0.98),rgba(37,99,235,0.92))] p-6 text-white shadow-[0_28px_80px_-42px_rgba(15,23,42,0.5)]">
-                    <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                      <div className="space-y-2">
-                        <p className="inline-flex items-center gap-2 text-xs uppercase tracking-[0.24em] text-white/70">
-                          <TrendUp className="size-3.5" weight="fill" />
-                          Ready to generate
-                        </p>
-                        <p className="text-lg font-semibold">
-                          Save this profile and move into the X planning workspace.
-                        </p>
-                        {saveError ? (
-                          <p className="inline-flex items-center gap-2 text-sm text-rose-200">
-                            <WarningCircle className="size-4" weight="fill" />
-                            {saveError}
-                          </p>
-                        ) : null}
-                      </div>
-                      <Button
-                        type="button"
-                        onClick={handleSubmit}
-                        disabled={isPending}
-                        className="h-11 rounded-full bg-white px-6 text-slate-950 hover:bg-slate-100"
-                      >
-                        {isPending ? (
-                          <>
-                            <SpinnerGap className="size-4 animate-spin" />
-                            Saving
-                          </>
-                        ) : (
-                          <>
-                            Generate my 30-day strategy
-                            <ArrowRight className="size-4" />
-                          </>
-                        )}
-                      </Button>
+                      {autofillBrandIdentity ? (
+                        <BrandVisualOverview
+                          identity={autofillBrandIdentity}
+                          title="Brand Identity Snapshot"
+                        />
+                      ) : null}
                     </div>
-                  </div>
+                  ) : isBrandGuidelinesOnlyView ? (
+                    <BrandVisualOverview
+                      className="mb-2"
+                      identity={{
+                        ...autofillBrandIdentity,
+                        sourceDomain: autofillSourceDomain,
+                      }}
+                      title="Brand Guidelines"
+                    />
+                  ) : (
+                    <>
+                      {autofillApplied ? (
+                        <div className="mb-4 rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-900">
+                          {autofillHint ?? 'Answers were prefilled from your website. You can edit every field before saving.'}
+                        </div>
+                      ) : null}
+
+                      <div className="space-y-7">
+                        {currentQuestion ? renderQuestion(currentQuestion) : null}
+                      </div>
+
+                      {isStepSkippable(activeQuestionStep) ? (
+                        <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                          <Lifebuoy className="size-3.5" weight="bold" />
+                          Optional section
+                        </div>
+                      ) : null}
+                    </>
+                  )}
+
+                  {saveError ? (
+                    <p className="mt-4 rounded-md border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+                      {saveError}
+                    </p>
+                  ) : null}
                 </section>
               ) : null}
             </motion.div>
@@ -697,11 +791,15 @@ export default function OnboardingFlow({
               size={"sm"}
 
               onClick={goToPreviousQuestion}
-              disabled={currentStepIndex <= 0 || isPending}
+              disabled={currentStepIndex <= 0 || isBusy}
               className="rounded-md text-slate-600"
             >
               <ArrowLeft className="size-4" />
-              {activeQuestionStep && activeQuestionIndex > 0 ? 'Previous question' : 'Back'}
+              {isSourceSetupStep
+                ? 'Back'
+                : activeQuestionStep && activeQuestionIndex > 0
+                  ? 'Previous question'
+                  : 'Back'}
             </Button>
 
             <div className="flex items-center gap-3">
@@ -711,54 +809,61 @@ export default function OnboardingFlow({
                   variant="ghost"
                   size={"sm"}
                   onClick={goNext}
-                  disabled={isPending}
+                  disabled={isBusy}
                   className="rounded-md text-slate-500"
                 >
                   Skip for now
                 </Button>
               ) : null}
 
-              {!isReviewStep ? (
-                <Button
-                  type="button"
-                  size={"sm"}
-                  onClick={goToNextQuestion}
-                  disabled={
-                    activeQuestionStep
-                      ? isLastQuestionInStep
-                        ? !canContinue
-                        : !isCurrentQuestionComplete
-                      : false
-                  }
-                  className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
-                >
-                  {activeQuestionStep && !isLastQuestionInStep
-                    ? 'Next question'
-                    : 'Continue'}
-                  <ArrowRight className="size-4" />
-                </Button>
-              ) : (
-                <Button
-                  size={"sm"}
-
-                  type="button"
-                  onClick={handleSubmit}
-                  disabled={isPending}
-                  className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
-                >
-                  {isPending ? (
-                    <>
-                      <SpinnerGap className="size-4 animate-spin" />
-                      Saving
-                    </>
-                  ) : (
-                    <>
-                      Save and continue
-                      <CheckCircle className="size-4" weight="fill" />
-                    </>
-                  )}
-                </Button>
-              )}
+              <Button
+                type="button"
+                size={"sm"}
+                onClick={
+                  isSourceSetupStep
+                    ? runSourceAutofill
+                    : isBrandGuidelinesOnlyView
+                      ? continueFromBrandGuidelines
+                      : goToNextQuestion
+                }
+                disabled={
+                  isSourceSetupStep
+                    ? websiteUrlValue.trim().length === 0 || isBusy
+                    : isBrandGuidelinesOnlyView
+                      ? isBusy
+                    : activeQuestionStep
+                    ? isLastQuestionInStep
+                      ? !canContinue || isBusy
+                      : !isCurrentQuestionComplete
+                    : false
+                }
+                className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
+              >
+                {isAutofillPending ? (
+                  <>
+                    <SpinnerGap className="size-4 animate-spin" />
+                    Analyzing website
+                  </>
+                ) : isPending ? (
+                  <>
+                    <SpinnerGap className="size-4 animate-spin" />
+                    Saving
+                  </>
+                ) : (
+                  <>
+                    {isSourceSetupStep
+                      ? 'Confirm website and continue'
+                      : isBrandGuidelinesOnlyView
+                        ? 'Continue to Company Basics'
+                      : activeQuestionStep && !isLastQuestionInStep
+                      ? 'Next question'
+                      : isFinalQuestionInFlow
+                        ? 'Save and continue'
+                        : 'Continue'}
+                    <ArrowRight className="size-4" />
+                  </>
+                )}
+              </Button>
             </div>
           </div>
         </footer>
@@ -824,8 +929,25 @@ function DefaultEntryStep({
   ];
 
   return (
-    <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_50px_-40px_rgba(15,23,42,0.65)]">
-      <div className="grid md:grid-cols-[300px_1fr]">
+    <section className="flex flex-col items-center justify-between h-[80dvh] ">
+      <div className="mt-12 space-y-4">
+        <h1 className="text-3xl font-  mx-auto text-center max-w-xl text-[#1f6fff]">
+          A few clicks away from creating <br />  perfect <XLogoIcon className='inline-flex'/> 
+          {/* A few clicks away from creating <br />  your strategy. */}
+        </h1>
+        <BenfitsAnimatedBeam className='-my-10' />
+        {/* <p className="text-center ">
+          Start your content system in minutes. Save time and publish consistently.
+        </p> */}
+      </div>
+      <Button
+        onClick={onNext}
+        className="h-11 rounded-full  bg-[#1f6fff] px-52 text-white hover:bg-[#1959db]"
+      >
+        {step.screen.ctaLabel}
+        <ArrowRight className="size-4" />
+      </Button>
+      {/* <div className="grid md:grid-cols-[300px_1fr]">
         <div className="relative hidden bg-[#1f6fff] p-8 text-white md:flex md:flex-col">
           <Logo
             full
@@ -834,14 +956,7 @@ function DefaultEntryStep({
             width={22}
           />
 
-          <div className="mt-12 space-y-4">
-            <h1 className="text-4xl font-semibold leading-tight">
-              A few clicks away from creating your strategy.
-            </h1>
-            <p className="text-white/80">
-              Start your content system in minutes. Save time and publish consistently.
-            </p>
-          </div>
+         
 
           <div className="mt-auto rounded-lg border border-white/20 bg-white/10 p-4 text-sm text-white/90">
             {step.screen.estimatedTimeLabel}
@@ -900,17 +1015,101 @@ function DefaultEntryStep({
           </div>
 
           <div className="mt-8 flex items-center gap-3">
-            <Button
-              onClick={onNext}
-              className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
-            >
-              {step.screen.ctaLabel}
-              <ArrowRight className="size-4" />
-            </Button>
+            
             <p className="text-sm text-slate-500">You can edit everything later from Brand Kit.</p>
           </div>
         </div>
-      </div>
+      </div> */}
     </section>
   );
+  // return (
+  //   <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_50px_-40px_rgba(15,23,42,0.65)]">
+  //     <div className="grid md:grid-cols-[300px_1fr]">
+  //       <div className="relative hidden bg-[#1f6fff] p-8 text-white md:flex md:flex-col">
+  //         <Logo
+  //           full
+  //           textClassName="text-white font-semibold"
+  //           height={22}
+  //           width={22}
+  //         />
+
+  //         <div className="mt-12 space-y-4">
+  //           <h1 className="text-4xl font-semibold leading-tight">
+  //             A few clicks away from creating your strategy.
+  //           </h1>
+  //           <p className="text-white/80">
+  //             Start your content system in minutes. Save time and publish consistently.
+  //           </p>
+  //         </div>
+
+  //         <div className="mt-auto rounded-lg border border-white/20 bg-white/10 p-4 text-sm text-white/90">
+  //           {step.screen.estimatedTimeLabel}
+  //         </div>
+  //       </div>
+
+  //       <div className="p-6 md:p-10">
+  //         <p className="text-xs font-semibold uppercase tracking-[0.17em] text-[#1f6fff]">
+  //           {step.eyebrow}
+  //         </p>
+  //         <h2 className="mt-3 text-4xl font-semibold tracking-tight text-slate-900">
+  //           {step.title}
+  //         </h2>
+  //         <p className="mt-4 max-w-2xl text-sm leading-7 text-slate-500 md:text-base">
+  //           {step.description}
+  //         </p>
+
+  //         <div className="mt-7 space-y-4">
+  //           {tracks.map((track) => {
+  //             const active = selectedTrack === track.id;
+
+  //             return (
+  //               <button
+  //                 key={track.id}
+  //                 type="button"
+  //                 onClick={() => setSelectedTrack(track.id)}
+  //                 className={
+  //                   active
+  //                     ? 'flex w-full items-center justify-between rounded-lg border border-[#1f6fff] bg-[#eef5ff] px-5 py-4 text-left shadow-[0_10px_25px_-20px_rgba(31,111,255,0.7)]'
+  //                     : 'flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-5 py-4 text-left hover:border-slate-300'
+  //                 }
+  //               >
+  //                 <div className="flex items-center gap-4">
+  //                   <span
+  //                     className={
+  //                       active
+  //                         ? 'inline-flex size-10 items-center justify-center rounded-lg bg-[#1f6fff] text-sm font-semibold text-white'
+  //                         : 'inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-sm font-semibold text-slate-500'
+  //                     }
+  //                   >
+  //                     {track.title.charAt(0)}
+  //                   </span>
+  //                   <div>
+  //                     <p className="text-sm font-semibold uppercase tracking-[0.12em] text-slate-800">
+  //                       {track.title}
+  //                     </p>
+  //                     <p className="text-sm text-slate-500">{track.description}</p>
+  //                   </div>
+  //                 </div>
+  //                 <ArrowRight
+  //                   className={active ? 'size-4 text-[#1f6fff]' : 'size-4 text-slate-300'}
+  //                 />
+  //               </button>
+  //             );
+  //           })}
+  //         </div>
+
+  //         <div className="mt-8 flex items-center gap-3">
+  //           <Button
+  //             onClick={onNext}
+  //             className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
+  //           >
+  //             {step.screen.ctaLabel}
+  //             <ArrowRight className="size-4" />
+  //           </Button>
+  //           <p className="text-sm text-slate-500">You can edit everything later from Brand Kit.</p>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   </section>
+  // );
 }

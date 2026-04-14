@@ -8,6 +8,29 @@ export const metadata = {
   description: 'Set up your X content strategy workspace',
 };
 
+function normalizeXHandle(raw: unknown) {
+  if (typeof raw !== 'string') {
+    return null;
+  }
+
+  const trimmed = raw.trim();
+  if (!trimmed) {
+    return null;
+  }
+
+  const urlMatch = trimmed.match(/(?:x|twitter)\.com\/([A-Za-z0-9_]{1,15})/i);
+  if (urlMatch?.[1]) {
+    return `@${urlMatch[1]}`;
+  }
+
+  const withoutAt = trimmed.startsWith('@') ? trimmed.slice(1) : trimmed;
+  if (/^[A-Za-z0-9_]{1,15}$/.test(withoutAt)) {
+    return `@${withoutAt}`;
+  }
+
+  return null;
+}
+
 export default async function OnboardingPage() {
   const supabase = await createClient();
 
@@ -29,5 +52,19 @@ export default async function OnboardingPage() {
     redirect('/app/analytics');
   }
 
-  return <OnboardingFlow />;
+  const { data: storedXAccount } = await supabase
+    .from('x_accounts')
+    .select('username')
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const initialXHandle =
+    normalizeXHandle(storedXAccount?.username) ??
+    normalizeXHandle(metadata.user_name) ??
+    normalizeXHandle(metadata.preferred_username) ??
+    normalizeXHandle(metadata.username) ??
+    normalizeXHandle(metadata.screen_name);
+
+  return <OnboardingFlow initialXHandle={initialXHandle} />;
 }

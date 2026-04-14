@@ -7,6 +7,26 @@ import { Changelog } from '@/types/changelog';
  */
 export const changelog: Changelog = [
     {
+        version: '1.0.5',
+        date: 'Apr 12, 2026',
+        title: 'Onboarding Autofill and Brand Detection',
+        description: 'Introduced website-first onboarding prefill with Firecrawl extraction, AI inference, and editable review context.',
+        improvements: [
+            'Added a dedicated onboarding source step for website + X profile capture before guided questions',
+            'Implemented automatic onboarding prefill using website scrape + AI inference for faster setup',
+            'Added reusable brand visual preview card to display detected logo and color palette during onboarding',
+            'Auto-detects X handle from connected account data when available to reduce manual input',
+        ],
+        fixes: [
+            'Improved onboarding feedback by surfacing inline errors and processing state during prefill',
+        ],
+        patches: [
+            'Added migration 00003 for onboarding_autofill_profiles JSONB persistence with RLS and indexes',
+            'Upgraded /api/scrape to return normalized scrape data with structured request logging',
+            'Added correlation-ID based backend logs for scrape, inference, and persistence stages',
+        ],
+    },
+    {
         version: '1.0.4',
         date: 'Feb 5, 2026',
         title: 'Production Build Fixes',

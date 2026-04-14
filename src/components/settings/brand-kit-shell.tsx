@@ -41,7 +41,14 @@ function isTabActive(pathname: string, href: string) {
 
   return pathname === href || pathname.startsWith(`${href}/`);
 }
-
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardPanel,
+  CardTitle,
+} from "@/components/ui/card"
 export default function BrandKitShell({
   answeredCount,
   children,
@@ -51,29 +58,39 @@ export default function BrandKitShell({
 
   return (
     <div className="space-y-8">
+      {/* <Card className='bg-[#1384FF]'>
+        <CardHeader>
+          <CardTitle>Company X Profile Toolkit</CardTitle>
+          <CardDescription>Keep your company X profile consistent by aligning voice, content intent, and
+            visual identity from one workspace.</CardDescription>
+        </CardHeader>
+        <CardPanel>
+          <div className="flex flex-wrap items-center gap-3 text-sm">
+
+          </div>
+        </CardPanel>
+        <CardFooter> <Badge variant="outline" className="border-slate-200 px-3 py-1">
+          {answeredCount} saved values
+        </Badge>
+          <Badge variant="outline" className="border-slate-200 px-3 py-1">
+            onboarding_answers
+          </Badge></CardFooter>
+      </Card>
       <div className="rounded-4xl border border-slate-200 bg-[#1384FF] p-6 text-white shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
             <Badge variant="secondary">Brand settings</Badge>
             <div className="space-y-2">
-              <h1 className="text-3xl font-semibold tracking-tight">Company X Profile Toolkit</h1>
+              <h1 className="text-3xl font-semibold tracking-tight"></h1>
               <p className="max-w-3xl text-sm leading-6">
-                Keep your company X profile consistent by aligning voice, content intent, and
-                visual identity from one workspace.
+
               </p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <Badge variant="outline" className="border-slate-200 px-3 py-1">
-              {answeredCount} saved values
-            </Badge>
-            <Badge variant="outline" className="border-slate-200 px-3 py-1">
-              onboarding_answers
-            </Badge>
-          </div>
+
         </div>
-      </div>
+      </div> */}
 
       <ScrollArea>
         <div className="mb-3 flex h-auto gap-2 rounded-none border-b bg-transparent px-0 py-1 text-foreground">

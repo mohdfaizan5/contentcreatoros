@@ -341,9 +341,9 @@ export function OnboardingField({
           {required && <span className="ml-1 text-slate-400">*</span>}
         </Label>
         {description && (
-          <TooltipProvider delayDuration={150}>
+          <TooltipProvider>
             <Tooltip>
-              <TooltipTrigger asChild>
+              <TooltipTrigger asChild delay={150}>
                 <div className="inline-flex size-4 cursor-default items-center justify-center rounded-full bg-slate-100 text-slate-500 hover:bg-slate-200 transition-colors">
                   <Question weight="bold" className="size-2.5" />
                 </div>

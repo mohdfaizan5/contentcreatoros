@@ -33,11 +33,15 @@ import {
   PaletteIcon,
   PanelsTopLeftIcon,
 } from "lucide-react";
+import { BrandVisualOverview } from '@/components/brand-kit/brand-visual-overview';
+import type { BrandVisualIdentity } from '@/lib/brand-visuals';
 
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
 type BrandSettingsFormProps = {
   initialAnswers: OnboardingAnswers;
+  brandIdentity?: BrandVisualIdentity;
+  companyOverview?: string;
   showShell?: boolean;
   view?: 'overview' | 'brand-voice';
 };
@@ -48,6 +52,8 @@ function getQuestionControlDescription() {
 
 export default function BrandSettingsForm({
   initialAnswers,
+  brandIdentity,
+  companyOverview,
   showShell = true,
   view = 'brand-voice',
 }: BrandSettingsFormProps) {
@@ -227,6 +233,16 @@ export default function BrandSettingsForm({
   );
 
   const isOverviewView = view === 'overview';
+  const hasBrandVisualData = Boolean(
+    brandIdentity &&
+      (
+        brandIdentity.logoUrl ||
+        brandIdentity.ogImageUrl ||
+        brandIdentity.companyName ||
+        brandIdentity.sourceDomain ||
+        brandIdentity.colors.length > 0
+      ),
+  );
 
   const isTabActive = (href: string) => {
     if (href === '/app/brand-kit/voice') {
@@ -342,7 +358,24 @@ export default function BrandSettingsForm({
       ) : null}
 
       {isOverviewView ? (
-        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        <div className="space-y-4 hid">
+          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]">
+            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+              Company overview from onboarding
+            </p>
+            <p className="mt-2 text-base leading-7 text-slate-900">
+              {companyOverview || 'No overview summary was found yet. Complete website autofill in onboarding to populate this.'}
+            </p>
+          </section>
+
+          {hasBrandVisualData && brandIdentity ? (
+            <BrandVisualOverview
+              identity={brandIdentity}
+              title="Brand Visual Overview"
+            />
+          ) : null}
+
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 hidden">
           {questionSteps.map((step) => {
             const stepAnsweredCount = getStepAnsweredCount(step);
 
@@ -385,6 +418,7 @@ export default function BrandSettingsForm({
               </Button>
             </div>
           </section>
+          </div>
         </div>
       ) : (
         <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">

@@ -8,11 +8,23 @@ export const metadata = {
 };
 
 export default async function BrandSettingsPage() {
-  const { answeredCount, initialAnswers, totalQuestionCount } = await getBrandKitPageData();
+  const {
+    answeredCount,
+    brandIdentity,
+    companyOverview,
+    initialAnswers,
+    totalQuestionCount,
+  } = await getBrandKitPageData();
 
   return (
     <BrandKitShell answeredCount={answeredCount} totalQuestionCount={totalQuestionCount}>
-      <BrandSettingsForm initialAnswers={initialAnswers} view="overview" showShell={false} />
+      <BrandSettingsForm
+        brandIdentity={brandIdentity}
+        companyOverview={companyOverview}
+        initialAnswers={initialAnswers}
+        showShell={false}
+        view="overview"
+      />
     </BrandKitShell>
   );
 }

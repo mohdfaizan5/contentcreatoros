@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
+import { BenfitsAnimatedBeam } from '@/components/onboarding/benefits-animated-beam';
 
 type StreamStatus = 'idle' | 'streaming' | 'done' | 'error';
 
@@ -496,6 +497,7 @@ export default function TestVoicePage() {
 
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_10%_10%,hsl(var(--primary)/0.16),transparent_40%),radial-gradient(circle_at_90%_90%,hsl(var(--accent)/0.2),transparent_45%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)/0.22))] px-4 py-10 md:px-8">
+          <BenfitsAnimatedBeam />
       <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <header className="space-y-3">
           <Badge variant="outline" className="w-fit bg-background/70">

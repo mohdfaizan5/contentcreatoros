@@ -1,6 +1,10 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Inter, Inter_Tight, Source_Serif_4, Instrument_Serif } from "next/font/google";
 import "./globals.css";
+import { cn } from "@/lib/utils";
+
+const interHeading = Inter({subsets:['latin'],variable:'--font-heading'});
+
 
 // -----------------------------------------------------------------------------
 // FONT CONFIGURATION
@@ -9,10 +13,7 @@ import "./globals.css";
 // -----------------------------------------------------------------------------
 
 // 1. INTER TIGHT (Current Active)
-const fontSans = Inter_Tight({
-  variable: "--font-sans",
-  subsets: ["latin"],
-});
+const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 // 2. GOOGLE SANS FLEX (Commented)
 // Note: Requires font files in /public/fonts/ or /src/app/fonts/
@@ -69,9 +70,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={fontSans.variable}>
+    <html lang="en" className={cn("font-sans", inter.variable, interHeading.variable)}>
       <body
-        className={`${serif.variable} ${fontSans.variable} font-sans antialiased overflow-x-hidden`}
+        className={`${serif.variable} ${inter.variable} font-sans antialiased overflow-x-hidden`}
       >
         {children}
       </body>

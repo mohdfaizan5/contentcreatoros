@@ -11,7 +11,7 @@
   --card-foreground: oklch(0.1450 0 0);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.1450 0 0);
-  --primary: oklch(0.6415 0.2287 26.8000);
+  --primary: oklch(0.5843 0.2274 261.27);
   --primary-foreground: oklch(0.9850 0 0);
   --secondary: oklch(0.9700 0 0);
   --secondary-foreground: oklch(0.2050 0 0);
@@ -42,7 +42,7 @@
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-serif-instrumental: InstrumentalSerif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-  --radius: 0.225rem;
+  --radius: 0.5rem;
   --shadow-x: 0;
   --shadow-y: 1px;
   --shadow-blur: 3px;

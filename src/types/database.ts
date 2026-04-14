@@ -17,6 +17,14 @@ export type GeneratedTweetStatus =
     | 'publishing'
     | 'published'
     | 'failed';
+export type ScheduledDispatchRunStatus =
+    | 'queued'
+    | 'running'
+    | 'completed'
+    | 'completed_with_failures'
+    | 'unauthorized'
+    | 'misconfigured'
+    | 'failed';
 
 // ============================================
 // EDITOR.JS TYPES
@@ -214,6 +222,23 @@ export interface XAccount {
     updated_at: string;
 }
 
+export interface OnboardingAutofillProfile {
+    id: string;
+    user_id: string;
+    flow_key: string;
+    source_url: string;
+    source_domain: string | null;
+    x_handle: string | null;
+    scrape_payload: Record<string, unknown>;
+    brand_identity: Record<string, unknown>;
+    inferred_answers: Record<string, unknown>;
+    model: string | null;
+    prompt_version: string | null;
+    run_metadata: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+}
+
 export interface GeneratedTweet {
     id: string;
     user_id: string;
@@ -228,6 +253,26 @@ export interface GeneratedTweet {
     error_message: string | null;
     model: string | null;
     prompt_snapshot: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface ScheduledDispatchRun {
+    id: string;
+    trigger_source: string;
+    request_target: string | null;
+    pg_net_request_id: number | null;
+    request_payload: Record<string, unknown>;
+    status: ScheduledDispatchRunStatus;
+    worker_started_at: string | null;
+    worker_completed_at: string | null;
+    http_status: number | null;
+    processed_count: number;
+    published_count: number;
+    failed_count: number;
+    skipped_count: number;
+    top_level_error: string | null;
+    results: unknown[];
     created_at: string;
     updated_at: string;
 }

@@ -42,6 +42,7 @@ type PageProps = {
     error?: string;
   }>;
 };
+import { AnimatedCircularProgressBar } from "@/components/ui/animated-circular-progress-bar"
 
 function formatCompactNumber(value?: number) {
   return new Intl.NumberFormat('en', {
@@ -141,7 +142,9 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-
+      <AnimatedCircularProgressBar value={32}
+      gaugePrimaryColor="rgb(79 70 229)"
+      gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"  />
       <section className="relative overflow-hidden  rounded-2xl  border border-slate-200/70 bg-[#1384FF] px-8 py-4 text-white shadow-[0_24px_80px_-28px_rgba(15,23,42,0.75)]">
         <div className="absolute inset-y-0 right-[-8%] w-56 rounded-full bg-[#1384FF] blur-3xl" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">

@@ -317,7 +317,10 @@ export function EventDialog({
             {!allDay && (
               <div className="min-w-28 *:not-first:mt-1.5">
                 <Label htmlFor="start-time">Start Time</Label>
-                <Select onValueChange={setStartTime} value={startTime}>
+                <Select
+                  onValueChange={(value) => setStartTime(value ?? "")}
+                  value={startTime}
+                >
                   <SelectTrigger disabled={readOnly} id="start-time">
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>
@@ -383,7 +386,10 @@ export function EventDialog({
             {!allDay && (
               <div className="min-w-28 *:not-first:mt-1.5">
                 <Label htmlFor="end-time">End Time</Label>
-                <Select onValueChange={setEndTime} value={endTime}>
+                <Select
+                  onValueChange={(value) => setEndTime(value ?? "")}
+                  value={endTime}
+                >
                   <SelectTrigger disabled={readOnly} id="end-time">
                     <SelectValue placeholder="Select time" />
                   </SelectTrigger>

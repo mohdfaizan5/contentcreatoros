@@ -1,3 +1,8 @@
+because the failure is likely in the handoff between Supabase’s scheduler and your Next API endpoint.
+
+
+
+---
 https://tweakcn.com/themes/cmka0y2aq000104jc1e5lbedt
 
 
@@ -36,6 +41,17 @@ https://www.cult-ui.com/docs/components/mock-browser-window
 
 
 https://bundui.io/blocks/marketing/promotional#02
+
+magicui
+https://magicui.design/docs/components/tweet-card
+https://magicui.design/docs/components/terminal
+https://magicui.design/docs/components/hero-video-dialog
+https://magicui.design/docs/components/animated-list
+https://magicui.design/docs/components/tweet-card
+https://magicui.design/docs/components/orbiting-circles
+https://magicui.design/docs/components/smooth-cursor
+https://magicui.design/docs/components/dotted-map
+https://magicui.design/docs/components/animated-beam
 
 
 
