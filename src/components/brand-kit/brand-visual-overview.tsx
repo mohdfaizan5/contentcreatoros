@@ -89,9 +89,9 @@ export function BrandVisualOverview({
           </Badge>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2">
+        <div className="grid gap-3 sm:grid-cols-12">
           <div
-            className="rounded-2xl border p-3"
+            className="rounded-2xl border p-3 col-span-2"
             style={{
               borderColor: hexToRgba(theme.foreground, 0.16),
               backgroundColor: theme.surface,
@@ -105,7 +105,7 @@ export function BrandVisualOverview({
               Logo
             </p>
             <div
-              className="flex h-20 w-full items-center justify-center overflow-hidden rounded-xl border"
+              className="flex h-20 w-20 items-center justify-center overflow-hidden "
               style={{
                 borderColor: hexToRgba(theme.foreground, 0.14),
                 backgroundColor: hexToRgba(theme.background, 0.35),
@@ -125,7 +125,7 @@ export function BrandVisualOverview({
           </div>
 
           <div
-            className="rounded-2xl border p-3"
+            className="rounded-2xl border p-3 col-span-4"
             style={{
               borderColor: hexToRgba(theme.foreground, 0.14),
               backgroundColor: theme.surface,

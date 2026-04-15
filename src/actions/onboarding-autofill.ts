@@ -51,7 +51,7 @@ type InferPromptQuestion = {
 
 const DEBUG_LOGS = process.env.ONBOARDING_AUTOFILL_DEBUG !== 'false';
 const INFERENCE_MODEL = 'claude-haiku-4-5';
-const PROMPT_VERSION = 'onboarding-autofill-v1';
+const PROMPT_VERSION = 'onboarding-autofill-v2';
 const MAX_MARKDOWN_CHARS = 12_000;
 
 function createRequestId() {
@@ -244,18 +244,20 @@ function buildInferencePrompt(params: {
 
   return [
     'You are helping prefill onboarding answers for an X content strategy app.',
-    'Use website context to infer likely answers. Keep answers practical and concise.',
+    'Use only explicit evidence from the website context. Keep answers practical and concise.',
     'Rules:',
     '- Return JSON only.',
     '- Use only these question keys.',
     '- For single-select/multi-select keys, return OPTION VALUES only (not labels).',
-    '- If uncertain, omit that key instead of guessing aggressively.',
+    '- If uncertain, omit that key. Prefer empty over wrong.',
+    '- Never use generic industry assumptions to fill missing details.',
+    '- For belief/opinion fields, answer only if the site explicitly states them; otherwise omit.',
     '- Do not invent revenue numbers or confidential details.',
     '',
     `Source website: ${params.websiteUrl}`,
     `Domain: ${params.domain}`,
     `X handle: ${params.xHandle || 'unknown'}`,
-    ` ${JSON.stringify(params.brandIdentity)}`,
+    `Brand identity hints: ${JSON.stringify(params.brandIdentity)}`,
     `Metadata: ${JSON.stringify(params.metadata)}`,
     'Question schema:',
     JSON.stringify(compactQuestions, null, 2),
@@ -267,8 +269,8 @@ function buildInferencePrompt(params: {
     JSON.stringify(
       {
         answers: {
-          company_description: '...',
-          problem_solved: '...',
+          some_key: 'value',
+          some_multi_select_key: ['value_1', 'value_2'],
         },
       },
       null,

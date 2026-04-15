@@ -359,10 +359,10 @@ export default function BrandSettingsForm({
 
       {isOverviewView ? (
         <div className="space-y-4 hid">
-          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]">
-            <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+          <section className="max-w-4xl shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]">
+            {/* <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Company overview from onboarding
-            </p>
+            </p> */}
             <p className="mt-2 text-base leading-7 text-slate-900">
               {companyOverview || 'No overview summary was found yet. Complete website autofill in onboarding to populate this.'}
             </p>

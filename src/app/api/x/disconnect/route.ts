@@ -1,4 +1,4 @@
-import { clearStoredXConnectionForCurrentUser, clearXSession } from '@/lib/x';
+import { clearStoredXConnectionForCurrentUser, clearXSession } from '@/lib/x/x';
 import { NextResponse, type NextRequest } from 'next/server';
 
 async function disconnect(request: NextRequest) {

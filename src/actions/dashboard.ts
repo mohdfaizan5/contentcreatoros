@@ -13,7 +13,7 @@ import {
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import { createClient } from '@/lib/server';
-import { getAuthenticatedUserTweets, getAuthenticatedXUser } from '@/lib/x';
+import { getAuthenticatedUserTweets, getAuthenticatedXUser } from '@/lib/x/x';
 import type { GeneratedTweetStatus } from '@/types/database';
 
 export interface DashboardSnapshot {

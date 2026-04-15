@@ -1,4 +1,4 @@
-import { createXAuthorizationUrl } from '@/lib/x';
+import { createXAuthorizationUrl } from '@/lib/x/x';
 import { getRequestOrigin } from '@/lib/request-origin';
 import { NextResponse, type NextRequest } from 'next/server';
 

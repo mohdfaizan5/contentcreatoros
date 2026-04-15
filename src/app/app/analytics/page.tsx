@@ -35,12 +35,12 @@ import {
   getXConfigStatus,
   getXConnectionMetadata,
   type XTweet,
-} from '@/lib/x';
+} from '@/lib/x/x';
 import {
   hasPublicXLookupConfigured,
   lookupPublicXTweetsByUserId,
   lookupPublicXUserByHandle,
-} from '@/lib/x-public';
+} from '@/lib/x/x-public';
 
 type PageProps = {
   searchParams: Promise<{

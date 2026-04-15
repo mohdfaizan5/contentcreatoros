@@ -14,7 +14,7 @@ import {
 } from '@phosphor-icons/react';
 
 import type { GeneratedTweet } from '@/types/database';
-import { buildTweetIntentUrl } from '@/lib/x-intent';
+import { buildTweetIntentUrl } from '@/lib/x/x-intent';
 import CalendarSelectWithTime from '@/components/calendar-select-with-time';
 import { Button } from '@/components/ui/button';
 import {

@@ -4,9 +4,9 @@ import { createClient } from '@/lib/server';
 import {
   hasStoredXConnectionForCurrentUser,
   publishTweetWithStoredConnection,
-} from '@/lib/x';
+} from '@/lib/x/x';
 import { generateBrandTweet, X_CHARACTER_LIMIT } from '@/lib/brand-tweets';
-import { buildTweetIntentUrl } from '@/lib/x-intent';
+import { buildTweetIntentUrl } from '@/lib/x/x-intent';
 import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import type { GeneratedTweet, Template } from '@/types/database';
 import type { CalendarEventInput, EventColor } from '@/components/types';

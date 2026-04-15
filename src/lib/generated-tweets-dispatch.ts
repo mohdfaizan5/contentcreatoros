@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/server-admin';
-import { publishTweetWithStoredConnection } from '@/lib/x';
+import { publishTweetWithStoredConnection } from '@/lib/x/x';
 import type { ScheduledDispatchRunStatus } from '@/types/database';
 
 type ScheduledTweetRow = {

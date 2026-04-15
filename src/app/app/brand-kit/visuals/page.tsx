@@ -1,10 +1,11 @@
 import type { CSSProperties, ReactNode } from 'react';
 import type { Metadata } from 'next';
+import ColorContrastChecker from 'color-contrast-checker';
 import BrandKitShell from '@/components/settings/brand-kit-shell';
 import { getBrandKitPageData } from '@/lib/brand-kit-page-data';
 import { buildBrandVisualIdentity, type BrandVisualIdentity } from '@/lib/brand-visuals';
 import { cn } from '@/lib/utils';
-import { SiLeaflet } from "react-icons/si";
+import { SiLeaflet } from 'react-icons/si';
 
 export const metadata: Metadata = {
   title: 'Brand Visuals | ContentOSX',
@@ -41,6 +42,8 @@ const LAUREL_LEAVES = [
   { inward: 52, rotate: 12, top: 68 },
 ] as const;
 
+const contrastChecker = new ColorContrastChecker();
+
 function toVisualPalette(identity: BrandVisualIdentity): VisualPalette {
   const [link, accent, primary, background, textPrimary] = identity.colors;
 
@@ -69,6 +72,7 @@ export default async function BrandVisualsPage() {
   const { answeredCount, brandIdentity, totalQuestionCount } = await getBrandKitPageData();
   const identity = buildBrandVisualIdentity(brandIdentity);
   const theme = resolvePalette(toVisualPalette(identity));
+  const contrastTokens = getContrastTokens(theme);
   const displayName = identity.companyName || identity.sourceDomain || theme.name;
   const logoUrl = identity.logoUrl || null;
   const fallbackImageUrl = identity.ogImageUrl || identity.logoUrl || null;
@@ -76,7 +80,7 @@ export default async function BrandVisualsPage() {
   return (
     <BrandKitShell answeredCount={answeredCount} totalQuestionCount={totalQuestionCount}>
       <div className="mx-auto max-w-310 space-y-5">
-        <header className="animate-fade-in-up space-y-2">
+        {/* <header className="animate-fade-in-up space-y-2">
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-muted-foreground">
             Brand Kit
           </p>
@@ -91,7 +95,7 @@ export default async function BrandVisualsPage() {
             Active theme from onboarding profile:{' '}
             <span className="text-foreground">{theme.name}</span>
           </p>
-        </header>
+        </header> */}
 
         <div
           className="relative isolate overflow-hidden rounded-[28px] border p-3 sm:p-4 lg:p-6"
@@ -111,21 +115,21 @@ export default async function BrandVisualsPage() {
             style={{ backgroundColor: hexToRgba(theme.primary, 0.18) }}
           />
 
-          <div className="relative z-20 mb-10 grid gap-3 lg:grid-cols-12 lg:gap-4">
+          <div className="relative  z-20 mb-10 grid gap-3 lg:grid-cols-12 lg:gap-4">
             <Panel
-              className="animate-fade-in-up lg:col-span-3"
+              className="animate-fade-in-up  lg:col-span-3"
               style={{
                 backgroundColor: theme.surface,
                 color: theme.surfaceText,
                 borderColor: hexToRgba(theme.foreground, 0.2),
               }}
             >
-              <div className="space-y-3 p-3 sm:p-3.5">
+              <div className="space-y-3 p-3 sm:p-3.5 grid grid-rows-3">
                 <div
-                  className="rounded-[14px] px-4 py-3 text-xl font-medium sm:text-3xl"
+                  className="rounded-[14px] px-4 py-3 text-xl font-medium sm:text-2xl row-span-1"
                   style={{
                     backgroundColor: theme.swatches[3],
-                    color: pickReadableText(theme.swatches[3], theme.surfaceText),
+                    color: contrastTokens.brandTitleText,
                   }}
                 >
                   <div className="flex items-center gap-2 sm:gap-3">
@@ -133,7 +137,7 @@ export default async function BrandVisualsPage() {
                       <img
                         src={logoUrl}
                         alt={`${displayName} logo`}
-                        className="h-8 w-8 rounded-full bg-white/70 object-contain p-1 sm:h-10 sm:w-10"
+                        className="h-9 w-9 rounded-full bg-white/70 object-contain p-1 sm:h-12 sm:w-12"
                         loading="lazy"
                       />
                     ) : (
@@ -142,11 +146,11 @@ export default async function BrandVisualsPage() {
                         style={{ backgroundColor: theme.primary }}
                       />
                     )}
-                    <span className="truncate">{displayName}</span>
+                    <span className="truncate text-">{displayName.split('—')[0].trim()}</span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-2">
+                {/* <div className="grid grid-cols-2 gap-2">
                   <div className="rounded-[12px] bg-[#12161f] p-2 text-[10px] text-slate-300 sm:text-[11px]">
                     <div className="mb-2 text-slate-100">Tracking History</div>
                     <div className="rounded-lg bg-[#1e2432] p-2">
@@ -171,22 +175,28 @@ export default async function BrandVisualsPage() {
                       <div className="h-full rounded-[10px] border border-white/50 bg-white/25" />
                     )}
                   </div>
-                </div>
+                </div> */}
 
                 <div
-                  className="rounded-[14px] p-3"
+                  className="rounded-[14px] p-3 h-full max-h-32  row-span-2"
                   style={{
-                    background: `linear-gradient(130deg, ${theme.swatches[0]}, ${theme.swatches[2]})`,
-                    color: theme.textOnPrimary,
+                    // background: ` ${theme.swatches[0]}, ${theme.swatches[2]})`,
+                    color: contrastTokens.primaryCardText,
+                    backgroundColor: theme.primary,
                   }}
                 >
                   <p
                     className="text-xs uppercase tracking-wide"
-                    style={{ color: hexToRgba(theme.textOnPrimary, 0.76) }}
+                    style={{ color: contrastTokens.shipmentsTitleText }}
                   >
                     Shipments Delivered
                   </p>
-                  <p className="mt-2 text-4xl font-semibold leading-none">20k+</p>
+                  <p
+                    className="mt-2 text-4xl font-semibold leading-none"
+                    style={{ color: contrastTokens.shipmentsValueText }}
+                  >
+                    20k+
+                  </p>
                 </div>
               </div>
             </Panel>
@@ -202,26 +212,26 @@ export default async function BrandVisualsPage() {
               <div className="space-y-3 p-3 sm:p-3.5">
                 <div
                   className="rounded-2xl p-4"
-                  style={{ backgroundColor: theme.secondary, color: theme.textOnSecondary }}
+                  style={{ backgroundColor: theme.secondary, color: contrastTokens.secondaryCardText }}
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <p className="text-4xl font-semibold leading-none">Geist</p>
+                    {/* <p className="text-4xl font-semibold leading-none">Geist</p> */}
                     <p
                       className="mt-1 text-[10px] uppercase tracking-[0.14em]"
-                      style={{ color: hexToRgba(theme.textOnSecondary, 0.72) }}
+                      style={{ color: contrastTokens.fontFamilyTitleText }}
                     >
                       Font Family
                     </p>
                   </div>
                   <p
                     className="mt-4 text-[11px] uppercase tracking-[0.12em]"
-                    style={{ color: hexToRgba(theme.textOnSecondary, 0.8) }}
+                    style={{ color: contrastTokens.fontFamilyCapsLineText }}
                   >
                     The brown fox jumps over the lazy dog cursive
                   </p>
                   <p
                     className="mt-1 text-sm"
-                    style={{ color: hexToRgba(theme.textOnSecondary, 0.92) }}
+                    style={{ color: contrastTokens.fontFamilyBodyLineText }}
                   >
                     The brown fox jumps over the lazy dog cursive
                   </p>
@@ -246,22 +256,21 @@ export default async function BrandVisualsPage() {
                 borderColor: hexToRgba(theme.foreground, 0.2),
               }}
             >
-              <div className="grid gap-2 p-3 sm:grid-cols-[1.7fr_1fr] sm:p-3.5">
+              <div className="grid gap-2 p-3  sm:p-3.5">
                 <div
                   className="relative overflow-hidden rounded-2xl p-4 sm:min-h-55"
                   style={{
                     background: `linear-gradient(135deg, ${theme.secondary}, ${theme.swatches[4]})`,
-                    color: theme.textOnSecondary,
+                    color: contrastTokens.heroText,
                   }}
                 >
                   <p
                     className="max-w-70 text-3xl leading-[1.1]"
-                    style={{ color: hexToRgba(theme.textOnSecondary, 0.82) }}
+                    style={{ color: contrastTokens.heroMutedText }}
                   >
-                    <span className="font-semibold" style={{ color: theme.textOnSecondary }}>
-                      {displayName}
+                    <span className="font-semibold " style={{ color: contrastTokens.heroText }}>
+                      {displayName ? <span>{displayName.split('—')[0]} <span className='block  font-normal opacity-75'>{displayName.split('—')[1]}</span></span> : 'Visual identity in a collage board style preview.'}
                     </span>{' '}
-                    visual identity in a collage board style preview.
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
                     <span
@@ -296,7 +305,7 @@ export default async function BrandVisualsPage() {
                   />
                 </div>
 
-                <div className="space-y-2">
+                {/* <div className="space-y-2">
                   <div
                     className="flex h-24 items-center justify-center overflow-hidden rounded-2xl text-3xl font-semibold"
                     style={{ backgroundColor: theme.primary, color: theme.textOnPrimary }}
@@ -327,7 +336,7 @@ export default async function BrandVisualsPage() {
                       ))}
                     </div>
                   </div>
-                </div>
+                </div> */}
               </div>
             </Panel>
           </div>
@@ -349,10 +358,13 @@ export default async function BrandVisualsPage() {
                 }}
               >
                 <div className="p-5">
-                  <p className="text-6xl font-semibold leading-none" style={{ color: theme.primary }}>
+                  <p
+                    className="text-6xl font-semibold leading-none"
+                    style={{ color: contrastTokens.statAccentText }}
+                  >
                     140
                   </p>
-                  <p className="mt-3 max-w-55 text-4xl leading-[1.05]" style={{ color: theme.surfaceText }}>
+                  <p className="mt-3 max-w-55 text-3xl leading-[1.05]" style={{ color: theme.surfaceText }}>
                     Finely-crafted app icons
                   </p>
                 </div>
@@ -434,22 +446,22 @@ export default async function BrandVisualsPage() {
                   </div>
 
                   <div className="relative z-10">
-                    <p className="text-lg tracking-[0.4em]" style={{ color: theme.primary }}>
+                    <p className="text-lg tracking-[0.4em]" style={{ color: contrastTokens.statAccentText }}>
                       *****
                     </p>
-                  {logoUrl ? (
-                    <img
-                      src={logoUrl}
-                      alt={`${displayName} logo`}
-                      className="mx-auto mt-2 h-14 w-auto max-w-48 rounded-xl bg-white/90 object-contain px-2 py-1"
-                      loading="lazy"
-                    />
-                  ) : (
-                    <p className="mt-2 text-5xl font-semibold tracking-tight">{displayName}</p>
-                  )}
-                  <p className="mt-2 text-3xl" style={{ color: theme.mutedSurfaceText }}>
-                    400+ 5 star reviews
-                  </p>
+                    {logoUrl ? (
+                      <img
+                        src={logoUrl}
+                        alt={`${displayName} logo`}
+                        className="mx-auto mt-2 h-14 w-auto max-w-48 rounded-xl bg-white/90 object-contain px-2 py-1"
+                        loading="lazy"
+                      />
+                    ) : (
+                      <p className="mt-2 text-5xl font-semibold tracking-tight">{displayName}</p>
+                    )}
+                    <p className="mt-2 text-3xl" style={{ color: contrastTokens.surfaceMutedText }}>
+                      400+ 5 star reviews
+                    </p>
                   </div>
                 </div>
               </Panel>
@@ -540,11 +552,23 @@ function getContrastRatio(foreground: string, background: string) {
   return (lighter + 0.05) / (darker + 0.05);
 }
 
+function hasContrast(foreground: string, background: string, targetRatio = 4.5) {
+  try {
+    return contrastChecker.isLevelCustom(
+      normalizeHex(foreground),
+      normalizeHex(background),
+      targetRatio,
+    );
+  } catch {
+    return false;
+  }
+}
+
 function ensureContrast(foreground: string, background: string, targetRatio = 4.5) {
   const bg = normalizeHex(background);
   let current = normalizeHex(foreground);
 
-  if (getContrastRatio(current, bg) >= targetRatio) {
+  if (hasContrast(current, bg, targetRatio)) {
     return current;
   }
 
@@ -567,7 +591,7 @@ function ensureContrast(foreground: string, background: string, targetRatio = 4.
       bestColor = current;
     }
 
-    if (ratio >= targetRatio) {
+    if (hasContrast(current, bg, targetRatio)) {
       return current;
     }
   }
@@ -583,9 +607,327 @@ function pickReadableText(background: string, preferred: string, targetRatio = 4
     ensureContrast('#FFFFFF', bg, targetRatio),
   ];
 
+  const passingCandidates = candidates.filter((candidate) =>
+    hasContrast(candidate, bg, targetRatio),
+  );
+  const pool = passingCandidates.length > 0 ? passingCandidates : candidates;
+
+  return pool.reduce((best, candidate) =>
+    getContrastRatio(candidate, bg) > getContrastRatio(best, bg) ? candidate : best,
+  );
+}
+
+function uniqueHexColors(colors: string[]) {
+  return [...new Set(colors.map((color) => normalizeHex(color)))];
+}
+
+function getSaturation(hex: string) {
+  const { r, g, b } = hexToRgb(hex);
+  const max = Math.max(r, g, b) / 255;
+  const min = Math.min(r, g, b) / 255;
+
+  if (max === 0) {
+    return 0;
+  }
+
+  return (max - min) / max;
+}
+
+function isDarkNeutral(hex: string) {
+  const color = normalizeHex(hex);
+  return getSaturation(color) <= 0.12 && getRelativeLuminance(color) <= 0.2;
+}
+
+function isHardFallbackColor(hex: string) {
+  const color = normalizeHex(hex);
+  return color === '#FFFFFF' || color === '#000000' || color === '#0B0D12';
+}
+
+function isBlendFriendlyText(foreground: string, background: string) {
+  const fg = normalizeHex(foreground);
+  const bg = normalizeHex(background);
+  const backgroundIsVivid = getSaturation(bg) >= 0.38;
+
+  if (backgroundIsVivid && isDarkNeutral(fg)) {
+    return false;
+  }
+
+  return true;
+}
+
+function getBestByContrast(background: string, colors: string[]) {
+  const bg = normalizeHex(background);
+  const candidates = uniqueHexColors(colors);
+
   return candidates.reduce((best, candidate) =>
     getContrastRatio(candidate, bg) > getContrastRatio(best, bg) ? candidate : best,
   );
+}
+
+function getBestByWorstContrast(backgrounds: string[], colors: string[]) {
+  const normalizedBackgrounds = backgrounds.map((background) => normalizeHex(background));
+  const candidates = uniqueHexColors(colors);
+
+  return candidates.reduce((best, candidate) =>
+    getWorstContrastRatio(candidate, normalizedBackgrounds) >
+    getWorstContrastRatio(best, normalizedBackgrounds)
+      ? candidate
+      : best,
+  );
+}
+
+function pickTextFromPalette(params: {
+  background: string;
+  preferred: string;
+  paletteCandidates: string[];
+  targetRatio?: number;
+}) {
+  const targetRatio = params.targetRatio ?? 4.5;
+  const background = normalizeHex(params.background);
+  const preferred = normalizeHex(params.preferred);
+  const preferredPasses = hasContrast(preferred, background, targetRatio);
+
+  if (preferredPasses && isBlendFriendlyText(preferred, background)) {
+    return preferred;
+  }
+
+  const paletteOnlyCandidates = uniqueHexColors(params.paletteCandidates).filter(
+    (candidate) => !isHardFallbackColor(candidate),
+  );
+  const passingPaletteCandidates = paletteOnlyCandidates.filter((candidate) =>
+    hasContrast(candidate, background, targetRatio),
+  );
+  const blendFriendlyPaletteCandidates = passingPaletteCandidates.filter((candidate) =>
+    isBlendFriendlyText(candidate, background),
+  );
+
+  if (blendFriendlyPaletteCandidates.length > 0) {
+    return getBestByContrast(background, blendFriendlyPaletteCandidates);
+  }
+
+  if (passingPaletteCandidates.length > 0) {
+    return getBestByContrast(background, passingPaletteCandidates);
+  }
+
+  if (preferredPasses) {
+    return preferred;
+  }
+
+  const fallbackCandidates = ['#FFFFFF', '#0B0D12'];
+  const passingFallback = fallbackCandidates.filter((candidate) =>
+    hasContrast(candidate, background, targetRatio),
+  );
+
+  if (passingFallback.length > 0) {
+    return passingFallback[0];
+  }
+
+  return getBestByContrast(background, fallbackCandidates);
+}
+
+function pickTextFromPaletteForBackgrounds(params: {
+  backgrounds: string[];
+  preferred: string;
+  paletteCandidates: string[];
+  targetRatio?: number;
+}) {
+  const targetRatio = params.targetRatio ?? 4.5;
+  const backgrounds = params.backgrounds.map((background) => normalizeHex(background));
+
+  if (!backgrounds.length) {
+    return normalizeHex(params.preferred);
+  }
+
+  const preferred = normalizeHex(params.preferred);
+  const preferredPasses = backgrounds.every((background) =>
+    hasContrast(preferred, background, targetRatio),
+  );
+
+  if (
+    preferredPasses &&
+    backgrounds.every((background) => isBlendFriendlyText(preferred, background))
+  ) {
+    return preferred;
+  }
+
+  const paletteOnlyCandidates = uniqueHexColors(params.paletteCandidates).filter(
+    (candidate) => !isHardFallbackColor(candidate),
+  );
+  const passingPaletteCandidates = paletteOnlyCandidates.filter((candidate) =>
+    backgrounds.every((background) => hasContrast(candidate, background, targetRatio)),
+  );
+  const blendFriendlyPaletteCandidates = passingPaletteCandidates.filter((candidate) =>
+    backgrounds.every((background) => isBlendFriendlyText(candidate, background)),
+  );
+
+  if (blendFriendlyPaletteCandidates.length > 0) {
+    return getBestByWorstContrast(backgrounds, blendFriendlyPaletteCandidates);
+  }
+
+  if (passingPaletteCandidates.length > 0) {
+    return getBestByWorstContrast(backgrounds, passingPaletteCandidates);
+  }
+
+  if (preferredPasses) {
+    return preferred;
+  }
+
+  const fallbackCandidates = ['#FFFFFF', '#0B0D12'];
+  const passingFallback = fallbackCandidates.filter((candidate) =>
+    backgrounds.every((background) => hasContrast(candidate, background, targetRatio)),
+  );
+
+  if (passingFallback.length > 0) {
+    return passingFallback[0];
+  }
+
+  return getBestByWorstContrast(backgrounds, fallbackCandidates);
+}
+
+function getWorstContrastRatio(foreground: string, backgrounds: string[]) {
+  return backgrounds.reduce(
+    (lowestRatio, background) => Math.min(lowestRatio, getContrastRatio(foreground, background)),
+    Number.POSITIVE_INFINITY,
+  );
+}
+
+function pickReadableTextForBackgrounds(
+  backgrounds: string[],
+  preferred: string,
+  targetRatio = 4.5,
+) {
+  if (!backgrounds.length) {
+    return normalizeHex(preferred);
+  }
+
+  const normalizedBackgrounds = backgrounds.map((background) => normalizeHex(background));
+  const fallback = normalizedBackgrounds[0];
+  const candidatePool = [
+    normalizeHex(preferred),
+    ensureContrast(preferred, fallback, targetRatio),
+    ensureContrast('#0B0D12', fallback, targetRatio),
+    ensureContrast('#FFFFFF', fallback, targetRatio),
+  ];
+
+  const candidates = [...new Set(candidatePool)];
+  const passingCandidates = candidates.filter((candidate) =>
+    normalizedBackgrounds.every((background) => hasContrast(candidate, background, targetRatio)),
+  );
+  const pool = passingCandidates.length > 0 ? passingCandidates : candidates;
+
+  return pool.reduce((best, candidate) =>
+    getWorstContrastRatio(candidate, normalizedBackgrounds) >
+    getWorstContrastRatio(best, normalizedBackgrounds)
+      ? candidate
+      : best,
+  );
+}
+
+function getContrastTokens(theme: ResolvedPalette) {
+  const paletteCandidates = uniqueHexColors([
+    ...theme.swatches,
+    theme.primary,
+    theme.secondary,
+    theme.background,
+    theme.foreground,
+    theme.surface,
+    theme.surfaceText,
+    theme.textOnPrimary,
+    theme.textOnSecondary,
+  ]);
+
+  const primaryCardText = pickTextFromPalette({
+    background: theme.primary,
+    preferred: theme.textOnPrimary,
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const secondaryCardText = pickTextFromPalette({
+    background: theme.secondary,
+    preferred: theme.textOnSecondary,
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const shipmentsValueText = pickTextFromPalette({
+    background: theme.primary,
+    preferred: primaryCardText,
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const shipmentsTitleText = pickTextFromPalette({
+    background: theme.primary,
+    preferred: blendHex(shipmentsValueText, theme.primary, 0.24),
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const fontFamilyBodyLineText = pickTextFromPalette({
+    background: theme.secondary,
+    preferred: secondaryCardText,
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const fontFamilyTitleText = pickTextFromPalette({
+    background: theme.secondary,
+    preferred: blendHex(fontFamilyBodyLineText, theme.secondary, 0.2),
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const fontFamilyCapsLineText = pickTextFromPalette({
+    background: theme.secondary,
+    preferred: blendHex(fontFamilyBodyLineText, theme.secondary, 0.16),
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  const heroText = pickTextFromPaletteForBackgrounds({
+    backgrounds: [theme.secondary, theme.swatches[4]],
+    preferred: secondaryCardText,
+    paletteCandidates,
+    targetRatio: 4.5,
+  });
+
+  return {
+    brandTitleText: pickTextFromPalette({
+      background: theme.swatches[3],
+      preferred: theme.surfaceText,
+      paletteCandidates,
+      targetRatio: 4.5,
+    }),
+    primaryCardText: shipmentsValueText,
+    primaryCardLabelText: shipmentsTitleText,
+    secondaryCardText: fontFamilyBodyLineText,
+    secondaryCardLabelText: fontFamilyTitleText,
+    shipmentsTitleText,
+    shipmentsValueText,
+    fontFamilyTitleText,
+    fontFamilyCapsLineText,
+    fontFamilyBodyLineText,
+    heroText,
+    heroMutedText: pickTextFromPaletteForBackgrounds({
+      backgrounds: [theme.secondary, theme.swatches[4]],
+      preferred: blendHex(heroText, theme.secondary, 0.2),
+      paletteCandidates,
+      targetRatio: 4.5,
+    }),
+    statAccentText: pickTextFromPalette({
+      background: theme.surface,
+      preferred: theme.primary,
+      paletteCandidates,
+      targetRatio: 4.5,
+    }),
+    surfaceMutedText: pickTextFromPalette({
+      background: theme.surface,
+      preferred: blendHex(theme.surfaceText, theme.surface, 0.35),
+      paletteCandidates,
+      targetRatio: 4.5,
+    }),
+  };
 }
 
 function buildSwatches(

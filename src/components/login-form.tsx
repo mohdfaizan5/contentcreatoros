@@ -3,7 +3,7 @@
 import { cn } from '@/lib/utils'
 import { createClient } from '@/lib/client'
 import { getOAuthRedirectTo } from '@/lib/auth-redirect'
-import { X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth'
+import { X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'

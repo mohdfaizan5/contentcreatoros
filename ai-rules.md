@@ -5,4 +5,5 @@
 - make sure you write code understanding the bigger picture and how it fits into the whole application.
 - always check what version of the package is already installed and use that version docs and api.
 - **Database Migrations**: Always create NEW numbered migration files (00001, 00002, etc.) in migrations/ folder. Never edit existing migrations unless they failed. Format: `00XXX_description.sql`
+    - make sure you give a proper quick summary of what the migration will do for the db and if there is something for the user to be aware of.
 - **Changelog**: After making user-facing changes, update `src/data/changelog.ts` by adding a NEW entry at the TOP of the array. Categorize changes into `improvements`, `fixes`, and `patches`. Include version, date, title, and description. This powers the public `/changelog` route.

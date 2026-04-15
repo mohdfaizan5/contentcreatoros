@@ -1,5 +1,5 @@
 import { TwitterApi } from 'twitter-api-v2';
-import type { XTweet, XUser } from '@/lib/x';
+import type { XTweet, XUser } from '@/lib/x/x';
 
 type SyndicationAccount = {
   friends_count?: number;
@@ -56,7 +56,7 @@ async function lookupWithSyndicationApi(handle: string): Promise<XUser | null> {
     const payload = (await response.json()) as SyndicationAccount[];
     const account = payload?.[0];
 
-    if (!account?.screen_name) {
+    if (!account?.screen_name || !account.id_str) {
       return null;
     }
 

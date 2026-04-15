@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
 import { createClient } from '@/lib/server'
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding'
-import { X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth'
-import { persistXConnectionForCurrentUser, persistXTokens } from '@/lib/x'
+import { X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth'
+import { persistXConnectionForCurrentUser, persistXTokens } from '@/lib/x/x'
 
 function getSafeNextPath(rawNext: string | null) {
   if (!rawNext || !rawNext.startsWith('/')) {

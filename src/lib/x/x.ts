@@ -2,9 +2,9 @@ import { cookies } from 'next/headers';
 import { TwitterApi } from 'twitter-api-v2';
 import { createClient } from '@/lib/server';
 import { createAdminClient } from '@/lib/server-admin';
-import { X_OAUTH_SCOPES, X_OAUTH_SCOPE_STRING } from '@/lib/x-oauth';
+import { X_OAUTH_SCOPES, X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
-import { extractXHandle } from '@/lib/x-handle';
+import { extractXHandle } from '@/lib/x/x-handle';
 import { getConfiguredPublicOrigin } from '@/lib/request-origin';
 
 const X_STATE_COOKIE = 'x_oauth_state';

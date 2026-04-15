@@ -9,26 +9,26 @@ export const ONBOARDING_IMPORTANT_MILESTONES: OnboardingMilestone[] = [
   {
     id: 'brand-core',
     title: 'Brand Core',
-    description: 'Company basics and audience',
+    description: 'Core context and audience fit',
     stepIds: ['company-basics', 'audience'],
   },
   {
     id: 'goals-voice',
-    title: 'Goals and Voice',
-    description: 'Outcomes and communication style',
-    stepIds: ['goals', 'style'],
+    title: 'Voice and Beliefs',
+    description: 'Outcomes, tone, and clear opinions',
+    stepIds: ['goals', 'style', 'beliefs'],
   },
   {
     id: 'strategy',
     title: 'Publishing Plan',
-    description: 'Cadence, pillars, and formats',
-    stepIds: ['strategy'],
+    description: 'Cadence, pillars, formats, and recent seeds',
+    stepIds: ['strategy', 'content-seeds'],
   },
   {
     id: 'positioning',
     title: 'Positioning',
     description: 'Offer details and market context',
-    stepIds: ['product-details', 'competitors', 'capability'],
+    stepIds: ['product-details', 'competitors'],
   },
 ];
 

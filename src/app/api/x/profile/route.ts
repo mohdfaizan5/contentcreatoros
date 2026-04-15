@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { extractXHandle } from '@/lib/x-handle';
-import { lookupPublicXUserByHandle } from '@/lib/x-public';
+import { extractXHandle } from '@/lib/x/x-handle';
+import { lookupPublicXUserByHandle } from '@/lib/x/x-public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

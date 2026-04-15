@@ -4,7 +4,7 @@ import {
   persistXConnectionForCurrentUser,
   persistXTokens,
   validateXOAuthState,
-} from '@/lib/x';
+} from '@/lib/x/x';
 import { getRequestOrigin } from '@/lib/request-origin';
 import { NextResponse, type NextRequest } from 'next/server';
 

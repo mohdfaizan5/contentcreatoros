@@ -36,6 +36,7 @@
         "ai": "^6.0.140",
         "class-variance-authority": "^0.7.1",
         "clsx": "^2.1.1",
+        "color-contrast-checker": "^2.1.0",
         "coolshapes-react": "^1.0.1",
         "date-fns": "^4.1.0",
         "editorjs-undo": "^2.0.28",
@@ -1072,6 +1073,8 @@
     "codex-notifier": ["codex-notifier@1.1.2", "", {}, "sha512-DCp6xe/LGueJ1N5sXEwcBc3r3PyVkEEDNWCVigfvywAkeXcZMk9K41a31tkEFBW0Ptlwji6/JlAb49E3Yrxbtg=="],
 
     "codex-tooltip": ["codex-tooltip@1.0.5", "", {}, "sha512-IuA8LeyLU5p1B+HyhOsqR6oxyFQ11k3i9e9aXw40CrHFTRO2Y1npNBVU3W1SvhKAbUU7R/YikUBdcYFP0RcJag=="],
+
+    "color-contrast-checker": ["color-contrast-checker@2.1.0", "", {}, "sha512-6Y0aIEej3pwZTVlicIqVzhO6T4izDWouaIXnYoDdTuFFAMQ9nnN0dgHNP9J94jRnH6asjPq1/wzUKxwoNbWtRQ=="],
 
     "color-convert": ["color-convert@2.0.1", "", { "dependencies": { "color-name": "~1.1.4" } }, "sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ=="],
 
