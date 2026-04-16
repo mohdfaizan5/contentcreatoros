@@ -2,6 +2,7 @@ import type { CSSProperties, ReactNode } from 'react';
 import type { Metadata } from 'next';
 import ColorContrastChecker from 'color-contrast-checker';
 import BrandKitShell from '@/components/settings/brand-kit-shell';
+import { BrandVisualRegenerateMenu } from '@/components/brand-kit/brand-visual-regenerate-menu';
 import { getBrandKitPageData } from '@/lib/brand-kit-page-data';
 import { buildBrandVisualIdentity, type BrandVisualIdentity } from '@/lib/brand-visuals';
 import { cn } from '@/lib/utils';
@@ -69,13 +70,19 @@ function toVisualPalette(identity: BrandVisualIdentity): VisualPalette {
 }
 
 export default async function BrandVisualsPage() {
-  const { answeredCount, brandIdentity, totalQuestionCount } = await getBrandKitPageData();
+  const { answeredCount, brandIdentity, initialAnswers, totalQuestionCount } = await getBrandKitPageData();
   const identity = buildBrandVisualIdentity(brandIdentity);
   const theme = resolvePalette(toVisualPalette(identity));
   const contrastTokens = getContrastTokens(theme);
   const displayName = identity.companyName || identity.sourceDomain || theme.name;
   const logoUrl = identity.logoUrl || null;
   const fallbackImageUrl = identity.ogImageUrl || identity.logoUrl || null;
+  const defaultWebsiteUrl =
+    typeof initialAnswers.website_url === 'string' && initialAnswers.website_url.trim().length > 0
+      ? initialAnswers.website_url
+      : identity.sourceDomain
+        ? `https://${identity.sourceDomain}`
+        : '';
 
   return (
     <BrandKitShell answeredCount={answeredCount} totalQuestionCount={totalQuestionCount}>
@@ -96,6 +103,18 @@ export default async function BrandVisualsPage() {
             <span className="text-foreground">{theme.name}</span>
           </p>
         </header> */}
+
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <p className="text-xs font-medium text-muted-foreground/80">
+            Active theme from onboarding profile:{' '}
+            <span className="text-foreground">{theme.name}</span>
+          </p>
+
+          <BrandVisualRegenerateMenu
+            defaultWebsiteUrl={defaultWebsiteUrl}
+            currentColors={theme.swatches}
+          />
+        </div>
 
         <div
           className="relative isolate overflow-hidden rounded-[28px] border p-3 sm:p-4 lg:p-6"
@@ -146,7 +165,7 @@ export default async function BrandVisualsPage() {
                         style={{ backgroundColor: theme.primary }}
                       />
                     )}
-                    <span className="truncate text-">{displayName.split('—')[0].trim()}</span>
+                    <span className="truncate text-">{displayName.includes("-") ? displayName.split('-')[0].trim() : displayName.includes("—") ? displayName.split('—')[0].trim() : displayName}</span>
                   </div>
                 </div>
 
@@ -258,7 +277,7 @@ export default async function BrandVisualsPage() {
             >
               <div className="grid gap-2 p-3  sm:p-3.5">
                 <div
-                  className="relative overflow-hidden rounded-2xl p-4 sm:min-h-55"
+                  className="relative flex flex-col justify-between overflow-hidden rounded-2xl p-4 sm:min-h-55"
                   style={{
                     background: `linear-gradient(135deg, ${theme.secondary}, ${theme.swatches[4]})`,
                     color: contrastTokens.heroText,
@@ -269,7 +288,7 @@ export default async function BrandVisualsPage() {
                     style={{ color: contrastTokens.heroMutedText }}
                   >
                     <span className="font-semibold " style={{ color: contrastTokens.heroText }}>
-                      {displayName ? <span>{displayName.split('—')[0]} <span className='block  font-normal opacity-75'>{displayName.split('—')[1]}</span></span> : 'Visual identity in a collage board style preview.'}
+                      {displayName ? <span>{displayName.split('—')[0]} <span className='block  font-normal opacity-90 text-xl'>{displayName.split('—')[1]}</span></span> : 'Visual identity in a collage board style preview.'}
                     </span>{' '}
                   </p>
                   <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
@@ -670,7 +689,7 @@ function getBestByWorstContrast(backgrounds: string[], colors: string[]) {
 
   return candidates.reduce((best, candidate) =>
     getWorstContrastRatio(candidate, normalizedBackgrounds) >
-    getWorstContrastRatio(best, normalizedBackgrounds)
+      getWorstContrastRatio(best, normalizedBackgrounds)
       ? candidate
       : best,
   );
@@ -817,7 +836,7 @@ function pickReadableTextForBackgrounds(
 
   return pool.reduce((best, candidate) =>
     getWorstContrastRatio(candidate, normalizedBackgrounds) >
-    getWorstContrastRatio(best, normalizedBackgrounds)
+      getWorstContrastRatio(best, normalizedBackgrounds)
       ? candidate
       : best,
   );

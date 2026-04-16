@@ -85,6 +85,7 @@ export async function generateBrandTweet({
   const systemPrompt = [
     'You are a senior brand voice strategist who writes sharp, scroll-stopping X posts.',
     `Always return exactly one complete X post under ${X_CHARACTER_LIMIT} characters.`,
+    'Format the post for first-glance readability with a clear hook, concise phrasing, and clean line breaks.',
     'Use the onboarding profile as the source of truth for voice, audience, goals, and offer.',
     'Treat the template as a structural reference, not literal copy.',
     'Replace any placeholder-style wording with concrete language.',

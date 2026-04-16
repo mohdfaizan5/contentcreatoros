@@ -60,7 +60,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ContentCreatorOS",
+  title: "ContentOSX",
   description: "Making your content creation easier",
 };
 

@@ -126,7 +126,7 @@ function withOptionVisuals(options: OnboardingOption[]) {
 
 export default function OnboardingFlow({
   initialXHandle,
-  redirectTo = '/app/analytics',
+  redirectTo = '/app',
   stepRenderers,
 }: OnboardingFlowProps) {
   const router = useRouter();
@@ -560,12 +560,12 @@ export default function OnboardingFlow({
 
   if (isAutofillProcessing) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-[#eef2f8] p-6">
+      <div className="flex min-h-svh items-center justify-center bg-[#eef2f8] p-6 ">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-3xl space-y-5"
-        >
+          className="w-full max-w-2xl space-y-5"
+        > 
           <OnboardingTerminal mode="processing" />
 
           <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
@@ -582,7 +582,7 @@ export default function OnboardingFlow({
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="w-full max-w-3xl space-y-5"
+          className="w-full max-w-2xl space-y-5"
         >
           <OnboardingTerminal mode="complete" />
 

@@ -1,6 +1,5 @@
 "use client"
 
-import { useWhisper } from "@chengsokdara/use-whisper"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 export type AudioFormat = "webm" | "wav" | "mp3" | "pcm"
@@ -175,6 +174,106 @@ async function transcribeBlobWithServer({
   return text
 }
 
+function useWhisperRecorder({
+  onTranscribe,
+  timeSlice,
+}: {
+  onTranscribe: (blob: Blob) => void | Promise<void>
+  timeSlice: number
+}) {
+  const [recording, setRecording] = useState(false)
+  const recorderRef = useRef<MediaRecorder | null>(null)
+  const streamRef = useRef<MediaStream | null>(null)
+  const isStartingRef = useRef(false)
+
+  const stopStream = useCallback(() => {
+    if (!streamRef.current) {
+      return
+    }
+
+    for (const track of streamRef.current.getTracks()) {
+      track.stop()
+    }
+
+    streamRef.current = null
+  }, [])
+
+  const stopRecording = useCallback(async () => {
+    const recorder = recorderRef.current
+
+    if (recorder && recorder.state !== "inactive") {
+      await new Promise<void>((resolve) => {
+        recorder.addEventListener(
+          "stop",
+          () => {
+            resolve()
+          },
+          { once: true }
+        )
+
+        recorder.stop()
+      })
+    }
+
+    recorderRef.current = null
+    stopStream()
+    setRecording(false)
+  }, [stopStream])
+
+  const startRecording = useCallback(async () => {
+    if (recording || isStartingRef.current) {
+      return
+    }
+
+    if (!navigator.mediaDevices?.getUserMedia) {
+      throw new Error("Microphone recording is not supported in this browser")
+    }
+
+    isStartingRef.current = true
+
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
+      streamRef.current = stream
+
+      const recorder = new MediaRecorder(stream)
+      recorderRef.current = recorder
+
+      recorder.addEventListener("dataavailable", (event) => {
+        if (!event.data || event.data.size === 0) {
+          return
+        }
+
+        void onTranscribe(event.data)
+      })
+
+      recorder.addEventListener("stop", () => {
+        setRecording(false)
+        stopStream()
+      })
+
+      recorder.start(timeSlice)
+      setRecording(true)
+    } catch (error) {
+      stopStream()
+      throw error
+    } finally {
+      isStartingRef.current = false
+    }
+  }, [onTranscribe, recording, stopStream, timeSlice])
+
+  useEffect(() => {
+    return () => {
+      void stopRecording()
+    }
+  }, [stopRecording])
+
+  return {
+    recording,
+    startRecording,
+    stopRecording,
+  }
+}
+
 export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
   const {
     onSessionStarted,
@@ -322,9 +421,7 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
     [onCommittedTranscript, onCommittedTranscriptWithTimestamps]
   )
 
-  const whisper = useWhisper({
-    autoTranscribe: true,
-    streaming: true,
+  const whisper = useWhisperRecorder({
     timeSlice: 1000,
     onTranscribe: async (blob: Blob) => {
       const sessionId =
@@ -360,10 +457,8 @@ export function useScribe(options: ScribeHookOptions = {}): UseScribeReturn {
         })
 
         commitTranscript(text, sessionId, clearRevisionAtStart)
-        return { blob, text }
       } catch (transcribeError) {
         reportError(transcribeError, sessionId)
-        return { blob, text: "" }
       } finally {
         if (abortControllerRef.current === controller) {
           abortControllerRef.current = null

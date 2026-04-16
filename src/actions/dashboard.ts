@@ -20,6 +20,12 @@ export interface DashboardSnapshot {
   score: number;
   scoreLabel: string;
   followersCount: number | null;
+  xProfile: {
+    name: string;
+    username: string;
+    profileImageUrl: string | null;
+    description: string | null;
+  } | null;
   scheduledUpcomingCount: number;
   publishedLast7DaysCount: number;
   engagementLast7DaysCount: number;
@@ -53,6 +59,14 @@ type RawPlanItem = {
   rationale?: string;
   suggestedPost?: string;
 };
+
+const WORKFLOW_PLANNER_SYSTEM_PROMPT = [
+  'You are a senior X content strategist producing concise, high-signal post drafts.',
+  'Every suggestedPost must be 280 characters or fewer (hard limit).',
+  'Optimize for first-glance readability with a clear hook, concise lines, and coherent flow.',
+  'Avoid clutter, filler, excessive emojis, and hashtag stuffing.',
+  'Return strict JSON only using the exact schema requested by the user prompt.',
+].join(' ');
 
 function toIsoDateString(date: Date) {
   return format(date, 'yyyy-MM-dd');
@@ -243,6 +257,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
       score: 0,
       scoreLabel: 'At risk',
       followersCount: null,
+      xProfile: null,
       scheduledUpcomingCount: 0,
       publishedLast7DaysCount: 0,
       engagementLast7DaysCount: 0,
@@ -310,6 +325,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
   });
 
   let followersCount: number | null = null;
+  let xProfile: DashboardSnapshot['xProfile'] = null;
   let engagementLast7DaysCount = 0;
   let needsXReconnect = false;
 
@@ -317,11 +333,19 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     try {
       const profile = await getAuthenticatedXUser(xAccountResponse.data.access_token);
       followersCount = profile.public_metrics?.followers_count ?? null;
+      xProfile = {
+        name: profile.name,
+        username: profile.username,
+        profileImageUrl: profile.profile_image_url ?? null,
+        description: profile.description ?? null,
+      };
 
       const timelineTweets = await getAuthenticatedUserTweets(
         xAccountResponse.data.access_token,
         profile.id,
       );
+
+      const engagementActionTypes = new Set(['replied_to', 'quoted', 'retweeted']);
 
       engagementLast7DaysCount = timelineTweets
         .filter((tweet) => {
@@ -329,18 +353,17 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
             return false;
           }
 
-          return new Date(tweet.created_at).getTime() >= lastSevenDays.getTime();
-        })
-        .reduce((total, tweet) => {
-          const metrics = tweet.public_metrics;
+          if (new Date(tweet.created_at).getTime() < lastSevenDays.getTime()) {
+            return false;
+          }
+
           return (
-            total +
-            (metrics?.like_count ?? 0) +
-            (metrics?.quote_count ?? 0) +
-            (metrics?.reply_count ?? 0) +
-            (metrics?.retweet_count ?? 0)
+            tweet.referenced_tweets?.some((reference) =>
+              engagementActionTypes.has(reference.type),
+            ) ?? false
           );
-        }, 0);
+        })
+        .length;
     } catch {
       needsXReconnect = true;
     }
@@ -386,6 +409,7 @@ export async function getDashboardSnapshot(): Promise<DashboardSnapshot> {
     score,
     scoreLabel: getScoreLabel(score),
     followersCount,
+    xProfile,
     scheduledUpcomingCount: scheduledUpcoming.length,
     publishedLast7DaysCount: publishedInLast7Days.length,
     engagementLast7DaysCount,
@@ -425,6 +449,7 @@ export async function generateSevenDayContentPlan(params: {
   try {
     const result = await generateText({
       model: anthropic('claude-haiku-4-5'),
+      system: WORKFLOW_PLANNER_SYSTEM_PROMPT,
       temperature: 0.5,
       prompt: [
         'Create a 7-day X content plan.',
@@ -433,6 +458,8 @@ export async function generateSevenDayContentPlan(params: {
         `Dates (must match order): ${dateList}`,
         'Return only valid JSON array of 7 objects. Each object must include:',
         'pillar, contentType, angle, rationale, suggestedPost',
+        'Each suggestedPost must be 280 characters or fewer.',
+        'Each suggestedPost should be formatted for quick scanning and readability at first glance.',
         'No markdown. No additional text.',
       ].join('\n\n'),
     });
@@ -473,6 +500,7 @@ export async function regenerateSevenDayPlanItem(params: {
   try {
     const result = await generateText({
       model: anthropic('claude-haiku-4-5'),
+      system: WORKFLOW_PLANNER_SYSTEM_PROMPT,
       temperature: 0.6,
       prompt: [
         'Regenerate one X content plan day as JSON object.',
@@ -484,6 +512,8 @@ export async function regenerateSevenDayPlanItem(params: {
         brandContext,
         'Return only valid JSON object with keys:',
         'pillar, contentType, angle, rationale, suggestedPost',
+        'The suggestedPost must be 280 characters or fewer.',
+        'The suggestedPost should be cleanly formatted for first-glance readability.',
       ].join('\n\n'),
     });
 

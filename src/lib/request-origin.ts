@@ -23,11 +23,17 @@ export function getConfiguredPublicOrigin() {
   return normalizeOrigin(originWithProtocol);
 }
 
-export function getRequestOrigin(request: NextRequest) {
-  const configuredOrigin = getConfiguredPublicOrigin();
+type RequestOriginOptions = {
+  preferConfiguredOrigin?: boolean;
+};
 
-  if (configuredOrigin) {
-    return configuredOrigin;
+export function getRequestOrigin(request: NextRequest, options: RequestOriginOptions = {}) {
+  if (options.preferConfiguredOrigin ?? true) {
+    const configuredOrigin = getConfiguredPublicOrigin();
+
+    if (configuredOrigin) {
+      return configuredOrigin;
+    }
   }
 
   const forwardedHost = request.headers.get('x-forwarded-host');

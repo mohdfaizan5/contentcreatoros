@@ -15,6 +15,21 @@ export type FirecrawlScrapeResult = {
   raw: Record<string, unknown>;
 };
 
+export type FirecrawlBrandingResult = {
+  normalizedUrl: string;
+  domain: string;
+  metadata: Record<string, unknown>;
+  brandIdentity: BrandVisualIdentity;
+  raw: Record<string, unknown>;
+};
+
+type ParsedScrapePayload = {
+  envelope: Record<string, unknown>;
+  data: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  branding: Record<string, unknown>;
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -108,6 +123,59 @@ function extractBrandingImages(branding: Record<string, unknown>) {
   };
 }
 
+function parseScrapePayload(rawResult: unknown): ParsedScrapePayload {
+  const envelope = asRecord(rawResult);
+  const data = asRecord(envelope.data && typeof envelope.data === 'object' ? envelope.data : envelope);
+
+  return {
+    envelope,
+    data,
+    metadata: asRecord(data.metadata),
+    branding: asRecord(data.branding),
+  };
+}
+
+function buildBrandIdentityFromPayload(params: {
+  data: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  branding: Record<string, unknown>;
+  domain: string;
+  markdown?: string;
+}) {
+  const brandingImages = extractBrandingImages(params.branding);
+
+  return buildBrandVisualIdentity({
+    companyName: firstString([
+      params.branding.companyName,
+      params.branding.company_name,
+      params.metadata.ogTitle,
+      params.metadata.title,
+      params.data.title,
+    ]),
+    description:
+      firstString([
+        params.branding.description,
+        params.metadata.description,
+        params.metadata.ogDescription,
+        params.data.description,
+      ]) || markdownSummary(params.markdown ?? ''),
+    logoUrl: firstString([
+      brandingImages.logoUrl,
+      params.metadata.logo,
+      params.data.favicon,
+      params.metadata.favicon,
+    ]),
+    ogImageUrl: firstString([
+      brandingImages.ogImageUrl,
+      params.metadata.ogImage,
+      params.metadata['og:image'],
+      params.data.ogImage,
+    ]),
+    sourceDomain: params.domain,
+    colors: extractColors(params.branding),
+  });
+}
+
 function markdownSummary(markdown: string) {
   const compact = markdown
     .replace(/```[\s\S]*?```/g, ' ')
@@ -166,14 +234,14 @@ function createFirecrawlClient() {
   return new Firecrawl({ apiKey });
 }
 
-async function scrapeWithFallback(client: Firecrawl, url: string) {
+async function scrapeWithFormats(client: Firecrawl, url: string, formats: string[]) {
   const scrapeClient = client as unknown as {
     scrape: (targetUrl: string, options?: unknown) => Promise<unknown>;
   };
 
   try {
     return await scrapeClient.scrape(url, {
-      formats: ['markdown', 'branding'],
+      formats,
     });
   } catch {
     return scrapeClient.scrape(url);
@@ -199,43 +267,17 @@ export async function scrapeWebsiteForOnboarding(params: {
     normalizedUrl,
   });
 
-  const rawResult = await scrapeWithFallback(firecrawl, normalizedUrl);
-  const envelope = asRecord(rawResult);
-  const data = asRecord(envelope.data && typeof envelope.data === 'object' ? envelope.data : envelope);
-  const metadata = asRecord(data.metadata);
-  const branding = asRecord(data.branding);
-  const brandingImages = extractBrandingImages(branding);
+  const rawResult = await scrapeWithFormats(firecrawl, normalizedUrl, ['markdown', 'branding']);
+  const parsed = parseScrapePayload(rawResult);
 
-  const markdown = firstString([data.markdown, data.content]);
+  const markdown = firstString([parsed.data.markdown, parsed.data.content]);
 
-  const brandIdentity = buildBrandVisualIdentity({
-    companyName: firstString([
-      branding.companyName,
-      branding.company_name,
-      metadata.ogTitle,
-      metadata.title,
-      data.title,
-    ]),
-    description: firstString([
-      branding.description,
-      metadata.description,
-      metadata.ogDescription,
-      data.description,
-    ]) || markdownSummary(markdown),
-    logoUrl: firstString([
-      brandingImages.logoUrl,
-      metadata.logo,
-      data.favicon,
-      metadata.favicon,
-    ]),
-    ogImageUrl: firstString([
-      brandingImages.ogImageUrl,
-      metadata.ogImage,
-      metadata['og:image'],
-      data.ogImage,
-    ]),
-    sourceDomain: domain,
-    colors: extractColors(branding),
+  const brandIdentity = buildBrandIdentityFromPayload({
+    data: parsed.data,
+    metadata: parsed.metadata,
+    branding: parsed.branding,
+    domain,
+    markdown,
   });
 
   console.log('[Firecrawl][scrape:done]', {
@@ -252,9 +294,57 @@ export async function scrapeWebsiteForOnboarding(params: {
     normalizedUrl,
     domain,
     markdown,
-    metadata,
+    metadata: parsed.metadata,
     brandIdentity,
-    raw: envelope,
+    raw: parsed.envelope,
+  };
+
+  return result;
+}
+
+export async function scrapeWebsiteForBranding(params: {
+  url: string;
+  requestId?: string;
+}) {
+  const normalizedUrl = normalizeWebsiteUrl(params.url);
+
+  if (!normalizedUrl) {
+    throw new Error('Please enter a valid website URL.');
+  }
+
+  const firecrawl = createFirecrawlClient();
+  const domain = extractDomain(normalizedUrl);
+
+  console.log('[Firecrawl][branding:start]', {
+    requestId: params.requestId ?? null,
+    domain,
+    normalizedUrl,
+  });
+
+  const rawResult = await scrapeWithFormats(firecrawl, normalizedUrl, ['branding']);
+  const parsed = parseScrapePayload(rawResult);
+  const brandIdentity = buildBrandIdentityFromPayload({
+    data: parsed.data,
+    metadata: parsed.metadata,
+    branding: parsed.branding,
+    domain,
+  });
+
+  console.log('[Firecrawl][branding:done]', {
+    requestId: params.requestId ?? null,
+    domain,
+    detectedColorCount: brandIdentity.colors.length,
+    hasLogo: Boolean(brandIdentity.logoUrl),
+    hasOgImage: Boolean(brandIdentity.ogImageUrl),
+    hasCompanyName: Boolean(brandIdentity.companyName),
+  });
+
+  const result: FirecrawlBrandingResult = {
+    normalizedUrl,
+    domain,
+    metadata: parsed.metadata,
+    brandIdentity,
+    raw: parsed.envelope,
   };
 
   return result;

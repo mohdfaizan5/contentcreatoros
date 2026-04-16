@@ -4,8 +4,8 @@ import Link from "next/link";
 
 const Logo = ({
   full = false,
-  width = 30,
-  height = 30,
+  width = 36,
+  height = 36,
   link = true,
   className,
   textClassName,
@@ -22,7 +22,7 @@ const Logo = ({
   const content = (
     <>
       <Image
-        src={"/logotemp.svg"}
+        src={"/contentosx logo1.svg"}
         width={width}
         height={height}
         alt="ContentOS logo"

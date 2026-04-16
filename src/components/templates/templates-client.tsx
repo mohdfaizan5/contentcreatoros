@@ -8,9 +8,10 @@ import type { Template } from '@/types/database';
 
 interface TemplatesClientProps {
     templates: Template[];
+    currentUserId: string | null;
 }
 
-export function TemplatesClient({ templates }: TemplatesClientProps) {
+export function TemplatesClient({ templates, currentUserId }: TemplatesClientProps) {
     // Count by platform
     const xCount = templates.filter(t => t.platform_type === 'x').length;
     const linkedinCount = templates.filter(t => t.platform_type === 'linkedin').length;
@@ -43,17 +44,17 @@ export function TemplatesClient({ templates }: TemplatesClientProps) {
             {/* Platform filter pills */}
             {templates.length > 0 && (
                 <div className="flex items-center gap-2 flex-wrap">
-                    <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 text-sm">
+                    {/* <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-muted/50 text-sm">
                         <span className="text-muted-foreground">All</span>
                         <span className="font-semibold">{templates.length}</span>
-                    </div>
+                    </div> */}
                     {xCount > 0 && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-sky-500/10 text-sm text-sky-600">
                             <TwitterLogo className="h-4 w-4" weight="fill" />
                             <span className="font-medium">{xCount}</span>
                         </div>
                     )}
-                    {linkedinCount > 0 && (
+                    {/* {linkedinCount > 0 && (
                         <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-600/10 text-sm text-blue-600">
                             <LinkedinLogo className="h-4 w-4" weight="fill" />
                             <span className="font-medium">{linkedinCount}</span>
@@ -70,12 +71,12 @@ export function TemplatesClient({ templates }: TemplatesClientProps) {
                             <Article className="h-4 w-4" weight="fill" />
                             <span className="font-medium">{genericCount}</span>
                         </div>
-                    )}
+                    )} */}
                 </div>
             )}
 
             {/* Masonry Grid */}
-            <TemplatesMasonryGrid templates={templates} />
+            <TemplatesMasonryGrid templates={templates} currentUserId={currentUserId} />
         </div>
     );
 }

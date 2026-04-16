@@ -3,7 +3,7 @@ import { changelog } from '@/data/changelog';
 import { Sparkle } from '@phosphor-icons/react/dist/ssr';
 
 export const metadata = {
-    title: 'Changelog - ContentCreator OS',
+    title: 'Changelog - ContentOSX',
     description: 'Latest updates, improvements, and fixes for ContentCreator OS',
 };
 

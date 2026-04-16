@@ -4,7 +4,9 @@ import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
   try {
-    const authorizationUrl = await createXAuthorizationUrl(getRequestOrigin(request));
+    const authorizationUrl = await createXAuthorizationUrl(
+      getRequestOrigin(request, { preferConfiguredOrigin: false }),
+    );
     return NextResponse.redirect(authorizationUrl);
   } catch (error) {
     const message =

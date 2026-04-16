@@ -11,7 +11,7 @@ type OnboardingTerminalProps = {
 
 const PROCESSING_STEPS = [
   'Validating source URL and preparing scrape request.',
-  'Scanning website content and metadata with Firecrawl.',
+  'Scanning website content and metadata .',
   'Extracting brand signals (logo, colors, voice hints).',
   'Inferring onboarding answers with AI.',
   'Saving profile snapshot for editable review.',
@@ -28,7 +28,7 @@ export function OnboardingTerminal({ mode = 'complete' }: OnboardingTerminalProp
 
     const stageInterval = window.setInterval(() => {
       setActiveStepIndex((current) => (current + 1) % PROCESSING_STEPS.length);
-    }, 1500);
+    }, 2);
 
     const elapsedInterval = window.setInterval(() => {
       setElapsedSeconds((current) => current + 1);
@@ -44,7 +44,7 @@ export function OnboardingTerminal({ mode = 'complete' }: OnboardingTerminalProp
     const dots = '.'.repeat((elapsedSeconds % 3) + 1);
 
     return (
-      <Terminal className="w-full max-w-2xl bg-muted-foreground/5" sequence={false}>
+      <Terminal className="w-full  bg-muted-foreground/5" sequence={false}>
         <p className="text-sm font-normal tracking-tight text-slate-200">
           &gt; collecting your website and brand context...
         </p>

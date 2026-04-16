@@ -42,7 +42,10 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    const tokenResponse = await exchangeXCodeForToken(code, getRequestOrigin(request));
+    const tokenResponse = await exchangeXCodeForToken(
+      code,
+      getRequestOrigin(request, { preferConfiguredOrigin: false }),
+    );
     await persistXTokens(tokenResponse);
     await persistXConnectionForCurrentUser(tokenResponse);
 

@@ -28,6 +28,7 @@ import {
 } from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
 import { NavBadge } from './nav-badge';
+import { TreeStructureIcon } from '@phosphor-icons/react/dist/ssr';
 
 type NavBadgeType = 'new' | 'updated' | 'comingSoon';
 type SidebarIcon = React.ComponentType<{ className?: string }>;
@@ -61,9 +62,25 @@ const companyNavItems: SidebarNavItem[] = [
         // hoverBg: 'hover:bg-pink-500/10',
         // badge: 'new',
     },
+    {
+        title: 'Brand Kit',
+        url: '/app/brand-kit',
+        icon: BriefcaseIcon,
+        // color: 'text-amber-500',
+        // badge: 'comingSoon',
+        // disabled: true,
+    },
 ];
 
 const contentNavItems: SidebarNavItem[] = [
+    {
+        title: 'Workflow',
+        url: '/app/workflow',
+        icon: TreeStructureIcon ,
+        // color: 'text-pink-500',
+        // hoverBg: 'hover:bg-pink-500/10',
+        // badge: 'new',
+    },
     {
         title: 'Content Calendar',
         url: '/app/calendar',
@@ -81,14 +98,7 @@ const contentNavItems: SidebarNavItem[] = [
         // hoverBg: 'hover:bg-blue-500/10',
         // badge: 'updated',
     },
-    {
-        title: 'Brand Kit',
-        url: '/app/brand-kit',
-        icon: BriefcaseIcon,
-        // color: 'text-amber-500',
-        // badge: 'comingSoon',
-        // disabled: true,
-    },
+    
     {
         title: 'Auto Replies',
         icon: VscCommentDiscussionSparkle,
@@ -208,9 +218,9 @@ export function AppSidebar() {
             <SidebarHeader className="border-b border-sidebar-border py-4">
                 <Logo
                     full
-                    height={20}
-                    width={20}
-                    className="ml-2 gap-2 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:py-[1.5px]"
+                    height={24}
+                    width={24}
+                    className="ml-2 gap-0 group-data-[collapsible=icon]:mx-auto group-data-[collapsible=icon]:py-[1.5px]"
                     textClassName="group-data-[collapsible=icon]:hidden bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text text-base font-bold text-transparent"
                 />
             </SidebarHeader>

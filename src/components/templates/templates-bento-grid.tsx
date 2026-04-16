@@ -35,20 +35,23 @@ const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; 
 
 interface TemplateMasonryCardProps {
     template: Template;
+    currentUserId: string | null;
     isPinned?: boolean;
 }
 
-function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCardProps) {
+function TemplateMasonryCard({ template, currentUserId, isPinned = false }: TemplateMasonryCardProps) {
     const [isPending, startTransition] = useTransition();
     const [isPublic, setIsPublic] = useState(Boolean(template.is_public));
     const [likedByMe, setLikedByMe] = useState(Boolean(template.liked_by_me));
     const [likesCount, setLikesCount] = useState(template.likes_count ?? 0);
+    const isOwner = Boolean(currentUserId && template.user_id === currentUserId);
     const config = platformConfig[template.platform_type];
     const Icon = config.icon;
 
     const handleDelete = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!isOwner) return;
         if (!confirm('Delete this template?')) return;
         startTransition(async () => {
             await deleteTemplate(template.id);
@@ -58,6 +61,7 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
     const handlePin = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!isOwner) return;
         startTransition(async () => {
             await updateTemplate(template.id, {
                 structure_fields: {
@@ -71,6 +75,7 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
     const handleToggleVisibility = (e: React.MouseEvent) => {
         e.preventDefault();
         e.stopPropagation();
+        if (!isOwner) return;
 
         const nextVisibility = !isPublic;
         setIsPublic(nextVisibility);
@@ -134,38 +139,42 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
                     >
                         <Heart className="h-3.5 w-3.5" weight={likedByMe ? 'fill' : 'regular'} />
                     </button>
-                    <button
-                        onClick={handleToggleVisibility}
-                        disabled={isPending}
-                        title={isPublic ? 'Make private' : 'Make public'}
-                        className={`p-1 rounded-md transition-colors ${isPublic
-                            ? 'bg-emerald-500/15 text-emerald-600'
-                            : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
-                            }`}
-                    >
-                        {isPublic ? <Eye className="h-3.5 w-3.5" /> : <EyeSlash className="h-3.5 w-3.5" />}
-                    </button>
-                    <button
-                        onClick={handlePin}
-                        disabled={isPending}
-                        className={`p-1 rounded-md transition-colors ${isPinned
-                            ? 'bg-amber-500/20 text-amber-500'
-                            : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
-                            }`}
-                    >
-                        <PushPin className="h-3.5 w-3.5" weight={isPinned ? 'fill' : 'regular'} />
-                    </button>
-                    <button
-                        onClick={handleDelete}
-                        disabled={isPending}
-                        className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
-                    >
-                        {isPending ? (
-                            <SpinnerGap className="h-3.5 w-3.5 animate-spin" />
-                        ) : (
-                            <Trash className="h-3.5 w-3.5" />
-                        )}
-                    </button>
+                    {isOwner ? (
+                        <>
+                            <button
+                                onClick={handleToggleVisibility}
+                                disabled={isPending}
+                                title={isPublic ? 'Make private' : 'Make public'}
+                                className={`p-1 rounded-md transition-colors ${isPublic
+                                    ? 'bg-emerald-500/15 text-emerald-600'
+                                    : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                {isPublic ? <Eye className="h-3.5 w-3.5" /> : <EyeSlash className="h-3.5 w-3.5" />}
+                            </button>
+                            <button
+                                onClick={handlePin}
+                                disabled={isPending}
+                                className={`p-1 rounded-md transition-colors ${isPinned
+                                    ? 'bg-amber-500/20 text-amber-500'
+                                    : 'hover:bg-background/80 text-muted-foreground hover:text-foreground'
+                                    }`}
+                            >
+                                <PushPin className="h-3.5 w-3.5" weight={isPinned ? 'fill' : 'regular'} />
+                            </button>
+                            <button
+                                onClick={handleDelete}
+                                disabled={isPending}
+                                className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                            >
+                                {isPending ? (
+                                    <SpinnerGap className="h-3.5 w-3.5 animate-spin" />
+                                ) : (
+                                    <Trash className="h-3.5 w-3.5" />
+                                )}
+                            </button>
+                        </>
+                    ) : null}
                 </div>
             </div>
 
@@ -213,9 +222,10 @@ function TemplateMasonryCard({ template, isPinned = false }: TemplateMasonryCard
 
 interface TemplatesMasonryGridProps {
     templates: Template[];
+    currentUserId: string | null;
 }
 
-export function TemplatesMasonryGrid({ templates }: TemplatesMasonryGridProps) {
+export function TemplatesMasonryGrid({ templates, currentUserId }: TemplatesMasonryGridProps) {
     // Separate pinned and unpinned
     const pinned = templates.filter(t => (t.structure_fields as Record<string, unknown>)?.isPinned === true);
     const unpinned = templates.filter(t => (t.structure_fields as Record<string, unknown>)?.isPinned !== true);
@@ -255,7 +265,7 @@ export function TemplatesMasonryGrid({ templates }: TemplatesMasonryGridProps) {
                     >
                         {pinned.map((template) => (
                             <div key={template.id} className="mb-4">
-                                <TemplateMasonryCard template={template} isPinned={true} />
+                                <TemplateMasonryCard template={template} currentUserId={currentUserId} isPinned={true} />
                             </div>
                         ))}
                     </div>
@@ -274,7 +284,7 @@ export function TemplatesMasonryGrid({ templates }: TemplatesMasonryGridProps) {
                     >
                         {unpinned.map((template) => (
                             <div key={template.id} className="mb-4">
-                                <TemplateMasonryCard template={template} />
+                                <TemplateMasonryCard template={template} currentUserId={currentUserId} />
                             </div>
                         ))}
                     </div>

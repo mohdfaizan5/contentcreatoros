@@ -5,7 +5,6 @@ import { createAdminClient } from '@/lib/server-admin';
 import { X_OAUTH_SCOPES, X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { extractXHandle } from '@/lib/x/x-handle';
-import { getConfiguredPublicOrigin } from '@/lib/request-origin';
 
 const X_STATE_COOKIE = 'x_oauth_state';
 const X_CODE_VERIFIER_COOKIE = 'x_oauth_code_verifier';
@@ -49,6 +48,10 @@ export type XTweet = {
   id: string;
   text: string;
   created_at?: string;
+  referenced_tweets?: Array<{
+    id: string;
+    type: 'retweeted' | 'quoted' | 'replied_to';
+  }>;
   public_metrics?: {
     like_count?: number;
     quote_count?: number;
@@ -138,12 +141,6 @@ export function getXRedirectUri(origin: string) {
 
   if (configuredCallback) {
     return configuredCallback;
-  }
-
-  const configuredOrigin = getConfiguredPublicOrigin();
-
-  if (configuredOrigin) {
-    return `${configuredOrigin}/api/x/callback`;
   }
 
   return `${normalizeOrigin(origin)}/api/x/callback`;
@@ -540,8 +537,8 @@ export async function getAuthenticatedUserTweets(accessToken: string, userId: st
   try {
     const client = createXUserClient(accessToken);
     const timeline = await client.v2.userTimeline(userId, {
-      max_results: 5,
-      'tweet.fields': ['created_at', 'public_metrics'],
+      max_results: 100,
+      'tweet.fields': ['created_at', 'public_metrics', 'referenced_tweets'],
     });
 
     return timeline.tweets as XTweet[];
@@ -697,6 +694,12 @@ async function refreshStoredXAccount(account: StoredXAccount) {
 export async function publishTweetWithStoredConnection(accountId: string, text: string) {
   let account = await getStoredXAccountById(accountId);
   const expiresAt = account.expires_at ? new Date(account.expires_at).getTime() : null;
+
+  if (!account.scope?.includes('tweet.write')) {
+    throw new Error(
+      'Your X connection is missing tweet.write scope. Reconnect X with X_OAUTH_SCOPES including tweet.write to publish posts.',
+    );
+  }
 
   if (expiresAt && expiresAt <= Date.now() + 60_000) {
     account = await refreshStoredXAccount(account);

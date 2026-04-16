@@ -49,7 +49,7 @@ export default async function OnboardingPage() {
     .eq('flow_key', ONBOARDING_FLOW_KEY);
 
   if (!onboardingAnswersError && (onboardingAnswerCount ?? 0) > 0) {
-    redirect('/app/analytics');
+    redirect('/app');
   }
 
   const { data: storedXAccount } = await supabase
@@ -66,5 +66,10 @@ export default async function OnboardingPage() {
     normalizeXHandle(metadata.username) ??
     normalizeXHandle(metadata.screen_name);
 
-  return <OnboardingFlow initialXHandle={initialXHandle} />;
+  return (
+    <OnboardingFlow
+      initialXHandle={initialXHandle}
+      redirectTo="/app?welcomeToContentOSX=true"
+    />
+  );
 }

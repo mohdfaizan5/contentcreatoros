@@ -41,7 +41,16 @@ type BrandTweetStudioProps = {
   generatedTweets: GeneratedTweet[];
   templateId: string;
 };
-
+import {
+  Card,
+  CardFrame,
+  CardFrameAction,
+  CardFrameDescription,
+  CardFrameHeader,
+  CardFrameTitle,
+  CardPanel,
+} from "@/components/ui/card"
+import { PlusIcon } from "lucide-react"
 function getStatusCopy(status: GeneratedTweet['status']) {
   switch (status) {
     case 'draft':
@@ -145,29 +154,29 @@ export function BrandTweetStudio({
     <section className="rounded-[28px] border border-slate-200 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(241,245,249,0.94))] p-6 shadow-[0_32px_80px_-50px_rgba(15,23,42,0.5)]">
       <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
-          <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+          {/* <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
             Brand Engine
-          </div>
+          </div> */}
           <div>
-            <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
+            {/* <h2 className="text-2xl font-semibold tracking-tight text-slate-950">
               Turn this template into your brand voice
-            </h2>
-            <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
+            </h2> */}
+            {/* <p className="mt-1 max-w-2xl text-sm leading-6 text-slate-600">
               &quot;My Brand&quot; pulls your onboarding answers into the prompt, uses this
               template as the structure reference, and writes a tweet that fits inside
               X&apos;s character limit.
-            </p>
+            </p> */}
           </div>
         </div>
 
-        <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center">
+        <div className="flex  gap-3  justify-between sm:items-center">
           {canAutoSchedule ? (
-            <div className="inline-flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
+            <div className="flex items-center gap-2 rounded-full bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-700">
               <CheckCircle className="size-4" weight="fill" />
               X is ready for auto-scheduling
             </div>
           ) : (
-            <div className="inline-flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
+            <div className="flex items-center gap-2 rounded-full bg-amber-50 px-3 py-2 text-xs font-medium text-amber-700">
               <WarningCircle className="size-4" weight="fill" />
               Reconnect X to enable auto-scheduling
             </div>
@@ -185,7 +194,7 @@ export function BrandTweetStudio({
             ) : (
               <>
                 <MagicWand className="size-4" />
-                My Brand
+                Generate my brand tweet
               </>
             )}
           </Button>
@@ -206,15 +215,99 @@ export function BrandTweetStudio({
         </div>
       ) : null}
 
+     
       <div className="mt-6 grid gap-4">
         {tweets.length > 0 ? (
           tweets.map((tweet) => {
             const status = getStatusCopy(tweet.status);
+            const scheduledFor = tweet.scheduled_for;
 
+            return (
+              <CardFrame key={tweet.id}>
+                <CardFrameHeader>
+                  {/* <CardFrameTitle>Project</CardFrameTitle> */}
+                  <CardFrameDescription>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span
+                        className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold ${status.tone}`}
+                      >
+                        {status.label}
+                      </span>
+                      <span className="text-xs font-medium text-slate-400">
+                        {tweet.character_count}/280 chars
+                      </span>
+                      {scheduledFor ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-slate-500">
+                          <ClockCountdown className="size-3.5" />
+                          {format(new Date(scheduledFor!), 'PPP p')}
+                        </span>
+                      ) : null}
+                    </div>                  </CardFrameDescription>
+                  <CardFrameAction>
+                    {/* <PlusIcon />
+                      Add */}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button type="button" variant="outline" className="rounded-full">
+                          <UploadSimple className="size-4" />
+                          Upload
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-56">
+                        <DropdownMenuItem
+                          onSelect={() => {
+                            window.location.assign(buildTweetIntentUrl(tweet.content));
+                          }}
+                        >
+                          <ArrowUpRight className="size-4" />
+                          Tweet now
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={
+                            !canAutoSchedule ||
+                            isPostingNow ||
+                            tweet.status === 'publishing' ||
+                            tweet.status === 'published'
+                          }
+                          onSelect={() => {
+                            handlePostNowWithApi(tweet.id);
+                          }}
+                        >
+                          {isPostingNow ? (
+                            <SpinnerGap className="size-4 animate-spin" />
+                          ) : (
+                            <UploadSimple className="size-4" />
+                          )}
+                          Post now (api)
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          disabled={!canAutoSchedule}
+                          onSelect={() => {
+                            setSelectedTweetId(tweet.id);
+                            setScheduleError(null);
+                            setIsScheduleDialogOpen(true);
+                          }}
+                        >
+                          <CalendarDots className="size-4" />
+                          Schedule tweet
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+
+                    </DropdownMenu>
+
+                  </CardFrameAction>
+                </CardFrameHeader>
+                <Card>
+                  <CardPanel><p className="whitespace-pre-wrap text-[15px] leading-7 text-slate-800">
+                    {tweet.content}
+                  </p></CardPanel>
+                </Card>
+              </CardFrame>
+            )
             return (
               <article
                 key={tweet.id}
-                className="overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_20px_50px_-38px_rgba(15,23,42,0.45)]"
+                className="overflow-hidden  bg-white shadow-[0_20px_50px_-38px_rgba(15,23,42,0.45)]"
               >
                 <div className="flex flex-col gap-4 p-5">
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
@@ -227,10 +320,10 @@ export function BrandTweetStudio({
                       <span className="text-xs font-medium text-slate-400">
                         {tweet.character_count}/280 chars
                       </span>
-                      {tweet.scheduled_for ? (
+                      {scheduledFor ? (
                         <span className="inline-flex items-center gap-1 text-xs text-slate-500">
                           <ClockCountdown className="size-3.5" />
-                          {format(new Date(tweet.scheduled_for), 'PPP p')}
+                          {format(new Date(scheduledFor!), 'PPP p')}
                         </span>
                       ) : null}
                     </div>

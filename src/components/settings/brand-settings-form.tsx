@@ -112,7 +112,6 @@ export default function BrandSettingsForm({
               value={typeof rawValue === 'string' ? rawValue : ''}
               onChange={(event) => updateAnswer(question.key, event.target.value)}
               placeholder={question.placeholder}
-              className="h-12 rounded-[20px] border-slate-200 bg-white"
             />
           </OnboardingField>
         );
@@ -130,7 +129,6 @@ export default function BrandSettingsForm({
               onChange={(event) => updateAnswer(question.key, event.target.value)}
               placeholder={question.placeholder}
               rows={question.rows ?? 4}
-              className="rounded-3xl border-slate-200 bg-white"
             />
           </OnboardingField>
         );
@@ -162,7 +160,6 @@ export default function BrandSettingsForm({
                   updateAnswer(question.otherOption!.answerKey, event.target.value)
                 }
                 placeholder={question.otherOption.placeholder}
-                className="h-12 rounded-[20px] border-slate-200 bg-white"
               />
             ) : null}
           </div>
@@ -197,7 +194,6 @@ export default function BrandSettingsForm({
                   updateAnswer(question.otherOption!.answerKey, event.target.value)
                 }
                 placeholder={question.otherOption.placeholder}
-                className="h-12 rounded-[20px] border-slate-200 bg-white"
               />
             ) : null}
           </div>

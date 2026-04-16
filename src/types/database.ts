@@ -25,6 +25,18 @@ export type ScheduledDispatchRunStatus =
     | 'unauthorized'
     | 'misconfigured'
     | 'failed';
+export type SevenDayPlanningRunStatus =
+    | 'queued'
+    | 'generating'
+    | 'pending_approval'
+    | 'scheduled'
+    | 'failed'
+    | 'cancelled';
+export type SevenDayPlanningItemApprovalStatus =
+    | 'pending'
+    | 'approved'
+    | 'rejected'
+    | 'scheduled';
 
 // ============================================
 // EDITOR.JS TYPES
@@ -253,6 +265,50 @@ export interface GeneratedTweet {
     error_message: string | null;
     model: string | null;
     prompt_snapshot: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SevenDayPlanningRun {
+    id: string;
+    user_id: string;
+    start_date: string;
+    end_date: string;
+    status: SevenDayPlanningRunStatus;
+    generation_model: string;
+    generation_prompt_snapshot: Record<string, unknown>;
+    generation_started_at: string | null;
+    generation_completed_at: string | null;
+    generation_error: string | null;
+    approved_count: number;
+    rejected_count: number;
+    pending_count: number;
+    scheduled_count: number;
+    scheduled_generated_tweet_ids: string[];
+    cancelled_at: string | null;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface SevenDayPlanningItem {
+    id: string;
+    run_id: string;
+    user_id: string;
+    item_date: string;
+    day_index: number;
+    day_label: string;
+    pillar: string;
+    content_type: string;
+    angle: string;
+    rationale: string;
+    suggested_post: string;
+    approval_status: SevenDayPlanningItemApprovalStatus;
+    decision_note: string | null;
+    approved_at: string | null;
+    rejected_at: string | null;
+    regeneration_count: number;
+    regeneration_history: Array<Record<string, unknown>>;
+    generated_tweet_id: string | null;
     created_at: string;
     updated_at: string;
 }

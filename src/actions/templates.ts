@@ -64,10 +64,12 @@ export async function getTemplates(platformType?: PlatformType): Promise<Templat
     const { data: userData } = await supabase.auth.getUser();
     if (!userData?.user) throw new Error('Not authenticated');
 
+    const currentUserId = userData.user.id;
+
     let query = supabase
         .from('templates')
         .select('*')
-        .eq('user_id', userData.user.id);
+        .or(`user_id.eq.${currentUserId},is_public.eq.true`);
 
     if (platformType) {
         query = query.eq('platform_type', platformType);
@@ -76,33 +78,46 @@ export async function getTemplates(platformType?: PlatformType): Promise<Templat
     const { data, error } = await query.order('created_at', { ascending: false });
 
     if (error) throw error;
-    return attachTemplateEngagement(supabase, data || [], userData.user.id);
+
+    const templates = (data ?? []).sort((left, right) => {
+        const leftOwnedByMe = left.user_id === currentUserId;
+        const rightOwnedByMe = right.user_id === currentUserId;
+
+        if (leftOwnedByMe !== rightOwnedByMe) {
+            return leftOwnedByMe ? -1 : 1;
+        }
+
+        return new Date(right.created_at).getTime() - new Date(left.created_at).getTime();
+    });
+
+    return attachTemplateEngagement(supabase, templates, currentUserId);
 }
 
 export async function getTemplate(id: string): Promise<Template | null> {
     const supabase = await createClient();
 
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+        return null;
+    }
+
+    const currentUserId = userData.user.id;
+
     const { data, error } = await supabase
         .from('templates')
         .select('*')
         .eq('id', id)
-        .single();
+        .or(`user_id.eq.${currentUserId},is_public.eq.true`)
+        .maybeSingle();
 
-    if (error) return null;
-
-    const { data: userData } = await supabase.auth.getUser();
-    if (!userData?.user) {
-        return {
-            ...data,
-            likes_count: 0,
-            liked_by_me: false,
-        };
+    if (error || !data) {
+        return null;
     }
 
     const [templateWithEngagement] = await attachTemplateEngagement(
         supabase,
         [data],
-        userData.user.id,
+        currentUserId,
     );
 
     return templateWithEngagement ?? data;

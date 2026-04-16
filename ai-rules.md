@@ -7,3 +7,16 @@
 - **Database Migrations**: Always create NEW numbered migration files (00001, 00002, etc.) in migrations/ folder. Never edit existing migrations unless they failed. Format: `00XXX_description.sql`
     - make sure you give a proper quick summary of what the migration will do for the db and if there is something for the user to be aware of.
 - **Changelog**: After making user-facing changes, update `src/data/changelog.ts` by adding a NEW entry at the TOP of the array. Categorize changes into `improvements`, `fixes`, and `patches`. Include version, date, title, and description. This powers the public `/changelog` route.
+
+
+
+## writing good quality code
+
+1. keep UI seperate from logic whenever possible.
+    - if logic is completely independent, make a self explanatory name for the it like a helper function and keep it inside lib folder.
+
+2. if something is repeated, don't do it all over, make a reuseable version of it.\
+
+3. don't make too big files and adding a lot of content
+
+4. make sure you're doing fetching only from the backend almost all times, unless required to do from frontend

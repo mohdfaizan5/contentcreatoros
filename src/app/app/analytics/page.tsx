@@ -1,3 +1,4 @@
+
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import {
@@ -17,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import {
   Card,
   CardContent,
+  CardDescription,
   CardFooter,
   CardHeader,
   CardTitle,
@@ -36,6 +38,7 @@ import {
   getXConnectionMetadata,
   type XTweet,
 } from '@/lib/x/x';
+import { X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth';
 import {
   hasPublicXLookupConfigured,
   lookupPublicXTweetsByUserId,
@@ -50,6 +53,8 @@ type PageProps = {
   }>;
 };
 import { AnimatedCircularProgressBar } from "@/components/ui/animated-circular-progress-bar"
+import { Badge } from '@/components/ui/badge';
+import { LabelTooltip } from '@/components/label-tooltip';
 
 function formatCompactNumber(value?: number) {
   return new Intl.NumberFormat('en', {
@@ -97,25 +102,7 @@ function getFriendlyError(error?: string) {
   return error;
 }
 
-function LabelTooltip({ label, description }: { label: string; description: string }) {
-  return (
-    <span className="inline-flex items-center gap-1.5 align-middle">
-      <span>{label}</span>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            className="inline-flex size-4 items-center justify-center rounded-full text-slate-400 transition hover:text-slate-700"
-            aria-label={description}
-          >
-            <Info className="size-3.5" weight="bold" />
-          </button>
-        </TooltipTrigger>
-        <TooltipContent side="top">{description}</TooltipContent>
-      </Tooltip>
-    </span>
-  );
-}
+
 
 export default async function XAnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -181,9 +168,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
 
   return (
     <div className="space-y-6">
-      <AnimatedCircularProgressBar value={32}
-      gaugePrimaryColor="rgb(79 70 229)"
-      gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"  />
+
       <section className="relative overflow-hidden  rounded-2xl  border border-slate-200/70 bg-[#1384FF] px-8 py-4 text-white shadow-[0_24px_80px_-28px_rgba(15,23,42,0.75)]">
         <div className="absolute inset-y-0 right-[-8%] w-56 rounded-full bg-[#1384FF] blur-3xl" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
@@ -302,35 +287,29 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
         </Card>
       )}
 
-      {usingPublicFallback && (
-        <Card className="border-sky-200/80 bg-sky-50/80">
-          <CardContent className="flex flex-col gap-2 pt-6 text-sm text-sky-950/80">
-            <p className="font-medium text-sky-900">Showing public X analytics from your saved handle</p>
-            <p>
-              We found <code>@{linkedHandle}</code> from your saved brand profile and loaded public profile data.
-              Connect X to unlock the direct user-authenticated connection and automatic token refresh.
-            </p>
-            {!hasPublicXLookupConfigured() && (
-              <p>
-                Add an app bearer token if you want public-handle fallback to work without a direct X connection.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
+
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
         <Card className="border-slate-200/80 bg-white/90">
-          <CardHeader>
+          <CardHeader >
             <CardTitle>
               <LabelTooltip
                 label="Connection status"
                 description="User-authenticated X API access via OAuth 2.0 PKCE."
               />
             </CardTitle>
+            <CardDescription>
+
+              <Badge>
+                <LabelTooltip
+                  label="Linked handle"
+                  description="This handle is loaded from your stored X connection or onboarding answers."
+                />
+              </Badge>
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2">
+            {/* <div className="grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
                   <LabelTooltip
@@ -341,6 +320,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 <p className="mt-2 text-xl font-semibold text-slate-900">
                   {connectionLabel}
                 </p>
+
               </div>
 
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
@@ -354,9 +334,10 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                   {formatDate(connectionMetadata.connectedAt)}
                 </p>
               </div>
-            </div>
+            </div> */}
 
-            {!accessToken && linkedHandle && (
+            {/* {!accessToken && linkedHandle && (
+
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
                   <LabelTooltip
@@ -366,7 +347,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 </p>
                 <p className="mt-2 text-xl font-semibold text-slate-900">@{linkedHandle}</p>
               </div>
-            )}
+            )} */}
 
             {user ? (
               <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,0.7))] p-5">
@@ -423,7 +404,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                     />
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2">
+                <CardContent className="grid gap-3 sm:grid-cols-4">
                   {[
                     {
                       icon: Users,
@@ -452,7 +433,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                     >
                       <div className="flex items-center gap-2 text-slate-400">
                         <item.icon className="size-4" weight="fill" />
-                        <span className="text-xs uppercase tracking-[0.24em]">
+                        <span className="text-xs font-mono">
                           <LabelTooltip
                             label={item.label}
                             description={`The current X ${item.label.toLowerCase()} count for this authenticated account.`}
@@ -476,7 +457,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                     />
                   </CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-3 sm:grid-cols-2">
+                <CardContent className="grid gap-3 sm:grid-cols-4">
                   {[
                     { label: 'Likes', value: tweetTotals.likes },
                     { label: 'Replies', value: tweetTotals.replies },
@@ -487,7 +468,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                       key={item.label}
                       className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(241,245,249,0.75),rgba(255,255,255,1))] p-4"
                     >
-                      <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+                      <p className="text-xs font-mono text-slate-400">
                         <LabelTooltip
                           label={item.label}
                           description={`The total number of ${item.label.toLowerCase()} across the latest five posts.`}
@@ -507,6 +488,9 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
 
         <Card className="border-slate-200/80 bg-white/90">
           <CardHeader>
+            <AnimatedCircularProgressBar value={32}
+              gaugePrimaryColor="rgb(79 70 229)"
+              gaugeSecondaryColor="rgba(0, 0, 0, 0.1)" />
             <CardTitle>
               <LabelTooltip
                 label="Latest posts"
@@ -521,8 +505,8 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                   key={tweet.id}
                   className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
                 >
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="space-y-2">
+                  <div className="flex flex-col gap-3  md:items-start md:justify-between">
+                    <div className="space-y-2 ">
                       <p className="text-sm leading-6 text-slate-700">
                         {truncateTweet(tweet.text)}
                       </p>
@@ -534,7 +518,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                       </p>
                     </div>
 
-                    <div className="grid min-w-55 grid-cols-2 gap-2 text-sm text-slate-500">
+                    <div className="flex min-w-55  gap-2 text-sm text-slate-500">
                       <div>
                         <LabelTooltip
                           label={`Likes: ${formatCompactNumber(tweet.public_metrics?.like_count)}`}
@@ -574,7 +558,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
             )}
           </CardContent>
           <CardFooter className="border-t border-slate-100 text-xs text-slate-400">
-            Scopes requested: users.read, tweet.read, tweet.write, offline.access
+            Scopes requested: {X_OAUTH_SCOPE_STRING}
           </CardFooter>
         </Card>
       </div>

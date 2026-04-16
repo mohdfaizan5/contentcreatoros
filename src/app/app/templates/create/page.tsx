@@ -22,12 +22,14 @@ import { PlaceholderList } from '@/components/templates/placeholder-renderer';
 import { PlatformPreview } from '@/components/templates/platform-preview';
 import { generateId } from '@/lib/template-utils';
 import type { PlatformType, TemplateExample } from '@/types/database';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 
 const platforms: { value: PlatformType; icon: PhosphorIcon; label: string; color: string }[] = [
     { value: 'x', icon: TwitterLogo, label: 'X', color: 'hover:bg-sky-500/10 hover:text-sky-500 data-[active=true]:bg-sky-500/10 data-[active=true]:text-sky-500 data-[active=true]:border-sky-500/30' },
-    { value: 'linkedin', icon: LinkedinLogo, label: 'LinkedIn', color: 'hover:bg-blue-600/10 hover:text-blue-600 data-[active=true]:bg-blue-600/10 data-[active=true]:text-blue-600 data-[active=true]:border-blue-600/30' },
-    { value: 'youtube', icon: YoutubeLogo, label: 'YouTube Title', color: 'hover:bg-red-500/10 hover:text-red-500 data-[active=true]:bg-red-500/10 data-[active=true]:text-red-500 data-[active=true]:border-red-500/30' },
-    { value: 'generic', icon: Article, label: 'Other', color: 'hover:bg-gray-500/10 hover:text-gray-500 data-[active=true]:bg-gray-500/10 data-[active=true]:text-gray-500 data-[active=true]:border-gray-500/30' },
+    // { value: 'linkedin', icon: LinkedinLogo, label: 'LinkedIn', color: 'hover:bg-blue-600/10 hover:text-blue-600 data-[active=true]:bg-blue-600/10 data-[active=true]:text-blue-600 data-[active=true]:border-blue-600/30' },
+    // { value: 'youtube', icon: YoutubeLogo, label: 'YouTube Title', color: 'hover:bg-red-500/10 hover:text-red-500 data-[active=true]:bg-red-500/10 data-[active=true]:text-red-500 data-[active=true]:border-red-500/30' },
+    // { value: 'generic', icon: Article, label: 'Other', color: 'hover:bg-gray-500/10 hover:text-gray-500 data-[active=true]:bg-gray-500/10 data-[active=true]:text-gray-500 data-[active=true]:border-gray-500/30' },
 ];
 
 export default function CreateTemplatePage() {
@@ -108,7 +110,7 @@ export default function CreateTemplatePage() {
             </Link>
 
             {/* Platform selector - horizontal icons */}
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
                 {platforms.map((p) => {
                     const Icon = p.icon;
                     return (
@@ -124,7 +126,7 @@ export default function CreateTemplatePage() {
                         </button>
                     );
                 })}
-            </div>
+            </div> */}
 
             {/* Live Preview - platform specific */}
             {templateText && (
@@ -235,7 +237,16 @@ export default function CreateTemplatePage() {
                 )}
 
                 {/* Add example */}
+                 <div className="*:not-first:mt-2">
+                        <Label htmlFor={"example-input"}>Autogrowing textarea</Label>
+                        <Textarea
+                            className="field-sizing-content max-h-29.5 min-h-0 resize-none py-1.75"
+                            id={"example-input"}
+                            placeholder="Leave a comment"
+                        />
+                    </div>
                 <div className="flex gap-2">
+                   
                     <input
                         type="text"
                         placeholder="Paste example content or URL..."

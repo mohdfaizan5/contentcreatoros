@@ -13,6 +13,7 @@ import { SocialEmbed } from './social-embed';
 import { BrandTweetStudio } from './brand-tweet-studio';
 import type { GeneratedTweet, Template, PlatformType } from '@/types/database';
 import { cn } from '@/lib/utils';
+import { Input } from '../ui/input';
 
 const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; label: string }> = {
     x: { icon: TwitterLogo, color: 'bg-sky-500/10 text-sky-600 border-sky-500/20', label: 'X (Twitter)' },
@@ -23,6 +24,7 @@ const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; 
 
 interface TemplateDetailProps {
     template: Template;
+    currentUserId: string | null;
     generatedTweets: GeneratedTweet[];
     canAutoSchedule: boolean;
 }
@@ -40,7 +42,7 @@ const useAutoResize = (value: string) => {
 };
 
 // Helper component for highlighting placeholders [text]
-const HighlightedTextarea = ({ value, onChange, placeholder, minHeight = '100px', className }: { value: string, onChange: (v: string) => void, placeholder?: string, minHeight?: string, className?: string }) => {
+const HighlightedTextarea = ({ value, onChange, placeholder, minHeight = '100px', className, readOnly = false }: { value: string, onChange: (v: string) => void, placeholder?: string, minHeight?: string, className?: string, readOnly?: boolean }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     // Auto-resize
@@ -99,6 +101,7 @@ const HighlightedTextarea = ({ value, onChange, placeholder, minHeight = '100px'
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
                 placeholder={placeholder}
+                readOnly={readOnly}
                 className={cn(
                     "relative block w-full h-full bg-transparent resize-none focus:outline-none text-foreground/90 overflow-hidden border-0",
                     className
@@ -112,6 +115,7 @@ const HighlightedTextarea = ({ value, onChange, placeholder, minHeight = '100px'
 
 export function TemplateDetail({
     template,
+    currentUserId,
     generatedTweets,
     canAutoSchedule,
 }: TemplateDetailProps) {
@@ -137,6 +141,7 @@ export function TemplateDetail({
     const [likesCount, setLikesCount] = useState(template.likes_count ?? 0);
     const [hasChanges, setHasChanges] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const isOwner = Boolean(currentUserId && currentUserId === template.user_id);
 
     const platform = platformConfig[template.platform_type];
     const Icon = platform.icon;
@@ -152,6 +157,7 @@ export function TemplateDetail({
     };
 
     const handleDelete = () => {
+        if (!isOwner) return;
         if (!confirm('Delete this template?')) return;
         startTransition(async () => {
             await deleteTemplate(template.id);
@@ -160,6 +166,7 @@ export function TemplateDetail({
     };
 
     const handleSave = () => {
+        if (!isOwner) return;
         const normalizedTags = normalizeTags(tagsInput);
 
         startTransition(async () => {
@@ -176,26 +183,31 @@ export function TemplateDetail({
     };
 
     const handleExamplesChange = (newExamples: typeof editedExamples) => {
+        if (!isOwner) return;
         setEditedExamples(newExamples);
         setHasChanges(true);
     };
 
     const handleTextChange = (value: string) => {
+        if (!isOwner) return;
         setEditedText(value);
         setHasChanges(true);
     };
 
     const handleNotesChange = (value: string) => {
+        if (!isOwner) return;
         setEditedNotes(value);
         setHasChanges(true);
     };
 
     const handleTagsChange = (value: string) => {
+        if (!isOwner) return;
         setTagsInput(value);
         setHasChanges(true);
     };
 
     const handleVisibilityToggle = () => {
+        if (!isOwner) return;
         const nextVisibility = !isPublic;
         setIsPublic(nextVisibility);
 
@@ -252,16 +264,23 @@ export function TemplateDetail({
                 </div>
 
                 <div className="flex items-center gap-2">
-                    <Button
-                        variant={isPublic ? 'secondary' : 'outline'}
-                        size="sm"
-                        onClick={handleVisibilityToggle}
-                        disabled={isPending}
-                        className="gap-2"
-                    >
-                        {isPublic ? <Eye className="h-4 w-4" /> : <EyeSlash className="h-4 w-4" />}
-                        {isPublic ? 'Public' : 'Private'}
-                    </Button>
+                    {isOwner ? (
+                        <Button
+                            variant={isPublic ? 'secondary' : 'outline'}
+                            size="sm"
+                            onClick={handleVisibilityToggle}
+                            disabled={isPending}
+                            className="gap-2"
+                        >
+                            {isPublic ? <Eye className="h-4 w-4" /> : <EyeSlash className="h-4 w-4" />}
+                            {isPublic ? 'Public' : 'Private'}
+                        </Button>
+                    ) : (
+                        <span className="inline-flex items-center gap-2 rounded-md border px-3 py-1.5 text-sm text-muted-foreground">
+                            <Eye className="h-4 w-4" />
+                            Public template
+                        </span>
+                    )}
 
                     <Button
                         variant={likedByMe ? 'secondary' : 'ghost'}
@@ -293,22 +312,24 @@ export function TemplateDetail({
                             </>
                         )}
                     </Button>
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={handleDelete}
-                        disabled={isPending}
-                        className="gap-2 text-destructive hover:text-destructive"
-                    >
-                        {isPending ? (
-                            <SpinnerGap className="h-4 w-4 animate-spin" />
-                        ) : (
-                            <Trash className="h-4 w-4" />
-                        )}
-                        Delete
-                    </Button>
+                    {isOwner ? (
+                        <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={handleDelete}
+                            disabled={isPending}
+                            className="gap-2 text-destructive hover:text-destructive"
+                        >
+                            {isPending ? (
+                                <SpinnerGap className="h-4 w-4 animate-spin" />
+                            ) : (
+                                <Trash className="h-4 w-4" />
+                            )}
+                            Delete
+                        </Button>
+                    ) : null}
 
-                    {hasChanges && (
+                    {isOwner && hasChanges && (
                         <Button onClick={handleSave} disabled={isPending} className="gap-2">
                             {isPending ? (
                                 <SpinnerGap className="h-4 w-4 animate-spin" />
@@ -321,17 +342,7 @@ export function TemplateDetail({
                 </div>
             </div>
 
-            <div className="space-y-2">
-                <label className="text-sm font-medium text-muted-foreground">Tags</label>
-                <input
-                    type="text"
-                    value={tagsInput}
-                    onChange={(event) => handleTagsChange(event.target.value)}
-                    placeholder="e.g. hooks, storytelling, growth"
-                    className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
-                />
-                <p className="text-xs text-muted-foreground">Separate tags with commas.</p>
-            </div>
+         
 
             {/* Inline Edit Preview - platform specific */}
             {template.platform_type === 'x' && (
@@ -339,6 +350,7 @@ export function TemplateDetail({
                     <TwitterInlineEditor
                         content={editedText}
                         onChange={handleTextChange}
+                        readOnly={!isOwner}
                     />
                     <BrandTweetStudio
                         canAutoSchedule={canAutoSchedule}
@@ -352,6 +364,7 @@ export function TemplateDetail({
                 <LinkedInInlineEditor
                     content={editedText}
                     onChange={handleTextChange}
+                    readOnly={!isOwner}
                 />
             )}
 
@@ -359,6 +372,7 @@ export function TemplateDetail({
                 <YouTubeInlineEditor
                     content={editedText}
                     onChange={handleTextChange}
+                    readOnly={!isOwner}
                 />
             )}
 
@@ -366,6 +380,7 @@ export function TemplateDetail({
                 <GenericInlineEditor
                     content={editedText}
                     onChange={handleTextChange}
+                    readOnly={!isOwner}
                 />
             )}
 
@@ -373,6 +388,18 @@ export function TemplateDetail({
             {editedText && (
                 <PlaceholderList templateText={editedText} />
             )}
+               <div className="space-y-2">
+                <label className="text-sm font-medium text-muted-foreground">Tags</label>
+                <Input
+                    type="text"
+                    value={tagsInput}
+                    onChange={(event) => handleTagsChange(event.target.value)}
+                    placeholder="e.g. hooks, storytelling, growth"
+                    readOnly={!isOwner}
+                    // className="w-full rounded-xl border bg-background px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/50"
+                />
+                <p className="text-xs text-muted-foreground">Separate tags with commas.</p>
+            </div>
             {/* References (Embeds) */}
             {referencesCount > 0 && (
                 <div className="space-y-3">
@@ -391,7 +418,7 @@ export function TemplateDetail({
                 <ExamplesList
                     examples={editedExamples}
                     templateText={editedText || undefined}
-                    onExamplesChange={handleExamplesChange}
+                    onExamplesChange={isOwner ? handleExamplesChange : undefined}
                     defaultPlatform={template.platform_type}
                 />
             </div>
@@ -404,6 +431,7 @@ export function TemplateDetail({
                         value={editedNotes}
                         onChange={(e) => handleNotesChange(e.target.value)}
                         placeholder="Add notes about using this template..."
+                        readOnly={!isOwner}
                         className="w-full bg-transparent text-sm text-foreground/90 focus:outline-none resize-none placeholder:text-muted-foreground/50 overflow-hidden"
                         style={{ minHeight: '80px' }}
                     />
@@ -422,9 +450,10 @@ export function TemplateDetail({
 interface InlineEditorProps {
     content: string;
     onChange: (value: string) => void;
+    readOnly?: boolean;
 }
 
-function TwitterInlineEditor({ content, onChange }: InlineEditorProps) {
+function TwitterInlineEditor({ content, onChange, readOnly = false }: InlineEditorProps) {
     return (
         <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
             {/* Header */}
@@ -449,7 +478,8 @@ function TwitterInlineEditor({ content, onChange }: InlineEditorProps) {
                     onChange={onChange}
                     placeholder="What's happening?"
                     minHeight="120px"
-                    className="text-[17px] leading-relaxed p-0"
+                    readOnly={readOnly}
+                    className={cn('text-[17px] leading-relaxed p-0', readOnly ? 'cursor-default' : undefined)}
                 />
             </div>
 
@@ -475,7 +505,7 @@ function TwitterInlineEditor({ content, onChange }: InlineEditorProps) {
     );
 }
 
-function LinkedInInlineEditor({ content, onChange }: InlineEditorProps) {
+function LinkedInInlineEditor({ content, onChange, readOnly = false }: InlineEditorProps) {
     return (
         <div className="rounded-2xl border bg-card overflow-hidden shadow-sm">
             {/* Header */}
@@ -495,7 +525,8 @@ function LinkedInInlineEditor({ content, onChange }: InlineEditorProps) {
                     onChange={onChange}
                     placeholder="What do you want to talk about?"
                     minHeight="150px"
-                    className="text-[15px] leading-relaxed p-0"
+                    readOnly={readOnly}
+                    className={cn('text-[15px] leading-relaxed p-0', readOnly ? 'cursor-default' : undefined)}
                 />
             </div>
 
@@ -523,7 +554,7 @@ function LinkedInInlineEditor({ content, onChange }: InlineEditorProps) {
     );
 }
 
-function YouTubeInlineEditor({ content, onChange }: InlineEditorProps) {
+function YouTubeInlineEditor({ content, onChange, readOnly = false }: InlineEditorProps) {
     return (
         <div className="rounded-xl border bg-card p-4 flex items-start gap-3">
             <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
@@ -536,14 +567,15 @@ function YouTubeInlineEditor({ content, onChange }: InlineEditorProps) {
                     onChange={onChange}
                     placeholder="Enter your video title..."
                     minHeight="80px"
-                    className="font-medium text-sm p-0"
+                    readOnly={readOnly}
+                    className={cn('font-medium text-sm p-0', readOnly ? 'cursor-default' : undefined)}
                 />
             </div>
         </div>
     );
 }
 
-function GenericInlineEditor({ content, onChange }: InlineEditorProps) {
+function GenericInlineEditor({ content, onChange, readOnly = false }: InlineEditorProps) {
     return (
         <div className="rounded-xl border bg-card p-4">
             <HighlightedTextarea
@@ -551,7 +583,8 @@ function GenericInlineEditor({ content, onChange }: InlineEditorProps) {
                 onChange={onChange}
                 placeholder="Enter your template content..."
                 minHeight="150px"
-                className="text-sm leading-relaxed p-0"
+                readOnly={readOnly}
+                className={cn('text-sm leading-relaxed p-0', readOnly ? 'cursor-default' : undefined)}
             />
         </div>
     );

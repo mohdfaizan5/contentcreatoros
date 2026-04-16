@@ -24,13 +24,17 @@ async function getAuthenticatedUserAndClient() {
   return { supabase, user };
 }
 
-async function getOwnedTemplate(supabase: Awaited<ReturnType<typeof createClient>>, userId: string, templateId: string) {
+async function getAccessibleTemplate(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+  templateId: string,
+) {
   const { data, error } = await supabase
     .from('templates')
     .select('*')
     .eq('id', templateId)
-    .eq('user_id', userId)
-    .single();
+    .or(`user_id.eq.${userId},is_public.eq.true`)
+    .maybeSingle();
 
   if (error || !data) {
     throw new Error('Unable to find that template.');
@@ -166,7 +170,7 @@ export async function getGeneratedTweetCalendarEvents(): Promise<CalendarEventIn
 
 export async function generateTweetFromTemplate(templateId: string) {
   const { supabase, user } = await getAuthenticatedUserAndClient();
-  const template = await getOwnedTemplate(supabase, user.id, templateId);
+  const template = await getAccessibleTemplate(supabase, user.id, templateId);
 
   if (template.platform_type !== 'x') {
     throw new Error('Brand tweet generation is currently only available for X templates.');
