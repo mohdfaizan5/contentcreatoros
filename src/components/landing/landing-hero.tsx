@@ -27,7 +27,7 @@ const LandingHero = () => {
                     Built for creators who publish daily
                 </span>
 
-                <h1 className="mb-6 max-w-5xl font-serif-instrumental text-5xl leading-[1.05] text-white md:text-6xl lg:text-7xl">
+                <h1 className="mb-6 max-w-5xl font-serif-scotchdeck font-light text-5xl text-white md:text-6xl lg:text-7xl">
                     Your AI CMO
                     <br className="hidden sm:block" />
                     for consistent X growth

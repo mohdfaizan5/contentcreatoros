@@ -13,6 +13,7 @@ import {
 
 export interface SaveOnboardingPayload {
   answers: OnboardingAnswers;
+  questionKeys?: string[];
 }
 
 async function syncOnboardingQuestionSchema() {
@@ -107,10 +108,22 @@ export async function saveOnboarding(payload: SaveOnboardingPayload) {
   const questionIdByKey = new Map(
     syncedQuestionsResult.data.map((question) => [question.question_key, question.id]),
   );
-  const currentQuestionKeys = getPersistedQuestionDefinitions().map(
+  const allQuestionKeys = getPersistedQuestionDefinitions().map(
     (question) => question.questionKey,
   );
-  const answerEntries = getPersistedAnswerEntries(payload.answers);
+  const scopedQuestionKeys = payload.questionKeys?.length
+    ? Array.from(
+        new Set(
+          payload.questionKeys.filter((questionKey) =>
+            allQuestionKeys.includes(questionKey),
+          ),
+        ),
+      )
+    : allQuestionKeys;
+
+  const answerEntries = getPersistedAnswerEntries(payload.answers).filter((entry) =>
+    scopedQuestionKeys.includes(entry.questionKey),
+  );
   const answeredQuestionKeys = answerEntries.map((entry) => entry.questionKey);
   const now = new Date().toISOString();
 
@@ -130,9 +143,10 @@ export async function saveOnboarding(payload: SaveOnboardingPayload) {
 
   const removableAnswerKeys =
     existingAnswerRows?.flatMap(({ question_key }) =>
-      currentQuestionKeys.includes(question_key) && answeredQuestionKeys.includes(question_key)
-        ? []
-        : [question_key],
+      scopedQuestionKeys.includes(question_key) &&
+      !answeredQuestionKeys.includes(question_key)
+        ? [question_key]
+        : [],
     ) ?? [];
 
   if (removableAnswerKeys.length > 0) {

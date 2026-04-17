@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import {
     AlertCircle,
+    CalendarClock,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
@@ -42,6 +43,7 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import CalendarSelectWithTime from '@/components/calendar-select-with-time';
 
 function ItemStatusBadge({ status }: { status: SevenDayPlanningItemApprovalStatus }) {
     const className =
@@ -77,6 +79,18 @@ function hasScheduleableItems(items: SevenDayPlanningItem[]) {
     return items.some((item) => item.approval_status === 'approved');
 }
 
+function buildDefaultItemScheduleDate(itemDateISO: string, approvedIndex: number) {
+    const date = parseISO(itemDateISO);
+
+    if (Number.isNaN(date.getTime())) {
+        return new Date();
+    }
+
+    date.setUTCHours(14, approvedIndex * 3, 0, 0);
+
+    return date;
+}
+
 export default function WorkflowRunDetailClient({
     run,
     items,
@@ -89,6 +103,8 @@ export default function WorkflowRunDetailClient({
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [noteByItemId, setNoteByItemId] = useState<Record<string, string>>({});
     const [suggestedPostByItemId, setSuggestedPostByItemId] = useState<Record<string, string>>({});
+    const [scheduledAtByItemId, setScheduledAtByItemId] = useState<Record<string, string>>({});
+    const [isSchedulePickerOpen, setIsSchedulePickerOpen] = useState(false);
 
     const selectedItem = items[selectedIndex] ?? null;
     const CHARACTER_LIMIT = 280;
@@ -103,6 +119,38 @@ export default function WorkflowRunDetailClient({
         : false;
     const canEditSuggestedPost = canModerateRun(run.status);
     const shouldPollRun = run.status === 'queued' || run.status === 'generating';
+    const approvedItemIndexById = useMemo(() => {
+        const indexById: Record<string, number> = {};
+
+        items
+            .filter((item) => item.approval_status === 'approved')
+            .forEach((item, index) => {
+                indexById[item.id] = index;
+            });
+
+        return indexById;
+    }, [items]);
+
+    const getItemScheduledDate = (item: SevenDayPlanningItem) => {
+        const savedISO = scheduledAtByItemId[item.id];
+
+        if (savedISO) {
+            const savedDate = new Date(savedISO);
+
+            if (!Number.isNaN(savedDate.getTime())) {
+                return savedDate;
+            }
+        }
+
+        const approvedIndex = approvedItemIndexById[item.id] ?? item.day_index;
+
+        return buildDefaultItemScheduleDate(item.item_date, approvedIndex);
+    };
+
+    const selectedItemScheduledDate = selectedItem ? getItemScheduledDate(selectedItem) : null;
+    const selectedItemHasCustomSchedule = selectedItem
+        ? Boolean(scheduledAtByItemId[selectedItem.id])
+        : false;
 
     useEffect(() => {
         if (!shouldPollRun) {
@@ -154,6 +202,10 @@ export default function WorkflowRunDetailClient({
         });
     }, [selectedItem?.id, selectedItem?.suggested_post]);
 
+    useEffect(() => {
+        setIsSchedulePickerOpen(false);
+    }, [selectedItem?.id]);
+
     const rangeLabel = useMemo(() => {
         const startDate = parseISO(run.start_date);
         const endDate = parseISO(run.end_date);
@@ -204,13 +256,34 @@ export default function WorkflowRunDetailClient({
     const handleSchedule = () => {
         startTransition(async () => {
             try {
-                const result = await scheduleWorkflowPlannerRun({ runId: run.id });
+                const scopedScheduleOverrides = Object.fromEntries(
+                    Object.entries(scheduledAtByItemId).filter(([itemId]) =>
+                        items.some((item) => item.id === itemId),
+                    ),
+                );
+
+                const result = await scheduleWorkflowPlannerRun({
+                    runId: run.id,
+                    scheduleByItemId:
+                        Object.keys(scopedScheduleOverrides).length > 0
+                            ? scopedScheduleOverrides
+                            : undefined,
+                });
                 toast.success(`Scheduled ${result.scheduledCount} approved day(s).`);
                 router.refresh();
             } catch (error) {
                 toast.error(error instanceof Error ? error.message : 'Unable to schedule this run.');
             }
         });
+    };
+
+    const handleUpdateItemSchedule = (itemId: string, scheduledAt: Date) => {
+        setScheduledAtByItemId((current) => ({
+            ...current,
+            [itemId]: scheduledAt.toISOString(),
+        }));
+        setIsSchedulePickerOpen(false);
+        toast.success('Date and time updated for this day.');
     };
 
     const handleRetry = () => {
@@ -381,10 +454,39 @@ export default function WorkflowRunDetailClient({
                                     <div>
                                         <CardTitle className="text-xl">{selectedItem.day_label}</CardTitle>
                                         <p className="mt-1 text-sm text-muted-foreground">{selectedItem.item_date}</p>
+                                        {selectedItemScheduledDate ? (
+                                            <p className="mt-1 text-xs text-muted-foreground">
+                                                {selectedItemHasCustomSchedule ? 'Custom slot' : 'Default slot'}:{' '}
+                                                {format(selectedItemScheduledDate, 'PPP p')}
+                                            </p>
+                                        ) : null}
                                     </div>
 
                                     <div className="flex items-center gap-2">
                                         <ItemStatusBadge status={selectedItem.approval_status} />
+                                        {canModerateRun(run.status) && selectedItemScheduledDate ? (
+                                            <Popover open={isSchedulePickerOpen} onOpenChange={setIsSchedulePickerOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <Button className="gap-2" size="sm" variant="outline">
+                                                        <CalendarClock className="h-4 w-4" />
+                                                        <span className="hidden sm:inline">Edit Date & Time</span>
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent
+                                                    align="end"
+                                                    className="w-105 max-w-full p-3"
+                                                >
+                                                    <CalendarSelectWithTime
+                                                        confirmLabel="Save date & time"
+                                                        initialValue={selectedItemScheduledDate}
+                                                        isSubmitting={isPending}
+                                                        onConfirm={(value) =>
+                                                            handleUpdateItemSchedule(selectedItem.id, value)
+                                                        }
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
+                                        ) : null}
                                         <Button
                                             disabled={selectedIndex === 0 || isPending}
                                             onClick={() => setSelectedIndex((current) => Math.max(0, current - 1))}
@@ -631,6 +733,8 @@ export default function WorkflowRunDetailClient({
                                         <ItemStatusBadge status={item.approval_status} />
                                     </div>
                                     <p className="mt-1 truncate text-xs text-muted-foreground">
+                                        {scheduledAtByItemId[item.id] ? 'Custom' : 'Default'}:{' '}
+                                        {format(getItemScheduledDate(item), 'MMM d, yyyy p')}
                                     </p>
                                     <Badge>
                                         {item.pillar}

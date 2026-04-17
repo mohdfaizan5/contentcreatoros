@@ -1,9 +1,14 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Inter, Inter_Tight, Source_Serif_4, Instrument_Serif } from "next/font/google";
+import localFont from "next/font/local";
+import { Geist, Geist_Mono, 
+  // Inter,
+   Inter_Tight, Instrument_Serif, 
+  Source_Serif_4
+ } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 
-const interHeading = Inter({subsets:['latin'],variable:'--font-heading'});
+const interHeading = Inter_Tight({subsets:['latin'],variable:'--font-heading'});
 
 
 // -----------------------------------------------------------------------------
@@ -13,7 +18,15 @@ const interHeading = Inter({subsets:['latin'],variable:'--font-heading'});
 // -----------------------------------------------------------------------------
 
 // 1. INTER TIGHT (Current Active)
-const inter = Inter({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter_Tight({subsets:['latin'],variable:'--font-sans'});
+
+const serif = localFont({
+  src: "../../public/ScotchDeck-Light.woff2",
+  variable: "--font-serif",
+  weight: "300",
+  style: "normal",
+  display: "swap",
+});
 
 // 2. GOOGLE SANS FLEX (Commented)
 // Note: Requires font files in /public/fonts/ or /src/app/fonts/
@@ -35,10 +48,10 @@ const inter = Inter({subsets:['latin'],variable:'--font-sans'});
 
 // -----------------------------------------------------------------------------
 
-const serif = Source_Serif_4({
-  variable: "--font-serif",
-  subsets: ["latin"],
-});
+// const serif2 = Source_Serif_4({
+//   variable: "--font-serif2",
+//   subsets: ["latin"],
+// });
 
 const InstrumentalSerif = Instrument_Serif({
   variable: "--font-serif-instrumental",

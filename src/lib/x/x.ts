@@ -2,7 +2,11 @@ import { cookies } from 'next/headers';
 import { TwitterApi } from 'twitter-api-v2';
 import { createClient } from '@/lib/server';
 import { createAdminClient } from '@/lib/server-admin';
-import { X_OAUTH_SCOPES, X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth';
+import {
+  REQUIRED_X_OAUTH_SCOPES,
+  X_OAUTH_SCOPES,
+  X_OAUTH_SCOPE_STRING,
+} from '@/lib/x/x-oauth';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { extractXHandle } from '@/lib/x/x-handle';
 
@@ -94,7 +98,17 @@ function getRequestedXScopes() {
     .map((scope) => scope.trim())
     .filter(Boolean);
 
-  return parsedScopes.length > 0 ? parsedScopes : [...X_OAUTH_SCOPES];
+  if (parsedScopes.length === 0) {
+    return [...X_OAUTH_SCOPES];
+  }
+
+  const combinedScopes = new Set(parsedScopes);
+
+  for (const requiredScope of REQUIRED_X_OAUTH_SCOPES) {
+    combinedScopes.add(requiredScope);
+  }
+
+  return Array.from(combinedScopes);
 }
 
 function getExpiresInSeconds(expiresAt: string | null, fallbackSeconds = 7200) {
@@ -697,7 +711,7 @@ export async function publishTweetWithStoredConnection(accountId: string, text: 
 
   if (!account.scope?.includes('tweet.write')) {
     throw new Error(
-      'Your X connection is missing tweet.write scope. Reconnect X with X_OAUTH_SCOPES including tweet.write to publish posts.',
+      'Your X connection is missing tweet.write permission. Reconnect X so we can request full publishing scopes and then try posting again.',
     );
   }
 

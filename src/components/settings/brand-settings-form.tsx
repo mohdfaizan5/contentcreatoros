@@ -2,14 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useMemo, useState, useTransition } from 'react';
-import { CheckCircle, SpinnerGap } from '@phosphor-icons/react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
+import { SpinnerGap } from '@phosphor-icons/react';
 import { saveOnboarding } from '@/actions/onboarding';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardPanel,
+  CardTitle,
+} from '@/components/ui/card';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { getQuestionSteps } from '@/lib/onboarding';
 import {
   buildOptionsWithOther,
@@ -19,6 +26,7 @@ import {
 } from '@/lib/onboarding/question-ui-utils';
 import type {
   OnboardingAnswers,
+  OnboardingFieldValue,
   OnboardingQuestion,
   OnboardingQuestionStepDefinition,
 } from '@/types/onboarding';
@@ -29,12 +37,15 @@ import {
   OnboardingTagInput,
 } from '@/components/onboarding/onboarding-cards';
 import {
+  CircleCheckIcon,
   HouseIcon,
   PaletteIcon,
   PanelsTopLeftIcon,
+  TriangleAlertIcon,
 } from "lucide-react";
 import { BrandVisualOverview } from '@/components/brand-kit/brand-visual-overview';
 import type { BrandVisualIdentity } from '@/lib/brand-visuals';
+import { SpeechInputPro } from '@/components/ui/speech-input-pro';
 
 import { ScrollArea, ScrollBar } from "@/components/ui/scroll-area";
 
@@ -50,6 +61,44 @@ function getQuestionControlDescription() {
   return ``;
 }
 
+function normalizeAnswerValue(value: OnboardingFieldValue | undefined) {
+  if (Array.isArray(value)) {
+    const normalizedEntries = value
+      .map((entry) => entry.trim())
+      .filter((entry) => entry.length > 0);
+
+    return normalizedEntries.length > 0 ? normalizedEntries : undefined;
+  }
+
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    return trimmed.length > 0 ? trimmed : undefined;
+  }
+
+  return undefined;
+}
+
+function areAnswerValuesEqual(
+  left: OnboardingFieldValue | undefined,
+  right: OnboardingFieldValue | undefined,
+) {
+  const normalizedLeft = normalizeAnswerValue(left);
+  const normalizedRight = normalizeAnswerValue(right);
+
+  if (normalizedLeft === undefined && normalizedRight === undefined) {
+    return true;
+  }
+
+  if (Array.isArray(normalizedLeft) && Array.isArray(normalizedRight)) {
+    return (
+      normalizedLeft.length === normalizedRight.length
+      && normalizedLeft.every((entry, index) => entry === normalizedRight[index])
+    );
+  }
+
+  return normalizedLeft === normalizedRight;
+}
+
 export default function BrandSettingsForm({
   initialAnswers,
   brandIdentity,
@@ -58,8 +107,12 @@ export default function BrandSettingsForm({
   view = 'brand-voice',
 }: BrandSettingsFormProps) {
   const [answers, setAnswers] = useState<OnboardingAnswers>(initialAnswers);
-  const [saveState, setSaveState] = useState<'idle' | 'saved' | 'error'>('idle');
-  const [saveError, setSaveError] = useState<string | null>(null);
+  const [savedAnswers, setSavedAnswers] = useState<OnboardingAnswers>(initialAnswers);
+  const [saveStateByStepId, setSaveStateByStepId] = useState<
+    Record<string, 'idle' | 'saved' | 'error'>
+  >({});
+  const [saveErrorByStepId, setSaveErrorByStepId] = useState<Record<string, string>>({});
+  const [savingStepId, setSavingStepId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const pathname = usePathname();
 
@@ -68,28 +121,214 @@ export default function BrandSettingsForm({
     [],
   );
 
+  const questionKeyToStepId = useMemo(
+    () =>
+      new Map(
+        questionSteps.flatMap((step) =>
+          step.questions.map((question) => [question.key, step.id] as const),
+        ),
+      ),
+    [questionSteps],
+  );
+
   const updateAnswer = (key: string, value: OnboardingAnswers[string]) => {
-    setSaveState('idle');
-    setSaveError(null);
+    const stepId = questionKeyToStepId.get(key);
+
+    if (stepId) {
+      setSaveStateByStepId((current) => ({
+        ...current,
+        [stepId]: 'idle',
+      }));
+
+      setSaveErrorByStepId((current) => {
+        if (!(stepId in current)) {
+          return current;
+        }
+
+        const next = { ...current };
+        delete next[stepId];
+        return next;
+      });
+    }
+
     setAnswers((currentAnswers) => ({
       ...currentAnswers,
       [key]: value,
     }));
   };
 
-  const handleSave = () => {
-    setSaveError(null);
+  const getStringAnswer = (key: string) => {
+    const value = answers[key];
+    return typeof value === 'string' ? value : '';
+  };
 
-    startTransition(async () => {
-      const result = await saveOnboarding({ answers });
+  const getQuestionKeysForStep = (step: OnboardingQuestionStepDefinition) =>
+    step.questions.flatMap((question) => {
+      if ('otherOption' in question && question.otherOption) {
+        return [question.key, question.otherOption.answerKey];
+      }
 
-      if (result.error) {
-        setSaveState('error');
-        setSaveError(result.error);
+      return [question.key];
+    });
+
+  const editableQuestionKeys = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          questionSteps.flatMap((step) =>
+            step.questions.flatMap((question) => {
+              if ('otherOption' in question && question.otherOption) {
+                return [question.key, question.otherOption.answerKey];
+              }
+
+              return [question.key];
+            }),
+          ),
+        ),
+      ),
+    [questionSteps],
+  );
+
+  const hasUnsavedChanges = useMemo(() => {
+    if (view !== 'brand-voice') {
+      return false;
+    }
+
+    return editableQuestionKeys.some(
+      (key) => !areAnswerValuesEqual(answers[key], savedAnswers[key]),
+    );
+  }, [answers, editableQuestionKeys, savedAnswers, view]);
+
+  useEffect(() => {
+    if (view !== 'brand-voice' || !hasUnsavedChanges) {
+      return;
+    }
+
+    const warningMessage =
+      'You have unsaved Brand Voice changes. Save your content before leaving this page.';
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = warningMessage;
+      return warningMessage;
+    };
+
+    const handleDocumentClick = (event: MouseEvent) => {
+      if (event.defaultPrevented || event.button !== 0) {
         return;
       }
 
-      setSaveState('saved');
+      if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) {
+        return;
+      }
+
+      if (!(event.target instanceof Element)) {
+        return;
+      }
+
+      const anchor = event.target.closest('a[href]') as HTMLAnchorElement | null;
+
+      if (!anchor) {
+        return;
+      }
+
+      if (anchor.target === '_blank' || anchor.hasAttribute('download')) {
+        return;
+      }
+
+      const nextUrl = new URL(anchor.href, window.location.href);
+      const isSameOrigin = nextUrl.origin === window.location.origin;
+
+      if (!isSameOrigin) {
+        return;
+      }
+
+      const isSameRoute =
+        nextUrl.pathname === window.location.pathname
+        && nextUrl.search === window.location.search;
+
+      if (isSameRoute) {
+        return;
+      }
+
+      if (!window.confirm(warningMessage)) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+    };
+
+    const handlePopState = () => {
+      const shouldLeave = window.confirm(warningMessage);
+
+      if (!shouldLeave) {
+        window.history.go(1);
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    document.addEventListener('click', handleDocumentClick, true);
+    window.addEventListener('popstate', handlePopState);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      document.removeEventListener('click', handleDocumentClick, true);
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [hasUnsavedChanges, view]);
+
+  const handleSaveStep = (step: OnboardingQuestionStepDefinition) => {
+    setSavingStepId(step.id);
+    setSaveStateByStepId((current) => ({
+      ...current,
+      [step.id]: 'idle',
+    }));
+
+    setSaveErrorByStepId((current) => {
+      if (!(step.id in current)) {
+        return current;
+      }
+
+      const next = { ...current };
+      delete next[step.id];
+      return next;
+    });
+
+    const questionKeys = getQuestionKeysForStep(step);
+    const stepAnswerSnapshot = questionKeys.reduce<OnboardingAnswers>(
+      (current, key) => ({
+        ...current,
+        [key]: answers[key],
+      }),
+      {},
+    );
+
+    startTransition(async () => {
+      const result = await saveOnboarding({ answers, questionKeys });
+
+      if (result.error) {
+        setSaveStateByStepId((current) => ({
+          ...current,
+          [step.id]: 'error',
+        }));
+
+        setSaveErrorByStepId((current) => ({
+          ...current,
+          [step.id]: result.error,
+        }));
+
+        setSavingStepId((current) => (current === step.id ? null : current));
+        return;
+      }
+
+      setSaveStateByStepId((current) => ({
+        ...current,
+        [step.id]: 'saved',
+      }));
+      setSavedAnswers((current) => ({
+        ...current,
+        ...stepAnswerSnapshot,
+      }));
+      setSavingStepId((current) => (current === step.id ? null : current));
     });
   };
 
@@ -107,10 +346,10 @@ export default function BrandSettingsForm({
             helperText={getQuestionControlDescription()}
             required={question.required}
           >
-            <Input
+            <SpeechInputPro
               type={question.inputType ?? 'text'}
               value={typeof rawValue === 'string' ? rawValue : ''}
-              onChange={(event) => updateAnswer(question.key, event.target.value)}
+              onValueChange={(value) => updateAnswer(question.key, value)}
               placeholder={question.placeholder}
             />
           </OnboardingField>
@@ -124,9 +363,10 @@ export default function BrandSettingsForm({
             helperText={getQuestionControlDescription()}
             required={question.required}
           >
-            <Textarea
+            <SpeechInputPro
+              as="textarea"
               value={typeof rawValue === 'string' ? rawValue : ''}
-              onChange={(event) => updateAnswer(question.key, event.target.value)}
+              onValueChange={(value) => updateAnswer(question.key, value)}
               placeholder={question.placeholder}
               rows={question.rows ?? 4}
             />
@@ -152,12 +392,10 @@ export default function BrandSettingsForm({
             </OnboardingField>
 
             {question.otherOption && otherInputVisible ? (
-              <Input
-                value={typeof answers[question.otherOption.answerKey] === 'string'
-                  ? answers[question.otherOption.answerKey]
-                  : ''}
-                onChange={(event) =>
-                  updateAnswer(question.otherOption!.answerKey, event.target.value)
+              <SpeechInputPro
+                value={getStringAnswer(question.otherOption.answerKey)}
+                onValueChange={(value) =>
+                  updateAnswer(question.otherOption!.answerKey, value)
                 }
                 placeholder={question.otherOption.placeholder}
               />
@@ -186,12 +424,10 @@ export default function BrandSettingsForm({
             </OnboardingField>
 
             {question.otherOption && otherInputVisible ? (
-              <Input
-                value={typeof answers[question.otherOption.answerKey] === 'string'
-                  ? answers[question.otherOption.answerKey]
-                  : ''}
-                onChange={(event) =>
-                  updateAnswer(question.otherOption!.answerKey, event.target.value)
+              <SpeechInputPro
+                value={getStringAnswer(question.otherOption.answerKey)}
+                onValueChange={(value) =>
+                  updateAnswer(question.otherOption!.answerKey, value)
                 }
                 placeholder={question.otherOption.placeholder}
               />
@@ -227,6 +463,28 @@ export default function BrandSettingsForm({
     (count, step) => count + step.questions.length,
     0,
   );
+  const answeredQuestionCount = questionSteps.reduce(
+    (count, step) => count + countAnsweredQuestionsInStep(step, answers),
+    0,
+  );
+  const completionPercentage = totalQuestionCount
+    ? Math.round((answeredQuestionCount / totalQuestionCount) * 100)
+    : 0;
+  const scoreTier = completionPercentage >= 80
+    ? 'Excellent'
+    : completionPercentage >= 55
+      ? 'Solid'
+      : 'Needs work';
+  const scoreToneClass = completionPercentage >= 80
+    ? 'text-emerald-700'
+    : completionPercentage >= 55
+      ? 'text-amber-700'
+      : 'text-rose-700';
+  const scoreTip = completionPercentage >= 80
+    ? 'Great detail. Keep refining examples and tone references for even stronger outputs.'
+    : completionPercentage >= 55
+      ? 'You are close. Add clearer details in each section to improve answer quality.'
+      : 'Add more specific inputs. Better brand voice context produces better AI answers.';
 
   const isOverviewView = view === 'overview';
   const hasBrandVisualData = Boolean(
@@ -371,7 +629,7 @@ export default function BrandSettingsForm({
             />
           ) : null}
 
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3 hidden">
+          <div className="hidden gap-4 md:grid md:grid-cols-2 xl:grid-cols-3">
           {questionSteps.map((step) => {
             const stepAnsweredCount = getStepAnsweredCount(step);
 
@@ -417,103 +675,185 @@ export default function BrandSettingsForm({
           </div>
         </div>
       ) : (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_320px]">
-        <form
-          onSubmit={(event) => {
-            event.preventDefault();
-            handleSave();
-          }}
-          className="space-y-6"
-        >
-          {questionSteps.map((step) => (
-            <section
-              key={step.id}
-              className="rounded-4xl border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] sm:p-7"
-            >
-              {/* <div className="mb-6 space-y-1">
-                <div className="text-xs font-semibold uppercase  text-slate-400">
-                  {step.eyebrow}
-                </div>
-                <h2 className="text-2xl font-semibold tracking-tight text-slate-950">{step.title}</h2>
-                <p className="max-w-2xl text-sm leading-6 text-slate-600">{step.description}</p>
-              </div> */}
+        <div className="grid gap-4 md:px-6 lg:grid-cols-[minmax(0,1fr)_18rem] lg:items-start xl:grid-cols-[minmax(0,1fr)_20rem]">
+          <div className="space-y-4">
+            {questionSteps.map((step) => {
+              const stepAnsweredCount = getStepAnsweredCount(step);
+              const stepSaveState = saveStateByStepId[step.id] ?? 'idle';
+              const stepSaveError = saveErrorByStepId[step.id] ?? null;
+              const isSavingStep = isPending && savingStepId === step.id;
 
-              <div className="space-y-6">
-                {step.questions.map((question) => (
-                  <div key={question.key} className="space-y-3">
-                    <div className="flex items-center justify-between gap-3">
-                      {/* <div className="flex items-center gap-3">
-                        <span className="text-base font-medium text-slate-950">{question.label}---</span>
-                        {renderQuestionKeyValue(question, answers)}
-                      </div> */}
+              return (
+                <Card key={step.id}>
+                  <CardHeader>
+                    <div className="text-xs font-semibold uppercase text-muted-foreground">
+                      {step.eyebrow}
                     </div>
+                    <CardTitle>{step.title}</CardTitle>
+                    <CardDescription>{step.description}</CardDescription>
+                  </CardHeader>
 
-                    {/* {question.description ? (
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Button variant="outline" size="icon-sm">
-                            <QuestionMarkIcon />
-                          </Button></TooltipTrigger>
-                        <TooltipContent>
-                          <p className="text-sm leading-6 text-slate-500">{question.description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : null} */}
-                    {renderQuestion(question)}
-                    {/* <p className="text-xs text-slate-400">
-                      Current value: {getQuestionSummaryValue(question, answers)}
-                    </p> */}
+                  <CardPanel className="flex flex-col gap-6">
+                    {step.questions.map((question) => (
+                      <div key={question.key} className="space-y-3">
+                        <div className="flex items-center justify-between gap-3">
+                          {/* <div className="flex items-center gap-3">
+                          <span className="text-base font-medium text-slate-950">{question.label}---</span>
+                          {renderQuestionKeyValue(question, answers)}
+                        </div> */}
+                        </div>
+
+                        {/* {question.description ? (
+                        <Tooltip>
+                          <TooltipTrigger>
+                            <Button variant="outline" size="icon-sm">
+                              <QuestionMarkIcon />
+                            </Button></TooltipTrigger>
+                          <TooltipContent>
+                            <p className="text-sm leading-6 text-slate-500">{question.description}</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      ) : null} */}
+                        {renderQuestion(question)}
+                        {/* <p className="text-xs text-slate-400">
+                        Current value: {getQuestionSummaryValue(question, answers)}
+                      </p> */}
+                      </div>
+                    ))}
+
+                    {stepSaveError ? (
+                      <Alert variant="error">
+                        <TriangleAlertIcon />
+                        <AlertTitle>Save failed</AlertTitle>
+                        <AlertDescription>{stepSaveError}</AlertDescription>
+                      </Alert>
+                    ) : null}
+
+                    {stepSaveState === 'saved' ? (
+                      <Alert variant="success">
+                        <CircleCheckIcon />
+                        <AlertTitle>Saved</AlertTitle>
+                        <AlertDescription>{step.title} saved.</AlertDescription>
+                      </Alert>
+                    ) : null}
+                  </CardPanel>
+
+                  <CardFooter className="justify-between gap-3 max-sm:flex-col max-sm:items-start">
+                    <Badge variant="outline">
+                      {stepAnsweredCount}/{step.questions.length} answered
+                    </Badge>
+
+                    <Button
+                      type="button"
+                      disabled={isPending}
+                      onClick={() => handleSaveStep(step)}
+                    >
+                      {isSavingStep ? (
+                        <>
+                          <SpinnerGap className="size-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        `Save ${step.eyebrow ?? step.title}`
+                      )}
+                    </Button>
+                  </CardFooter>
+                </Card>
+              );
+            })}
+          </div>
+
+          <div className="space-y-4 lg:sticky lg:top-24">
+            <Card>
+              <CardHeader className="space-y-2">
+                <CardDescription>Quick overview</CardDescription>
+                <CardTitle className="text-lg">Brand Voice Score</CardTitle>
+              </CardHeader>
+              <CardPanel className="space-y-3">
+                <div className="flex items-baseline justify-between gap-3">
+                  <div className="flex items-baseline gap-1">
+                    <span className={cn('text-3xl font-semibold tabular-nums', scoreToneClass)}>
+                      {completionPercentage}
+                    </span>
+                    <span className="text-sm text-muted-foreground">/ 100</span>
                   </div>
-                ))}
-              </div>
-            </section>
-          ))}
+                  <Badge variant="outline">{scoreTier}</Badge>
+                </div>
 
-          {saveError ? (
-            <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
-              {saveError}
-            </div>
-          ) : null}
+                <div className="h-2 rounded-full bg-muted">
+                  <div
+                    className={cn(
+                      'h-full rounded-full transition-all duration-300',
+                      completionPercentage >= 80
+                        ? 'bg-emerald-500'
+                        : completionPercentage >= 55
+                          ? 'bg-amber-500'
+                          : 'bg-rose-500',
+                    )}
+                    style={{ width: `${completionPercentage}%` }}
+                  />
+                </div>
 
-          {saveState === 'saved' ? (
-            <div className="inline-flex items-center gap-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
-              <CheckCircle className="size-4" weight="fill" />
-              Brand data saved.
-            </div>
-          ) : null}
+                <p className="text-sm text-muted-foreground">
+                  {answeredQuestionCount} of {totalQuestionCount} questions answered.
+                </p>
+                <p className="text-sm text-foreground/90">{scoreTip}</p>
+              </CardPanel>
+            </Card>
 
-          <div className="flex justify-end">
-            <Button type="submit" disabled={isPending} className="h-12 rounded-full px-6 text-sm font-semibold">
-              {isPending ? (
-                <>
-                  <SpinnerGap className="size-4 animate-spin" />
-                  Saving...
-                </>
-              ) : (
-                'Save / update data'
-              )}
-            </Button>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Section progress</CardTitle>
+                <CardDescription>
+                  Better detail here gives you better quality answers across the app.
+                </CardDescription>
+              </CardHeader>
+              <CardPanel className="space-y-3">
+                {questionSteps.map((step) => {
+                  const stepAnsweredCount = getStepAnsweredCount(step);
+                  const stepCompletion = step.questions.length
+                    ? Math.round((stepAnsweredCount / step.questions.length) * 100)
+                    : 0;
+
+                  return (
+                    <div key={`sidebar-${step.id}`} className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-medium text-foreground">{step.eyebrow ?? step.title}</p>
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          {stepAnsweredCount}/{step.questions.length}
+                        </p>
+                      </div>
+                      <div className="h-1.5 rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-primary transition-all duration-300"
+                          style={{ width: `${stepCompletion}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </CardPanel>
+              <CardFooter>
+                {hasUnsavedChanges ? (
+                  <Alert className="w-full" variant="warning">
+                    <TriangleAlertIcon />
+                    <AlertTitle>Unsaved changes</AlertTitle>
+                    <AlertDescription>
+                      Save each section before leaving this page.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <Alert className="w-full" variant="success">
+                    <CircleCheckIcon />
+                    <AlertTitle>All changes saved</AlertTitle>
+                    <AlertDescription>
+                      You are safe to navigate away.
+                    </AlertDescription>
+                  </Alert>
+                )}
+              </CardFooter>
+            </Card>
           </div>
-        </form>
-
-        {/* <aside className="h-fit rounded-[32px] border border-slate-200 bg-white p-6 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]">
-          <div className="space-y-2">
-            <h3 className="text-lg font-semibold text-slate-950">How this saves</h3>
-            <p className="text-sm leading-6 text-slate-600">
-              Each answer is written back to the same `onboarding_answers` table with its
-              `question_key`, `flow_key`, and JSON answer payload.
-            </p>
-          </div>
-
-          <div className="mt-6 space-y-3 text-sm text-slate-600">
-            {questionSteps.map((step) => (
-              <div key={step.id} className="rounded-2xl border border-slate-100 bg-slate-50 p-4">
-                <p className="font-medium text-slate-900">{step.title}</p>
-                <p className="mt-1">{step.questions.length} questions</p>
-              </div>
-            ))}
-          </div>
-        </aside> */}
         </div>
       )}
     </div>

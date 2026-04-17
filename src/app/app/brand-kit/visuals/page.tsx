@@ -260,8 +260,8 @@ export default async function BrandVisualsPage() {
                   className="grid grid-cols-5 gap-1 rounded-2xl p-2"
                   style={{ backgroundColor: theme.primary }}
                 >
-                  {theme.swatches.map((color) => (
-                    <div key={color} className="h-16 rounded-xl" style={{ backgroundColor: color }} />
+                  {theme.swatches.map((color, index) => (
+                    <div key={`swatch-${index}-${color}`} className="h-16 rounded-xl" style={{ backgroundColor: color }} />
                   ))}
                 </div>
               </div>
@@ -399,9 +399,9 @@ export default async function BrandVisualsPage() {
               >
                 <div className="p-5">
                   <div className="mb-5 flex gap-1.5">
-                    {[theme.background, theme.secondary, theme.primary, theme.foreground].map((color) => (
+                    {[theme.background, theme.secondary, theme.primary, theme.foreground].map((color, index) => (
                       <div
-                        key={color}
+                        key={`theme-chip-${index}-${color}`}
                         className="flex h-9 w-10 items-center justify-center rounded-[10px]"
                         style={{ backgroundColor: color }}
                       >

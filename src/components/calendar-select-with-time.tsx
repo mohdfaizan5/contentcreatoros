@@ -1,7 +1,15 @@
 "use client";
 
-import { format, isSameDay, setHours, setMinutes, startOfToday } from "date-fns";
-import { useMemo, useState } from "react";
+import {
+  format,
+  isBefore,
+  isSameDay,
+  setHours,
+  setMinutes,
+  startOfDay,
+  startOfToday,
+} from "date-fns";
+import { useEffect, useMemo, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -16,15 +24,47 @@ type CalendarSelectWithTimeProps = {
 
 const MINUTES_STEP = 30;
 
+function roundUpToNextStep(date: Date) {
+  const rounded = new Date(date);
+
+  rounded.setSeconds(0, 0);
+
+  const minuteRemainder = rounded.getMinutes() % MINUTES_STEP;
+
+  if (minuteRemainder !== 0) {
+    rounded.setMinutes(rounded.getMinutes() + (MINUTES_STEP - minuteRemainder));
+  }
+
+  return rounded;
+}
+
+function resolveInitialDate(initialValue?: Date | null) {
+  const now = new Date();
+
+  if (!initialValue || Number.isNaN(initialValue.getTime())) {
+    return roundUpToNextStep(now);
+  }
+
+  if (initialValue.getTime() <= now.getTime()) {
+    return roundUpToNextStep(now);
+  }
+
+  return initialValue;
+}
+
 function buildTimeSlots(selectedDate: Date) {
   const now = new Date();
+  const today = startOfToday();
+  const isPastDate = isBefore(startOfDay(selectedDate), today);
 
   return Array.from({ length: (24 * 60) / MINUTES_STEP }, (_, index) => {
     const totalMinutes = index * MINUTES_STEP;
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
     const slotDate = setMinutes(setHours(selectedDate, hours), minutes);
-    const disabled = isSameDay(selectedDate, now) && slotDate.getTime() <= now.getTime();
+    const disabled =
+      isPastDate ||
+      (isSameDay(selectedDate, now) && slotDate.getTime() <= now.getTime());
 
     return {
       disabled,
@@ -40,10 +80,20 @@ export default function CalendarSelectWithTime({
   isSubmitting = false,
   onConfirm,
 }: CalendarSelectWithTimeProps) {
-  const [date, setDate] = useState<Date>(initialValue ?? new Date());
-  const [selectedTime, setSelectedTime] = useState<string | null>(
-    initialValue ? format(initialValue, "HH:mm") : null,
+  const initialTimestamp = initialValue ? initialValue.getTime() : null;
+  const resolvedInitialDate = useMemo(
+    () => resolveInitialDate(initialValue),
+    [initialTimestamp],
   );
+  const [date, setDate] = useState<Date>(resolvedInitialDate);
+  const [selectedTime, setSelectedTime] = useState<string | null>(
+    format(resolvedInitialDate, "HH:mm"),
+  );
+
+  useEffect(() => {
+    setDate(resolvedInitialDate);
+    setSelectedTime(format(resolvedInitialDate, "HH:mm"));
+  }, [resolvedInitialDate]);
 
   const timeSlots = useMemo(() => buildTimeSlots(date), [date]);
   const selectedDateTime =

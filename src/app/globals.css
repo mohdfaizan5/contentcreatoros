@@ -41,6 +41,7 @@
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-serif-instrumental: InstrumentalSerif;
+  --font-serif-scotchdeck: var(--font-serif);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius: 0.5rem;
   --shadow-x: 0;
@@ -97,6 +98,7 @@
   /* Font variable is injected by layout.tsx */
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   --font-serif: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-serif-scotchdeck: var(--font-serif);
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   --radius: 0.225rem;
   --shadow-x: 0;
@@ -153,9 +155,10 @@
   --font-mono: var(--font-mono);
   --font-serif: var(--font-serif);
   --font-serif-instrumental: var(--font-serif-instrumental);
+  --font-serif-scotchdeck: var(--font-serif-scotchdeck);
 
-  --radius-sm: max(0px, calc(var(--radius) - 4px));
-  --radius-md: max(0px, calc(var(--radius) - 2px));
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
@@ -176,6 +179,13 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+}
+
+@layer utilities {
+  /* Explicit utility so ScotchDeck works even if token-based utility generation is skipped */
+  .font-serif-scotchdeck {
+    font-family: var(--font-serif), ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   }
 }
 

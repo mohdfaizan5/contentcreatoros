@@ -2,7 +2,9 @@
 
 import { RiCalendarLine, RiDeleteBinLine } from "@remixicon/react";
 import { format, isBefore } from "date-fns";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 
 import {
   DefaultEndHour,
@@ -10,6 +12,8 @@ import {
   EndHour,
   StartHour,
 } from "@/components/constants";
+import { scheduleGeneratedTweet } from "@/actions/generated-tweets";
+import CalendarSelectWithTime from "@/components/calendar-select-with-time";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -74,6 +78,43 @@ function createDraftFromEvent(event: CalendarEvent | null) {
   };
 }
 
+const RETRY_TIME_STEP_MINUTES = 30;
+
+function roundUpToNextRetrySlot(date: Date) {
+  const rounded = new Date(date);
+
+  rounded.setSeconds(0, 0);
+
+  const minuteRemainder = rounded.getMinutes() % RETRY_TIME_STEP_MINUTES;
+
+  if (minuteRemainder !== 0) {
+    rounded.setMinutes(
+      rounded.getMinutes() + (RETRY_TIME_STEP_MINUTES - minuteRemainder),
+    );
+  }
+
+  return rounded;
+}
+
+function getRetryInitialDate(event: CalendarEvent | null) {
+  const now = new Date();
+  const metadataDate = event?.metadata?.scheduledFor
+    ? new Date(event.metadata.scheduledFor)
+    : null;
+  const startDate = event ? new Date(event.start) : null;
+  const candidate = metadataDate ?? startDate;
+
+  if (!candidate || Number.isNaN(candidate.getTime())) {
+    return roundUpToNextRetrySlot(now);
+  }
+
+  if (candidate.getTime() <= now.getTime()) {
+    return roundUpToNextRetrySlot(now);
+  }
+
+  return candidate;
+}
+
 export function EventDialog({
   event,
   isOpen,
@@ -82,6 +123,7 @@ export function EventDialog({
   onSave,
   onDelete,
 }: EventDialogProps) {
+  const router = useRouter();
   const initialDraft = createDraftFromEvent(event);
   const [title, setTitle] = useState(initialDraft.title);
   const [description, setDescription] = useState(initialDraft.description);
@@ -99,6 +141,15 @@ export function EventDialog({
   const [error, setError] = useState<string | null>(null);
   const [startDateOpen, setStartDateOpen] = useState(false);
   const [endDateOpen, setEndDateOpen] = useState(false);
+  const [retryError, setRetryError] = useState<string | null>(null);
+  const [isRetrySchedulerOpen, setIsRetrySchedulerOpen] = useState(false);
+  const [isRetrying, startRetryTransition] = useTransition();
+  const isGeneratedTweetEvent =
+    readOnly && event?.metadata?.source === "generated_tweet";
+  const isFailedGeneratedTweet =
+    isGeneratedTweetEvent &&
+    event?.metadata?.generatedTweetStatus === "failed";
+  const retryInitialDate = useMemo(() => getRetryInitialDate(event), [event]);
 
   // Memoize time options so they're only calculated once
   const timeOptions = useMemo(() => {
@@ -173,6 +224,33 @@ export function EventDialog({
     }
   };
 
+  const handleRetrySchedule = (scheduledAt: Date) => {
+    if (!event?.id) {
+      return;
+    }
+
+    setRetryError(null);
+
+    startRetryTransition(async () => {
+      try {
+        await scheduleGeneratedTweet({
+          generatedTweetId: event.id,
+          scheduledFor: scheduledAt.toISOString(),
+        });
+        toast.success("Failed post moved back to scheduled.");
+        setIsRetrySchedulerOpen(false);
+        onClose();
+        router.refresh();
+      } catch (retryScheduleError) {
+        setRetryError(
+          retryScheduleError instanceof Error
+            ? retryScheduleError.message
+            : "Unable to retry this post.",
+        );
+      }
+    });
+  };
+
   // Updated color options to match types.ts
   const colorOptions: Array<{
     value: EventColor;
@@ -219,7 +297,16 @@ export function EventDialog({
     ];
 
   return (
-    <Dialog onOpenChange={(open) => !open && onClose()} open={isOpen}>
+    <Dialog
+      onOpenChange={(open) => {
+        if (!open) {
+          setIsRetrySchedulerOpen(false);
+          setRetryError(null);
+          onClose();
+        }
+      }}
+      open={isOpen}
+    >
       <DialogPopup className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
@@ -418,7 +505,7 @@ export function EventDialog({
               <Label htmlFor="all-day">All day</Label>
             </div>
 
-            <div className="*:not-first:mt-1.5">
+            {/* <div className="*:not-first:mt-1.5">
               <Label htmlFor="location">Location</Label>
               <Input
                 disabled={readOnly}
@@ -427,8 +514,8 @@ export function EventDialog({
                 readOnly={readOnly}
                 value={location}
               />
-            </div>
-            <fieldset className="space-y-4">
+            </div> */}
+            {/* <fieldset className="space-y-4">
               <legend className="font-medium text-foreground text-sm leading-none">
                 Etiquette
               </legend>
@@ -453,8 +540,38 @@ export function EventDialog({
                   />
                 ))}
               </RadioGroup>
-            </fieldset>
+            </fieldset> */}
           </div>
+
+          {isFailedGeneratedTweet ? (
+            <div className="mt-4 space-y-3 rounded-md border border-rose-200 bg-rose-50/70 p-3">
+              <p className="text-sm font-medium text-rose-700">
+                This post failed to publish.
+              </p>
+              {event?.metadata?.errorMessage ? (
+                <p className="text-xs text-rose-700/90">
+                  {event.metadata.errorMessage}
+                </p>
+              ) : (
+                <p className="text-xs text-rose-700/90">
+                  Pick a new date and time to retry this post.
+                </p>
+              )}
+
+              {isRetrySchedulerOpen ? (
+                <CalendarSelectWithTime
+                  confirmLabel="Retry and schedule"
+                  initialValue={retryInitialDate}
+                  isSubmitting={isRetrying}
+                  onConfirm={handleRetrySchedule}
+                />
+              ) : null}
+
+              {retryError ? (
+                <p className="text-xs text-rose-700">{retryError}</p>
+              ) : null}
+            </div>
+          ) : null}
         </DialogPanel>
         <DialogFooter className="flex-row sm:justify-between">
           {!readOnly && event?.id && (
@@ -469,6 +586,18 @@ export function EventDialog({
           )}
           {readOnly ? (
             <div className="flex flex-1 justify-end gap-2">
+              {isFailedGeneratedTweet ? (
+                <Button
+                  disabled={isRetrying}
+                  onClick={() => {
+                    setRetryError(null);
+                    setIsRetrySchedulerOpen((current) => !current);
+                  }}
+                  variant={isRetrySchedulerOpen ? "secondary" : "default"}
+                >
+                  {isRetrySchedulerOpen ? "Hide retry picker" : "Retry post"}
+                </Button>
+              ) : null}
               <DialogClose render={<Button variant="outline" />}>
                 Close
               </DialogClose>

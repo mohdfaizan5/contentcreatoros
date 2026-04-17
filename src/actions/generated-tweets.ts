@@ -155,6 +155,12 @@ export async function getGeneratedTweetCalendarEvents(): Promise<CalendarEventIn
           end: end.toISOString(),
           id: tweet.id,
           location: 'X',
+          metadata: {
+            errorMessage: tweet.error_message,
+            generatedTweetStatus: tweet.status,
+            scheduledFor: tweet.scheduled_for,
+            source: 'generated_tweet',
+          },
           start: start.toISOString(),
           title: getCalendarTitle(tweet.content, tweet.status),
         },

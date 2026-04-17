@@ -8,15 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
 function formatDateRange(startDate: string, endDate: string) {
-    return `${format(parseISO(startDate), 'MMM d')} - ${format(parseISO(endDate), 'MMM d, yyyy')}`;
+    return `${format(parseISO(startDate), 'MMM d')} — ${format(parseISO(endDate), 'MMM d, yyyy')}`;
 }
 
 export default async function WorkflowPage() {
     const runs = await listWorkflowPlannerRuns({ limit: 24 });
 
     return (
-        <div className="space-y-6">
-            <section className="flex flex-wrap items-start justify-between gap-3">
+        <div className="space-y-4 max-w-3xl">
+            <section className="flex flex-wrap items-center justify-between gap-3 mb-8">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-semibold tracking-tight">Workflow</h1>
                     <p className="max-w-2xl text-sm text-muted-foreground">

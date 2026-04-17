@@ -489,19 +489,19 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         placeholder: 'Distribution should be treated as a product surface, not just marketing output.',
         rows: 3,
       },
-      {
-        key: 'common_wrong_practice',
-        type: 'textarea',
-        label: 'What is something most people are doing wrong?',
-        placeholder: 'They optimize for reach before they clarify positioning.',
-        rows: 3,
-      },
-      {
-        key: 'agreed_hot_take',
-        type: 'text',
-        label: 'What is one hot take you agree with?',
-        placeholder: 'Most growth issues are positioning problems, not channel problems.',
-      },
+      // {
+      //   key: 'common_wrong_practice',
+      //   type: 'textarea',
+      //   label: 'What is something most people are doing wrong?',
+      //   placeholder: 'They optimize for reach before they clarify positioning.',
+      //   rows: 3,
+      // },
+      // {
+      //   key: 'agreed_hot_take',
+      //   type: 'text',
+      //   label: 'What is one hot take you agree with?',
+      //   placeholder: 'Most growth issues are positioning problems, not channel problems.',
+      // },
       {
         key: 'disagreed_myth',
         type: 'text',

@@ -119,6 +119,18 @@ function normalizeDecisionNote(note?: string) {
   return trimmed ? trimmed : null;
 }
 
+function buildDefaultWorkflowScheduledDate(itemDateISO: string, approvedIndex: number) {
+  const baseDate = startOfDay(parseISO(itemDateISO));
+
+  if (Number.isNaN(baseDate.getTime())) {
+    throw new Error(`Invalid date in workflow item: ${itemDateISO}`);
+  }
+
+  baseDate.setUTCHours(14, approvedIndex * 3, 0, 0);
+
+  return baseDate;
+}
+
 export async function enqueueWorkflowPlannerRun(params: {
   startDateISO: string;
   endDateISO: string;
@@ -466,6 +478,7 @@ export async function regenerateWorkflowPlannerItem(params: {
 
 export async function scheduleWorkflowPlannerRun(params: {
   runId: string;
+  scheduleByItemId?: Record<string, string>;
 }): Promise<{ runId: string; scheduledCount: number }> {
   const { supabase, user } = await getAuthenticatedUserAndClient();
 
@@ -537,15 +550,30 @@ export async function scheduleWorkflowPlannerRun(params: {
     throw new Error('Connect X before scheduling this workflow.');
   }
 
-  const rows = approvedItems.map((item, index) => {
-    const baseDate = startOfDay(parseISO(item.item_date));
+  const scheduleByItemId = params.scheduleByItemId ?? {};
+  const nowTimestamp = Date.now();
 
-    if (Number.isNaN(baseDate.getTime())) {
-      throw new Error(`Invalid date in workflow item: ${item.item_date}`);
+  const approvedItemsWithSchedule = approvedItems.map((item, index) => {
+    const overrideISO = scheduleByItemId[item.id];
+    const scheduledDate = overrideISO
+      ? new Date(overrideISO)
+      : buildDefaultWorkflowScheduledDate(item.item_date, index);
+
+    if (Number.isNaN(scheduledDate.getTime())) {
+      throw new Error(`Invalid date and time selected for ${item.day_label}.`);
     }
 
-    baseDate.setUTCHours(14, index * 3, 0, 0);
+    if (scheduledDate.getTime() <= nowTimestamp) {
+      throw new Error(`Pick a future date and time for ${item.day_label}.`);
+    }
 
+    return {
+      item,
+      scheduledDate,
+    };
+  });
+
+  const rows = approvedItemsWithSchedule.map(({ item, scheduledDate }) => {
     const content = (item.suggested_post || `${item.pillar}: ${item.angle}`)
       .replace(/\s+/g, ' ')
       .trim()
@@ -563,7 +591,7 @@ export async function scheduleWorkflowPlannerRun(params: {
         runId: params.runId,
         source: 'workflow_planner',
       },
-      scheduled_for: baseDate.toISOString(),
+      scheduled_for: scheduledDate.toISOString(),
       status: 'scheduled' as const,
       template_id: template.id,
       user_id: user.id,
@@ -583,7 +611,7 @@ export async function scheduleWorkflowPlannerRun(params: {
   const tweetIds = insertedTweets.map((tweet) => tweet.id);
 
   const itemUpdateResults = await Promise.all(
-    approvedItems.map((item, index) =>
+    approvedItemsWithSchedule.map(({ item }, index) =>
       supabase
         .from('seven_day_planning_items')
         .update({

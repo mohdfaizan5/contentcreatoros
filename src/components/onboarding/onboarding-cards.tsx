@@ -64,7 +64,7 @@ function ChoiceCard({
     return (
       <span
         className={cn(
-          'inline-flex min-h-11 items-center rounded-md border px-4 text-sm font-medium transition-all duration-200',
+          'inline-flex min-h-8 items-center rounded-md border px-4 text-sm font-medium transition-all duration-200',
           active
             ? 'border-slate-900 bg-slate-900 text-white shadow-[0_10px_24px_-14px_rgba(15,23,42,0.85)]'
             : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
@@ -85,8 +85,8 @@ function ChoiceCard({
           : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50',
       )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="space-y-1.5">
+      <div className="flex items-start justify-between gap-2">
+        <div className="space-y-1">
           <div className="flex items-center gap-2">
             {renderedIcon ? <span className="inline-flex shrink-0">{renderedIcon}</span> : null}
             <p className="text-sm font-semibold">{label}</p>
@@ -144,7 +144,7 @@ export function OnboardingChoiceGroup(props: SingleChoiceGroupProps | MultiChoic
   return (
     <div
       className={cn(
-        layout === 'cards' ? 'grid gap-3 sm:grid-cols-2' : 'flex flex-wrap gap-3',
+        layout === 'cards' ? 'grid gap-3 sm:grid-cols-2' : 'flex flex-wrap gap-2',
       )}
     >
       <AnimatePresence mode="popLayout">
