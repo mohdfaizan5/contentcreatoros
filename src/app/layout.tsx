@@ -1,14 +1,16 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Geist, Geist_Mono, 
+import {
+  Geist, Geist_Mono,
   // Inter,
-   Inter_Tight, Instrument_Serif, 
+  Inter_Tight, Instrument_Serif,
   Source_Serif_4
- } from "next/font/google";
+} from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import { ThemeProvider } from "@/lib/theme-provider";
 
-const interHeading = Inter_Tight({subsets:['latin'],variable:'--font-heading'});
+const interHeading = Inter_Tight({ subsets: ['latin'], variable: '--font-heading' });
 
 
 // -----------------------------------------------------------------------------
@@ -18,7 +20,7 @@ const interHeading = Inter_Tight({subsets:['latin'],variable:'--font-heading'});
 // -----------------------------------------------------------------------------
 
 // 1. INTER TIGHT (Current Active)
-const inter = Inter_Tight({subsets:['latin'],variable:'--font-sans'});
+const inter = Inter_Tight({ subsets: ['latin'], variable: '--font-sans' });
 
 const serif = localFont({
   src: "../../public/ScotchDeck-Light.woff2",
@@ -55,7 +57,7 @@ const serif = localFont({
 
 const InstrumentalSerif = Instrument_Serif({
   variable: "--font-serif-instrumental",
-  weight: ["400" ],
+  weight: ["400"],
   subsets: ["latin"],
 });
 
@@ -87,7 +89,15 @@ export default function RootLayout({
       <body
         className={`${serif.variable} ${inter.variable} font-sans antialiased overflow-x-hidden`}
       >
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

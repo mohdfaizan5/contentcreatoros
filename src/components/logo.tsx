@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { XLogoIcon } from "@phosphor-icons/react/dist/ssr";
 import Image from "next/image";
 import Link from "next/link";
 
@@ -27,7 +28,9 @@ const Logo = ({
         height={height}
         alt="ContentOS logo"
       />
-      {full && <span className={cn("-ml-0.5", textClassName)}>ContentOSX</span>}
+      {full && <span className={cn("-ml-0.5", textClassName)}>ContentOS𝕏
+        {/* <XLogoIcon className="inline -ml-1" size={22} /> */}
+      </span>}
     </>
   );
 

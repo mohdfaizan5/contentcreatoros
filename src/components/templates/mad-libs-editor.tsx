@@ -28,7 +28,7 @@ export function MadLibsEditor({
     return (
         <div className="space-y-3">
             {/* Editor */}
-            <div className={`relative rounded-xl border transition-all duration-200 ${isFocused ? 'border-primary/50 ring-2 ring-primary/20' : ''
+            <div className={`relative rounded-lg border transition-all duration-200 ${isFocused ? 'border-primary/50 ring-2 ring-primary/20' : ''
                 }`}>
                 <textarea
                     value={value}
@@ -37,7 +37,7 @@ export function MadLibsEditor({
                     onBlur={() => setIsFocused(false)}
                     placeholder={placeholder}
                     rows={rows}
-                    className="w-full px-4 py-3 rounded-xl bg-background text-foreground placeholder:text-muted-foreground focus:outline-none resize-none font-mono text-sm leading-relaxed"
+                    className="w-full px-4 py-3 rounded-lg bg-background text-foreground placeholder:text-muted-foreground focus:outline-none resize-none font-mono text-sm leading-relaxed"
                 />
             </div>
 

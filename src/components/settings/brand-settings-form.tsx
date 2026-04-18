@@ -517,7 +517,7 @@ export default function BrandSettingsForm({
     <div className="space-y-8">
       {showShell ? (
         <>
-          <div className="rounded-4xl border border-slate-200 bg-[#1384FF] text-white p-6 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
+          <div className="rounded-4xl border border-border/40 bg-[#1384FF] text-white p-6 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
               <div className="space-y-3">
                 <Badge variant="secondary" className="">
@@ -536,10 +536,10 @@ export default function BrandSettingsForm({
               </div>
 
               <div className="flex flex-wrap items-center gap-3 text-sm ">
-                <Badge variant="outline" className="border-slate-200 px-3 py-1">
+                <Badge variant="outline" className="border-border/40 px-3 py-1">
                   {answeredCount} saved values
                 </Badge>
-                <Badge variant="outline" className="border-slate-200 px-3 py-1">
+                <Badge variant="outline" className="border-border/40 px-3 py-1">
                   onboarding_answers
                 </Badge>
               </div>
@@ -617,7 +617,7 @@ export default function BrandSettingsForm({
             {/* <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
               Company overview from onboarding
             </p> */}
-            <p className="mt-2 text-base leading-7 text-slate-900">
+            <p className="mt-2 text-base leading-7 ">
               {companyOverview || 'No overview summary was found yet. Complete website autofill in onboarding to populate this.'}
             </p>
           </section>
@@ -636,7 +636,7 @@ export default function BrandSettingsForm({
             return (
               <section
                 key={step.id}
-                className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]"
+                className="rounded-[28px] border border-border/40 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)]"
               >
                 <div className="space-y-2">
                   <p className="text-xs font-semibold uppercase tracking-wide text-slate-500">
@@ -647,7 +647,7 @@ export default function BrandSettingsForm({
                 </div>
 
                 <div className="mt-4 flex items-center justify-between">
-                  <Badge variant="outline" className="border-slate-200 px-3 py-1">
+                  <Badge variant="outline" className="border-border/40 px-3 py-1">
                     {step.questions.length} questions
                   </Badge>
                   <span className="text-sm text-slate-600">
@@ -658,7 +658,7 @@ export default function BrandSettingsForm({
             );
           })}
 
-          <section className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] md:col-span-2 xl:col-span-3">
+          <section className="rounded-[28px] border border-border/40 bg-white p-5 shadow-[0_20px_50px_-42px_rgba(15,23,42,0.35)] md:col-span-2 xl:col-span-3">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
               <div className="space-y-1">
                 <h2 className="text-lg font-semibold tracking-tight text-slate-950">Continue editing your brand voice</h2>

@@ -423,7 +423,7 @@ export default function OnboardingFlow({
                 value={typeof rawValue === 'string' ? rawValue : ''}
                 onValueChange={(value) => updateAnswer(question.key, value)}
                 placeholder={question.placeholder}
-                className="h-12 rounded-md border-slate-200 bg-white"
+                className="h-12 border-border/40 bg-background"
               />
             ) : (
               <OnboardingSpeechInput
@@ -431,7 +431,7 @@ export default function OnboardingFlow({
                 value={typeof rawValue === 'string' ? rawValue : ''}
                 onValueChange={(value) => updateAnswer(question.key, value)}
                 placeholder={question.placeholder}
-                className="h-12 rounded-md border-slate-200 bg-white"
+                className="h-12 border-border/40 bg-background"
               />
             )}
           </OnboardingField>
@@ -450,7 +450,7 @@ export default function OnboardingFlow({
               onValueChange={(value) => updateAnswer(question.key, value)}
               placeholder={question.placeholder}
               rows={question.rows ?? 4}
-              className="rounded-md border-slate-200 bg-white"
+              className="border-border/40 bg-background"
             />
           </OnboardingField>
         );
@@ -488,7 +488,7 @@ export default function OnboardingFlow({
                     updateAnswer(otherAnswerKey, value)
                   }
                   placeholder={otherOption.placeholder}
-                  className="h-11 rounded-md border-slate-200 bg-white"
+                  className="h-11 border-border/40 bg-background"
                 />
               </OnboardingField>
             ) : null}
@@ -531,7 +531,7 @@ export default function OnboardingFlow({
                     updateAnswer(otherAnswerKey, value)
                   }
                   placeholder={otherOption.placeholder}
-                  className="h-11 rounded-md border-slate-200 bg-white"
+                  className="h-11 border-border/40 bg-background"
                 />
               </OnboardingField>
             ) : null}
@@ -568,7 +568,7 @@ export default function OnboardingFlow({
         > 
           <OnboardingTerminal mode="processing" />
 
-          <div className="rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+          <div className="rounded-xl border border-border/40 bg-white p-4 text-sm text-slate-600 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
             Analyzing your website, extracting brand signals, and prefilling your answers...
           </div>
         </motion.div>
@@ -586,7 +586,7 @@ export default function OnboardingFlow({
         >
           <OnboardingTerminal mode="complete" />
 
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+          <div className="flex items-center justify-between rounded-xl border border-border/40 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
             <p className="text-sm text-slate-600">Finalizing your setup and taking you to the workspace...</p>
             <Button
               className="h-10 rounded-full px-5"
@@ -693,7 +693,7 @@ export default function OnboardingFlow({
                       {/* <p className="text-sm  text-slate-500 ">
                         
                       </p> */}
-                      {/* <div className="inline-flex items-center rounded-md border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
+                      {/* <div className="inline-flex items-center rounded-md border border-border/40 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
                               Question {activeQuestionIndex + 1} of {activeQuestionStep.questions.length}
                             </div> */}
                     </div>
@@ -728,7 +728,7 @@ export default function OnboardingFlow({
                             value={xAccountValue}
                             onValueChange={(value) => updateAnswer('x_account', value)}
                             placeholder="https://x.com/yourhandle"
-                            className="h-12 rounded-md border-slate-200 bg-white"
+                            className="h-12 border-border/40 bg-background"
                           />
                         </div>
                       </OnboardingField>
@@ -762,7 +762,7 @@ export default function OnboardingFlow({
                       </div>
 
                       {isStepSkippable(activeQuestionStep) ? (
-                        <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
+                        <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-border/40 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
                           <Lifebuoy className="size-3.5" weight="bold" />
                           Optional section
                         </div>
@@ -986,7 +986,7 @@ function DefaultEntryStep({
                   className={
                     active
                       ? 'flex w-full items-center justify-between rounded-lg border border-[#1f6fff] bg-[#eef5ff] px-5 py-4 text-left shadow-[0_10px_25px_-20px_rgba(31,111,255,0.7)]'
-                      : 'flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-5 py-4 text-left hover:border-slate-300'
+                      : 'flex w-full items-center justify-between rounded-lg border border-border/40 bg-white px-5 py-4 text-left hover:border-border/50'
                   }
                 >
                   <div className="flex items-center gap-4">
@@ -994,7 +994,7 @@ function DefaultEntryStep({
                       className={
                         active
                           ? 'inline-flex size-10 items-center justify-center rounded-lg bg-[#1f6fff] text-sm font-semibold text-white'
-                          : 'inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-sm font-semibold text-slate-500'
+                          : 'inline-flex size-10 items-center justify-center rounded-lg border border-border/40 text-sm font-semibold text-slate-500'
                       }
                     >
                       {track.title.charAt(0)}
@@ -1023,7 +1023,7 @@ function DefaultEntryStep({
     </section>
   );
   // return (
-  //   <section className="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-[0_24px_50px_-40px_rgba(15,23,42,0.65)]">
+  //   <section className="overflow-hidden rounded-xl border border-border/40 bg-white shadow-[0_24px_50px_-40px_rgba(15,23,42,0.65)]">
   //     <div className="grid md:grid-cols-[300px_1fr]">
   //       <div className="relative hidden bg-[#1f6fff] p-8 text-white md:flex md:flex-col">
   //         <Logo
@@ -1070,7 +1070,7 @@ function DefaultEntryStep({
   //                 className={
   //                   active
   //                     ? 'flex w-full items-center justify-between rounded-lg border border-[#1f6fff] bg-[#eef5ff] px-5 py-4 text-left shadow-[0_10px_25px_-20px_rgba(31,111,255,0.7)]'
-  //                     : 'flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-5 py-4 text-left hover:border-slate-300'
+  //                     : 'flex w-full items-center justify-between rounded-lg border border-border/40 bg-white px-5 py-4 text-left hover:border-border/50'
   //                 }
   //               >
   //                 <div className="flex items-center gap-4">
@@ -1078,7 +1078,7 @@ function DefaultEntryStep({
   //                     className={
   //                       active
   //                         ? 'inline-flex size-10 items-center justify-center rounded-lg bg-[#1f6fff] text-sm font-semibold text-white'
-  //                         : 'inline-flex size-10 items-center justify-center rounded-lg border border-slate-200 text-sm font-semibold text-slate-500'
+  //                         : 'inline-flex size-10 items-center justify-center rounded-lg border border-border/40 text-sm font-semibold text-slate-500'
   //                     }
   //                   >
   //                     {track.title.charAt(0)}

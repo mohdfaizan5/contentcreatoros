@@ -48,12 +48,12 @@ import CalendarSelectWithTime from '@/components/calendar-select-with-time';
 function ItemStatusBadge({ status }: { status: SevenDayPlanningItemApprovalStatus }) {
     const className =
         status === 'approved'
-            ? 'border-emerald-300 bg-emerald-50 text-emerald-700'
+            ? 'bg-emerald-50 text-emerald-700'
             : status === 'rejected'
-                ? 'border-rose-300 bg-rose-50 text-rose-700'
+                ? 'bg-rose-50 text-rose-400'
                 : status === 'scheduled'
-                    ? 'border-sky-300 bg-sky-50 text-sky-700'
-                    : 'border-slate-300 text-slate-600';
+                    ? 'bg-sky-50 text-sky-700'
+                    : '';
 
     const label =
         status === 'approved'
@@ -344,16 +344,62 @@ export default function WorkflowRunDetailClient({
         });
     };
     return (
-        <div className="space-y-4">
+        <div className="space-y-4 max-w-5xl mx-auto">
             <Card>
                 <CardHeader className="space-y-3">
-                    <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
                             <CardTitle className="text-2xl">7-Day Workflow Run</CardTitle>
-                            <p className="mt-1 text-sm text-muted-foreground">{rangeLabel}</p>
+                            <div className='flex items-center gap-2'>
+                                <p className="mt-1 text-sm text-muted-foreground">{rangeLabel}</p>
+                                <WorkflowRunStatusBadge status={run.status} />
+                            </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                            {/* <Button asChild variant="outline">
+                            <Link href="/app/workflow">Back to Workflow</Link>
+                        </Button> */}
+
+                            {(run.status === 'queued' || run.status === 'generating') && (
+                                <Button className="gap-2" disabled={isPending} onClick={handleStartNow}>
+                                    {isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <Timer className="h-4 w-4" />
+                                    )}
+                                    Start Now
+                                </Button>
+                            )}
+
+                            {run.status === 'failed' && (
+                                <Button className="gap-2" disabled={isPending} onClick={handleRetry}>
+                                    {isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <RefreshCcw className="h-4 w-4" />
+                                    )}
+                                    Retry Run
+                                </Button>
+                            )}
+
+                            {run.status === 'pending_approval' && hasScheduleableItems(items) && (
+                                <Button className="gap-2" disabled={isPending} onClick={handleSchedule}>
+                                    {isPending ? (
+                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                    ) : (
+                                        <CheckCircle2 className="h-4 w-4" />
+                                    )}
+                                    Schedule Approved
+                                </Button>
+                            )}
+
+                            {run.status === 'scheduled' && (
+                                <Button asChild>
+                                    <Link href="/app/calendar">Open Calendar</Link>
+                                </Button>
+                            )}
                         </div>
 
-                        <WorkflowRunStatusBadge status={run.status} />
                     </div>
 
                     <div className="grid gap-2 sm:grid-cols-4">
@@ -375,50 +421,6 @@ export default function WorkflowRunDetailClient({
                         </div>
                     </div>
 
-                    <div className="flex flex-wrap gap-2">
-                        <Button asChild variant="outline">
-                            <Link href="/app/workflow">Back to Workflow</Link>
-                        </Button>
-
-                        {(run.status === 'queued' || run.status === 'generating') && (
-                            <Button className="gap-2" disabled={isPending} onClick={handleStartNow}>
-                                {isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <Timer className="h-4 w-4" />
-                                )}
-                                Start Now
-                            </Button>
-                        )}
-
-                        {run.status === 'failed' && (
-                            <Button className="gap-2" disabled={isPending} onClick={handleRetry}>
-                                {isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <RefreshCcw className="h-4 w-4" />
-                                )}
-                                Retry Run
-                            </Button>
-                        )}
-
-                        {run.status === 'pending_approval' && hasScheduleableItems(items) && (
-                            <Button className="gap-2" disabled={isPending} onClick={handleSchedule}>
-                                {isPending ? (
-                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                ) : (
-                                    <CheckCircle2 className="h-4 w-4" />
-                                )}
-                                Schedule Approved
-                            </Button>
-                        )}
-
-                        {run.status === 'scheduled' && (
-                            <Button asChild>
-                                <Link href="/app/calendar">Open Calendar</Link>
-                            </Button>
-                        )}
-                    </div>
 
                     {run.generation_error ? (
                         <div className="rounded-md border border-rose-300 bg-rose-50 p-3 text-sm text-rose-700">
@@ -453,7 +455,11 @@ export default function WorkflowRunDetailClient({
                                 <div className="flex items-center justify-between gap-2">
                                     <div>
                                         <CardTitle className="text-xl">{selectedItem.day_label}</CardTitle>
-                                        <p className="mt-1 text-sm text-muted-foreground">{selectedItem.item_date}</p>
+                                        <div className=' flex gap-2 items-center'>
+                                            <p className="mt-1 text-sm text-muted-foreground">{selectedItem.item_date}</p>
+                                            <ItemStatusBadge status={selectedItem.approval_status} />
+
+                                        </div>
                                         {selectedItemScheduledDate ? (
                                             <p className="mt-1 text-xs text-muted-foreground">
                                                 {selectedItemHasCustomSchedule ? 'Custom slot' : 'Default slot'}:{' '}
@@ -463,7 +469,6 @@ export default function WorkflowRunDetailClient({
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        <ItemStatusBadge status={selectedItem.approval_status} />
                                         {canModerateRun(run.status) && selectedItemScheduledDate ? (
                                             <Popover open={isSchedulePickerOpen} onOpenChange={setIsSchedulePickerOpen}>
                                                 <PopoverTrigger asChild>
@@ -515,10 +520,11 @@ export default function WorkflowRunDetailClient({
                             </CardHeader>
 
                             <CardContent className="space-y-4">
-                                <div className="max-w-2xl space-y-2">
+                                <div className="max-w space-y-2">
                                     <Textarea
+                                        textareaClassName='text-base'
                                         aria-describedby="twitter-post-input-description"
-                                        className="max-w-2xl text-[20px] leading-relaxed"
+                                        className="max-w- text-[20px] leading-relaxed"
                                         id="twitter-post-input"
                                         onChange={(event) => {
                                             if (!selectedItem) {
@@ -732,10 +738,10 @@ export default function WorkflowRunDetailClient({
                                         <p className="font-medium text-sm">{item.day_label}</p> -
                                         <ItemStatusBadge status={item.approval_status} />
                                     </div>
-                                    <p className="mt-1 truncate text-xs text-muted-foreground">
+                                    {/* <p className="mt-1 truncate text-xs text-muted-foreground">
                                         {scheduledAtByItemId[item.id] ? 'Custom' : 'Default'}:{' '}
                                         {format(getItemScheduledDate(item), 'MMM d, yyyy p')}
-                                    </p>
+                                    </p> */}
                                     <Badge>
                                         {item.pillar}
                                     </Badge>

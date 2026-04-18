@@ -142,10 +142,10 @@ const LandingManagement = () => {
                                 <div className="text-xs text-gray-400">Customizable</div>
                             </div>
                             <div className="flex flex-wrap gap-2">
-                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-gray-200">Hook Style</span>
-                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-gray-200">Length</span>
-                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-gray-200">Tone</span>
-                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-gray-200">CTA Style</span>
+                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-border/40">Hook Style</span>
+                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-border/40">Length</span>
+                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-border/40">Tone</span>
+                                <span className="text-xs bg-white px-2 py-1 rounded-full border border-border/40">CTA Style</span>
                             </div>
                         </div>
                     </div>

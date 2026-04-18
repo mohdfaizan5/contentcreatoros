@@ -4,12 +4,14 @@ import { addDays, differenceInCalendarDays, startOfDay } from "date-fns";
 import type { DateRange } from "react-day-picker";
 
 import { Calendar } from "@/components/ui/calendar";
+import { cn } from "@/lib/utils";
 
 type TwoCalendarRangeProps = {
   value: DateRange | undefined;
   onChange: (nextRange: DateRange | undefined) => void;
   maxDays?: number;
   minDate?: Date;
+  className?: string;
 };
 
 export default function TwoCalendarRange({
@@ -17,6 +19,7 @@ export default function TwoCalendarRange({
   onChange,
   maxDays = 7,
   minDate,
+  className
 }: TwoCalendarRangeProps) {
   const maxOffset = maxDays - 1;
 
@@ -52,9 +55,8 @@ export default function TwoCalendarRange({
   };
 
   return (
-    <div>
       <Calendar
-        className="rounded-md border p-2"
+        className={cn("rounded-md border p-2", className)}
         classNames={{
           month:
             "relative first-of-type:before:hidden before:absolute max-sm:before:inset-x-2 max-sm:before:h-px max-sm:before:-top-2 sm:before:inset-y-2 sm:before:w-px before:bg-border sm:before:-left-4",
@@ -68,6 +70,5 @@ export default function TwoCalendarRange({
         selected={value}
         showOutsideDays={false}
       />
-    </div>
   );
 }

@@ -4,6 +4,7 @@ import React from 'react';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 import { GradientBars } from '../gradient-bars';
+import { XLogoIcon } from '@phosphor-icons/react/dist/ssr';
 
 const LandingHero = () => {
     return (
@@ -30,7 +31,7 @@ const LandingHero = () => {
                 <h1 className="mb-6 max-w-5xl font-serif-scotchdeck font-light text-5xl text-white md:text-6xl lg:text-7xl">
                     Your AI CMO
                     <br className="hidden sm:block" />
-                    for consistent X growth
+                    for consistent <XLogoIcon className='inline-flex items-center -mt-4' size={56} />                    growth
                 </h1>
 
                 <p className="mb-10 max-w-3xl text-base leading-7 text-white/75 md:text-xl md:leading-8">

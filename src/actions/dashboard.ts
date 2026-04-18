@@ -13,6 +13,7 @@ import {
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import { createClient } from '@/lib/server';
+import { buildTweetContentForScheduling } from '@/lib/x/tweet-text';
 import { getAuthenticatedUserTweets, getAuthenticatedXUser } from '@/lib/x/x';
 import type { GeneratedTweetStatus } from '@/types/database';
 
@@ -611,10 +612,11 @@ export async function scheduleSevenDayContentPlan(params: {
 
     baseDate.setUTCHours(14, index * 3, 0, 0);
 
-    const content = (item.suggestedPost || `${item.pillar}: ${item.angle}`)
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 280);
+    const content = buildTweetContentForScheduling(
+      item.suggestedPost,
+      item.pillar,
+      item.angle,
+    );
 
     return {
       user_id: user.id,

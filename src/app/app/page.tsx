@@ -11,7 +11,6 @@ import {
     Users,
     type LucideIcon,
 } from 'lucide-react';
-
 import { getDashboardSnapshot } from '@/actions/dashboard';
 import WelcomeContentOsxModal from '@/components/dashboard/welcome-content-osx-modal';
 import { Badge } from '@/components/ui/badge';
@@ -20,26 +19,26 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
 
-const quickActions = [
-    {
-        title: 'Capture Idea',
-        description: 'Drop a raw idea before it disappears.',
-        href: '/app/ideas',
-        icon: PenSquare,
-    },
-    {
-        title: 'Content Calendar',
-        description: 'View and refine your upcoming schedule.',
-        href: '/app/calendar',
-        icon: CalendarClock,
-    },
-    {
-        title: 'X Workspace',
-        description: 'Track generated posts and publishing.',
-        href: '/app/x',
-        icon: TrendingUp,
-    },
-];
+// const quickActions = [
+//     {
+//         title: 'Capture Idea',
+//         description: 'Drop a raw idea before it disappears.',
+//         href: '/app/ideas',
+//         icon: PenSquare,
+//     },
+//     {
+//         title: 'Content Calendar',
+//         description: 'View and refine your upcoming schedule.',
+//         href: '/app/calendar',
+//         icon: CalendarClock,
+//     },
+//     {
+//         title: 'X Workspace',
+//         description: 'Track generated posts and publishing.',
+//         href: '/app/x',
+//         icon: TrendingUp,
+//     },
+// ];
 
 function scoreTone(score: number) {
     if (score >= 80) {
@@ -147,7 +146,14 @@ function getActivityAlertVisual(alert: string): ActivityAlertVisual {
 }
 import { ClockIcon } from "lucide-react";
 import { useId } from "react";
-
+import {
+    Frame,
+    FrameDescription,
+    FrameFooter,
+    FrameHeader,
+    FramePanel,
+    FrameTitle,
+} from "@/components/ui/frame"
 import { Label } from "@/components/ui/label";
 import {
     Select,
@@ -198,7 +204,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                 </Select>
             </div>
             <section className="grid gap-4 lg:grid-cols-[1.8fr_1fr]">
-                <Card className="border-slate-200/80 bg-linear-to-br from-white to-slate-50">
+                <Card className="border-border/80 ">
                     <CardHeader>
                         <CardTitle className="text-2xl">Content Health Score</CardTitle>
                         <CardDescription>
@@ -223,7 +229,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                             </div>
 
                             {xProfile ? (
-                                <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,0.7))] p-5">
+                                <div className="rounded-3xl border border-border/40  p-5">
                                     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                                         <div className="flex items-center gap-4">
                                             {xProfile.profileImageUrl ? (
@@ -231,7 +237,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                                                 <img
                                                     src={xProfile.profileImageUrl}
                                                     alt={xProfile.name}
-                                                    className="size-16 rounded-2xl border border-slate-200 object-cover"
+                                                    className="size-16 rounded-2xl border border-border/40 object-cover"
                                                 />
                                             ) : (
                                                 <div className="flex size-16 items-center justify-center rounded-2xl bg-slate-900 text-white">
@@ -240,8 +246,8 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                                             )}
 
                                             <div>
-                                                <p className="text-lg font-semibold text-slate-900">{xProfile.name}</p>
-                                                <p className="text-sm text-slate-500">@{xProfile.username}</p>
+                                                <p className="text-lg font-semibold ">{xProfile.name}</p>
+                                                <p className="text-sm text-muted-foreground">@{xProfile.username}</p>
                                             </div>
                                         </div>
 
@@ -256,13 +262,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                                     </div>
 
                                     {xProfile.description ? (
-                                        <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
+                                        <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
                                             {xProfile.description}
                                         </p>
                                     ) : null}
                                 </div>
                             ) : (
-                                <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
+                                <div className="rounded-3xl border border-dashed border-border/50 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
                                     Connect X from Analytics to show profile photo, username, and bio here.
                                 </div>
                             )}
@@ -270,23 +276,40 @@ export default async function DashboardPage({ searchParams }: PageProps) {
 
 
                         <Progress value={snapshot.score} className="h-2" />
-
-                        <div className="grid gap-3 sm:grid-cols-3">
-                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                        <Frame className="grid gap-3 sm:grid-cols-3">
+                            {/* <FrameHeader>
+                                <FrameTitle>Section header</FrameTitle>
+                                <FrameDescription>Brief description about the section</FrameDescription>
+                            </FrameHeader> */}
+                            <FramePanel>
+                                <p className="text-muted-foreground text-sm">Published (7d)</p>
+                                <h2 className="font-semibold text-sm">{snapshot.publishedLast7DaysCount}</h2>
+                            </FramePanel>
+                            <FramePanel>
+                                <p className="text-muted-foreground text-sm">Scheduled</p>
+                                <h2 className="font-semibold text-sm">{snapshot.scheduledUpcomingCount}</h2>
+                            </FramePanel>
+                            <FramePanel>
+                                <p className="text-muted-foreground text-sm">Engagement Actions (7d)</p>
+                                <h2 className="font-semibold text-sm">{snapshot.engagementLast7DaysCount}</h2>
+                            </FramePanel>
+                        </Frame>
+                        {/* <div className="grid gap-3 sm:grid-cols-3">
+                            <div className="rounded-md border border-border/40 p-3">
                                 <p className="text-xs text-muted-foreground">Published (7d)</p>
                                 <p className="mt-1 text-xl font-semibold">{snapshot.publishedLast7DaysCount}</p>
                             </div>
 
-                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                            <div className="rounded-md border border-border/40 p-3">
                                 <p className="text-xs text-muted-foreground">Scheduled</p>
                                 <p className="mt-1 text-xl font-semibold">{snapshot.scheduledUpcomingCount}</p>
                             </div>
 
-                            <div className="rounded-md border border-slate-200 bg-white p-3">
+                            <div className="rounded-md border border-border/40 p-3">
                                 <p className="text-xs text-muted-foreground">Engagement Actions (7d)</p>
                                 <p className="mt-1 text-xl font-semibold">{snapshot.engagementLast7DaysCount}</p>
                             </div>
-                        </div>
+                        </div> */}
                     </CardContent>
                 </Card>
 
@@ -351,3 +374,4 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
     );
 }
+

@@ -69,18 +69,18 @@ export default function WelcomeContentOsxModal({
     >
       <DialogPopup
         bottomStickOnMobile={false}
-        className="max-w-xl overflow-hidden border border-slate-800 bg-[#07090d] p-0 text-slate-100"
+        className="max-w-xl overflow-hidden border border-border/80 bg-[#07090d] p-0 text-slate-100"
         showCloseButton={false}
       >
         <DialogHeader className="items-center gap-3 pb-2 pt-8 text-center">
           {/* <p className="font-semibold text-3xl tracking-tight">ContentOS X</p> */}
 
           <div className="relative mt-2 flex h-28 w-28 items-center justify-center">
-            <div className="absolute inset-0 rounded-full border border-slate-700/40" />
-            <div className="absolute inset-2 rounded-full border border-slate-700/40" />
-            <div className="absolute inset-6 rounded-full border border-slate-700/40" />
-            <div className="absolute inset-10 rounded-full border border-slate-700/40" />
-            <div className="relative z-10 rounded-full border border-slate-600 bg-slate-900 p-2">
+            <div className="absolute inset-0 rounded-full border border-border/40" />
+            <div className="absolute inset-2 rounded-full border border-border/40" />
+            <div className="absolute inset-6 rounded-full border border-border/40" />
+            <div className="absolute inset-10 rounded-full border border-border/40" />
+            <div className="relative z-10 rounded-full border border-border/60 bg-slate-900 p-2">
               <CircleUserRound className="h-5 w-5 text-slate-200" />
             </div>
           </div>
@@ -106,7 +106,7 @@ export default function WelcomeContentOsxModal({
           </ul>
         </DialogPanel>
 
-        <DialogFooter className="justify-end border-t border-slate-800/90 bg-slate-950/70 px-8 py-6">
+        <DialogFooter className="justify-end border-t border-border/80/90 bg-slate-950/70 px-8 py-6">
           <Button
             className="rounded-2xl bg-white px-6 text-black hover:bg-slate-100"
             onClick={dismiss}
@@ -119,3 +119,4 @@ export default function WelcomeContentOsxModal({
     </Dialog>
   );
 }
+

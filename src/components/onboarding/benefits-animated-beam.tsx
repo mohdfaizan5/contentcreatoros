@@ -21,7 +21,7 @@ const Circle = forwardRef<
     <div
       ref={ref}
       className={cn(
-        "z-10 flex size-12 items-center justify-center rounded-full border-2 border-slate-200 bg-white p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
+        "z-10 flex size-12 items-center justify-center rounded-full border-2 border-border/40 bg-white p-3 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
         className,
       )}
     >
@@ -44,7 +44,7 @@ const FeaturePill = forwardRef<
     <div
       ref={ref}
       className={cn(
-        "z-10 flex h-10 w-44 items-center justify-start gap-2 rounded-full border-2 border-slate-200 bg-white px-3 text-xs font-medium text-slate-700 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
+        "z-10 flex h-10 w-44 items-center justify-start gap-2 rounded-full border-2 border-border/40 bg-white px-3 text-xs font-medium text-slate-700 shadow-[0_0_20px_-12px_rgba(0,0,0,0.8)]",
         className,
       )}
     >

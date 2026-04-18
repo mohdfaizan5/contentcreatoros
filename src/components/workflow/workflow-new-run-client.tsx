@@ -75,6 +75,7 @@ export default function WorkflowNewRunClient() {
         value={selectedRange}
         onChange={setSelectedRange}
         maxDays={7}
+        className='bg-background/70'
         minDate={today}
       />
 

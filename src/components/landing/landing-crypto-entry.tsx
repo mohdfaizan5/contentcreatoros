@@ -11,7 +11,7 @@ const LandingCryptoEntry = () => {
             {/* Decorative floating elements */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none -bg-amber-300">
                 {/* Left decoratives */}
-                <div className="absolute top-32 left-8 w-8 h-8 border-2 border-gray-200 rounded-lg rotate-12 animate-float-slow" />
+                <div className="absolute top-32 left-8 w-8 h-8 border-2 border-border/40 rounded-lg rotate-12 animate-float-slow" />
                 <div className="absolute top-48 left-24 w-6 h-6 bg-gray-100 rounded-full animate-float animation-delay-200" />
                 <div className="absolute top-1/2 left-12">
                     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" className="animate-pulse-glow">
@@ -129,7 +129,7 @@ const LandingCryptoEntry = () => {
                                         <button className="bg-[#2F92C7] text-white py-3 rounded-xl text-sm font-medium">
                                             Dump Idea
                                         </button>
-                                        <button className="bg-gray-100 text-gray-700 py-3 rounded-xl text-sm font-medium border border-gray-200">
+                                        <button className="bg-gray-100 text-gray-700 py-3 rounded-xl text-sm font-medium border border-border/40">
                                             View Series
                                         </button>
                                     </div>

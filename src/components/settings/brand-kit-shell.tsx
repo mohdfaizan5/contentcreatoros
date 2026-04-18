@@ -69,14 +69,14 @@ export default function BrandKitShell({
 
           </div>
         </CardPanel>
-        <CardFooter> <Badge variant="outline" className="border-slate-200 px-3 py-1">
+        <CardFooter> <Badge variant="outline" className="border-border/40 px-3 py-1">
           {answeredCount} saved values
         </Badge>
-          <Badge variant="outline" className="border-slate-200 px-3 py-1">
+          <Badge variant="outline" className="border-border/40 px-3 py-1">
             onboarding_answers
           </Badge></CardFooter>
       </Card>
-      <div className="rounded-4xl border border-slate-200 bg-[#1384FF] p-6 text-white shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
+      <div className="rounded-4xl border border-border/40 bg-[#1384FF] p-6 text-white shadow-[0_24px_80px_-60px_rgba(15,23,42,0.35)] sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-3">
             <Badge variant="secondary">Brand settings</Badge>

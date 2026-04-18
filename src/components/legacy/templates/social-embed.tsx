@@ -10,7 +10,7 @@ const embedConfig: Record<EmbedType, { icon: PhosphorIcon; color: string; label:
     x: { icon: TwitterLogo, color: 'text-sky-500 bg-sky-500/10 border-sky-500/20', label: 'X Post' },
     instagram: { icon: InstagramLogo, color: 'text-pink-500 bg-pink-500/10 border-pink-500/20', label: 'Instagram' },
     linkedin: { icon: LinkedinLogo, color: 'text-blue-600 bg-blue-600/10 border-blue-600/20', label: 'LinkedIn' },
-    link: { icon: LinkIcon, color: 'text-gray-500 bg-gray-500/10 border-gray-500/20', label: 'Link' },
+    link: { icon: LinkIcon, color: 'text-gray-500 bg-gray-500/10 border-border/20', label: 'Link' },
 };
 
 interface SocialEmbedProps {
@@ -172,3 +172,4 @@ export function ReferencesList({ references }: ReferencesListProps) {
         </div>
     );
 }
+

@@ -20,7 +20,7 @@ const platformColors: Record<PlatformType, string> = {
     x: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
     youtube: 'bg-red-500/10 text-red-600 dark:text-red-400 border-red-500/20',
     linkedin: 'bg-blue-600/10 text-blue-600 dark:text-blue-400 border-blue-600/20',
-    generic: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-gray-500/20',
+    generic: 'bg-gray-500/10 text-gray-600 dark:text-gray-400 border-border/20',
 };
 
 interface TemplateCardProps {
@@ -172,3 +172,4 @@ export function TemplatesGrid({ templates }: TemplatesGridProps) {
         </div>
     );
 }
+

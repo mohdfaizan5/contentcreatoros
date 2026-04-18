@@ -7,7 +7,7 @@ import { Badge } from "../ui/badge";
 
 const BentoGrid = () => {
   return (
-    <section className="relative border-y border-slate-200/80 bg-[radial-gradient(circle_at_top,rgba(31,146,249,0.08),transparent_45%),linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] py-20 md:py-24">
+    <section className="relative border-y border-border/80 bg-[radial-gradient(circle_at_top,rgba(31,146,249,0.08),transparent_45%),linear-gradient(180deg,#ffffff_0%,#f8fbff_100%)] py-20 md:py-24">
       <div className="mx-auto flex w-full max-w-7xl flex-col px-6">
         <div className="mb-10 max-w-3xl">
           <Badge className="border border-[#1F92F9]/20 bg-[#1F92F9]/10 text-[#0f4c8a]">Inside ContentOSX</Badge>
@@ -20,7 +20,7 @@ const BentoGrid = () => {
         </div>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] md:p-8">
+          <div className="rounded-3xl border border-border/40 bg-white p-6 shadow-[0_18px_45px_-30px_rgba(15,23,42,0.45)] md:p-8">
             <h3 className="text-2xl font-semibold text-slate-950">Capture without context switching</h3>
             <p className="mt-2 text-sm leading-6 text-slate-600 md:text-base">
               Dump raw ideas instantly, then let the system organize hooks, angles, and follow-ups in one timeline.
@@ -35,7 +35,7 @@ const BentoGrid = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-700 bg-slate-950 p-6 shadow-[0_28px_55px_-35px_rgba(2,6,23,0.9)] md:p-8">
+          <div className="rounded-3xl border border-border/70 bg-slate-950 p-6 shadow-[0_28px_55px_-35px_rgba(2,6,23,0.9)] md:p-8">
             <h3 className="text-2xl font-semibold text-white">Collaborate in real time</h3>
             <p className="mt-2 text-sm leading-6 text-white/70 md:text-base">
               Keep copy, edits, and approvals in sync so your publishing rhythm does not break when more people join.
@@ -62,7 +62,7 @@ const BentoGrid = () => {
             </div>
           </div>
 
-          <div className="rounded-3xl border border-slate-800 bg-black p-6 shadow-[0_28px_55px_-35px_rgba(2,6,23,0.95)] md:p-8">
+          <div className="rounded-3xl border border-border/80 bg-black p-6 shadow-[0_28px_55px_-35px_rgba(2,6,23,0.95)] md:p-8">
             <h3 className="text-2xl font-semibold text-white">Measure what compounds</h3>
             <p className="mt-2 text-sm leading-6 text-white/70 md:text-base">
               Track output, engagement, and velocity in one view so you can double down on formats that actually grow reach.
@@ -85,3 +85,4 @@ const BentoGrid = () => {
 };
 
 export default BentoGrid;
+

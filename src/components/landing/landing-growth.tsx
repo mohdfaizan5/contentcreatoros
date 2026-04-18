@@ -92,7 +92,7 @@ const LandingGrowth = () => {
                     <div className="bg-white rounded-3xl p-6 md:p-8 shadow-lg">
                         <div className="mb-6">
                             <label className="text-sm text-gray-500 mb-2 block">Active Series</label>
-                            <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                            <div className="bg-gray-50 rounded-xl px-4 py-3 border border-border/30">
                                 <span className="text-xl font-semibold">21 Startup Terms to Know</span>
                             </div>
                         </div>
@@ -100,7 +100,7 @@ const LandingGrowth = () => {
                         <div className="grid md:grid-cols-2 gap-6 mb-6">
                             <div>
                                 <label className="text-sm text-gray-500 mb-2 block">Platform</label>
-                                <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100 flex items-center gap-2">
+                                <div className="bg-gray-50 rounded-xl px-4 py-3 border border-border/30 flex items-center gap-2">
                                     <div className="w-6 h-6 rounded-full bg-black flex items-center justify-center">
                                         <span className="text-white text-xs font-bold">X</span>
                                     </div>
@@ -109,7 +109,7 @@ const LandingGrowth = () => {
                             </div>
                             <div>
                                 <label className="text-sm text-gray-500 mb-2 block">Total Pieces</label>
-                                <div className="bg-gray-50 rounded-xl px-4 py-3 border border-gray-100">
+                                <div className="bg-gray-50 rounded-xl px-4 py-3 border border-border/30">
                                     <span className="text-xl font-semibold">21</span>
                                 </div>
                             </div>

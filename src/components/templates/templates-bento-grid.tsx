@@ -30,7 +30,7 @@ const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; 
     x: { icon: TwitterLogo, color: 'text-sky-500', bgColor: 'bg-sky-500/5 border-sky-500/20 hover:border-sky-500/40' },
     linkedin: { icon: LinkedinLogo, color: 'text-blue-600', bgColor: 'bg-blue-600/5 border-blue-600/20 hover:border-blue-600/40' },
     youtube: { icon: YoutubeLogo, color: 'text-red-500', bgColor: 'bg-red-500/5 border-red-500/20 hover:border-red-500/40' },
-    generic: { icon: Article, color: 'text-gray-500', bgColor: 'bg-gray-500/5 border-gray-500/20 hover:border-gray-500/40' },
+    generic: { icon: Article, color: 'text-gray-500', bgColor: 'bg-gray-500/5 border-border/20 hover:border-border/40' },
 };
 
 interface TemplateMasonryCardProps {
@@ -293,3 +293,4 @@ export function TemplatesMasonryGrid({ templates, currentUserId }: TemplatesMaso
         </div>
     );
 }
+

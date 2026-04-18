@@ -19,7 +19,7 @@ const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; 
     x: { icon: TwitterLogo, color: 'bg-sky-500/10 text-sky-600 border-sky-500/20', label: 'X (Twitter)' },
     youtube: { icon: YoutubeLogo, color: 'bg-red-500/10 text-red-600 border-red-500/20', label: 'YouTube' },
     linkedin: { icon: LinkedinLogo, color: 'bg-blue-600/10 text-blue-600 border-blue-600/20', label: 'LinkedIn' },
-    generic: { icon: Article, color: 'bg-gray-500/10 text-gray-600 border-gray-500/20', label: 'Generic' },
+    generic: { icon: Article, color: 'bg-gray-500/10 text-gray-600 border-border/20', label: 'Generic' },
 };
 
 interface TemplateDetailProps {
@@ -462,3 +462,4 @@ function GenericInlineEditor({ content, onChange }: InlineEditorProps) {
         </div>
     );
 }
+

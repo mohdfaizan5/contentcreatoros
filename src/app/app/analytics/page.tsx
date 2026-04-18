@@ -2,12 +2,16 @@
 import Link from 'next/link';
 import { headers } from 'next/headers';
 import {
+  ArrowsClockwise,
   ArrowClockwise,
   ArrowSquareOut,
+  ChatCircle,
   ChartLineUp,
   CheckCircle,
+  Heart,
   Info,
   LockKey,
+  Quotes,
   TrendUp,
   Users,
   WarningCircle,
@@ -19,7 +23,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
@@ -102,7 +105,12 @@ function getFriendlyError(error?: string) {
   return error;
 }
 
-
+import {
+  Frame,
+  FrameHeader,
+  FramePanel,
+  FrameTitle,
+} from "@/components/ui/frame";
 
 export default async function XAnalyticsPage({ searchParams }: PageProps) {
   const params = await searchParams;
@@ -169,7 +177,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
   return (
     <div className="space-y-6">
 
-      <section className="relative overflow-hidden  rounded-2xl  border border-slate-200/70 bg-[#1384FF] px-8 py-4 text-white shadow-[0_24px_80px_-28px_rgba(15,23,42,0.75)]">
+      <section className="relative overflow-hidden  rounded-2xl  border border-border/70 bg-[#1384FF] px-8 py-4 text-white shadow-[0_24px_80px_-28px_rgba(15,23,42,0.75)]">
         <div className="absolute inset-y-0 right-[-8%] w-56 rounded-full bg-[#1384FF] blur-3xl" />
         <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
           <div className="max-w-2xl space-y-4">
@@ -194,7 +202,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
             {!accessToken ? (
               <Button
                 asChild
-                className="h-11 rounded-full border border-sky-300/30 bg-white px-5 text-sm font-semibold text-slate-950 shadow-[0_12px_30px_-12px_rgba(14,165,233,0.8)] hover:bg-sky-400"
+                className="rounded-full px-5 text-sm font-semibold "
               >
                 <Link href="/api/x/login">
                   <LockKey className="size-4" />
@@ -205,8 +213,8 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
               <form action="/api/x/disconnect" method="post">
                 <Button
                   type="submit"
-                  variant="outline"
-                  className="h-11 rounded-full border-white/20 text-black px-5 text-sm bg-white hover:bg-white/10"
+                  variant="default"
+                  className="rounded-full px-5 text-sm "
                 >
                   Disconnect
                 </Button>
@@ -228,7 +236,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
       </section>
 
       {(params.connected || params.disconnected || bannerMessage) && (
-        <Card className="border-slate-200/80 bg-white/80 backdrop-blur">
+        <Card className="border-border/80  backdrop-blur">
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-start gap-3">
               {bannerMessage ? (
@@ -237,7 +245,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 <CheckCircle className="mt-0.5 size-5 text-emerald-500" weight="fill" />
               )}
               <div>
-                <p className="font-medium text-slate-900">
+                <p className="font-medium ">
                   {bannerMessage
                     ? 'X connection needs attention'
                     : params.connected
@@ -290,7 +298,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
 
 
       <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr]">
-        <Card className="border-slate-200/80 bg-white/90">
+        <Card className="border-border/80 ">
           <CardHeader >
             <CardTitle>
               <LabelTooltip
@@ -310,27 +318,27 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
           </CardHeader>
           <CardContent className="space-y-6">
             {/* <div className="grid gap-4 sm:grid-cols-2">
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+              <div className="rounded-2xl border border-border/40 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] ">
                   <LabelTooltip
                     label="Session"
                     description="Shows whether the current app session has a valid authenticated X connection."
                   />
                 </p>
-                <p className="mt-2 text-xl font-semibold text-slate-900">
+                <p className="mt-2 text-xl font-semibold ">
                   {connectionLabel}
                 </p>
 
               </div>
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+              <div className="rounded-2xl border border-border/40 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] ">
                   <LabelTooltip
                     label="Connected at"
                     description="The time this X session was first stored in secure HTTP-only cookies."
                   />
                 </p>
-                <p className="mt-2 text-xl font-semibold text-slate-900">
+                <p className="mt-2 text-xl font-semibold ">
                   {formatDate(connectionMetadata.connectedAt)}
                 </p>
               </div>
@@ -338,19 +346,19 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
 
             {/* {!accessToken && linkedHandle && (
 
-              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                <p className="text-xs uppercase tracking-[0.24em] text-slate-400">
+              <div className="rounded-2xl border border-border/40 bg-slate-50 p-4">
+                <p className="text-xs uppercase tracking-[0.24em] ">
                   <LabelTooltip
                     label="Linked handle"
                     description="This handle is loaded from your stored X connection or onboarding answers."
                   />
                 </p>
-                <p className="mt-2 text-xl font-semibold text-slate-900">@{linkedHandle}</p>
+                <p className="mt-2 text-xl font-semibold ">@{linkedHandle}</p>
               </div>
             )} */}
 
             {user ? (
-              <div className="rounded-3xl border border-slate-200 bg-[linear-gradient(180deg,rgba(248,250,252,1),rgba(241,245,249,0.7))] p-5">
+              <div className="rounded-3xl border border-border/40  p-5">
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex items-center gap-4">
                     {user.profile_image_url ? (
@@ -358,7 +366,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                       <img
                         src={user.profile_image_url}
                         alt={user.name}
-                        className="size-16 rounded-2xl border border-slate-200 object-cover"
+                        className="size-16 rounded-2xl border border-border/40 object-cover"
                       />
                     ) : (
                       <div className="flex size-16 items-center justify-center rounded-2xl bg-slate-900 text-white">
@@ -366,8 +374,8 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                       </div>
                     )}
                     <div>
-                      <p className="text-lg font-semibold text-slate-900">{user.name}</p>
-                      <p className="text-sm text-slate-500">@{user.username}</p>
+                      <p className="text-lg font-semibold ">{user.name}</p>
+                      <p className="text-sm text-muted-foreground">@{user.username}</p>
                     </div>
                   </div>
 
@@ -382,20 +390,20 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 </div>
 
                 {user.description && (
-                  <p className="mt-4 max-w-2xl text-sm leading-6 text-slate-600">
+                  <p className="mt-4 max-w-2xl text-sm leading-6 text-muted-foreground">
                     {user.description}
                   </p>
                 )}
               </div>
             ) : (
-              <div className="rounded-3xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
+              <div className="rounded-3xl border border-dashed border-border/50 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
                 {linkedHandle
                   ? 'We found your linked X handle, but could not load the profile right now.'
                   : 'Connect an X account or save your X handle in onboarding to render profile analytics here.'}
               </div>
             )}
             <div className="grid gap-6">
-              <Card className="border-slate-200/80 bg-white/90">
+              <Card className="border-border/80 ">
                 <CardHeader>
                   <CardTitle>
                     <LabelTooltip
@@ -429,9 +437,9 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                   ].map((item) => (
                     <div
                       key={item.label}
-                      className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
+                      className="rounded-2xl border border-border/40 p-4"
                     >
-                      <div className="flex items-center gap-2 text-slate-400">
+                      <div className="flex items-center gap-2 ">
                         <item.icon className="size-4" weight="fill" />
                         <span className="text-xs font-mono">
                           <LabelTooltip
@@ -440,7 +448,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                           />
                         </span>
                       </div>
-                      <p className="mt-3 text-2xl font-semibold text-slate-900">
+                      <p className="mt-3 text-2xl font-semibold ">
                         {user ? item.value : '--'}
                       </p>
                     </div>
@@ -448,7 +456,7 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                 </CardContent>
               </Card>
 
-              <Card className="border-slate-200/80 bg-white/90">
+              <Card className="border-border/80 ">
                 <CardHeader>
                   <CardTitle>
                     <LabelTooltip
@@ -466,15 +474,15 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
                   ].map((item) => (
                     <div
                       key={item.label}
-                      className="rounded-2xl border border-slate-200 bg-[linear-gradient(180deg,rgba(241,245,249,0.75),rgba(255,255,255,1))] p-4"
+                      className="rounded-2xl border border-border/40  p-4"
                     >
-                      <p className="text-xs font-mono text-slate-400">
+                      <p className="text-xs font-mono ">
                         <LabelTooltip
                           label={item.label}
                           description={`The total number of ${item.label.toLowerCase()} across the latest five posts.`}
                         />
                       </p>
-                      <p className="mt-3 text-2xl font-semibold text-slate-900">
+                      <p className="mt-3 text-2xl font-semibold ">
                         {tweets.length > 0 ? formatCompactNumber(item.value) : '--'}
                       </p>
                     </div>
@@ -486,84 +494,100 @@ export default async function XAnalyticsPage({ searchParams }: PageProps) {
         </Card>
 
 
-        <Card className="border-slate-200/80 bg-white/90">
-          <CardHeader>
-            <AnimatedCircularProgressBar value={32}
+        <Frame className="w-full">
+          <FrameHeader>
+            <AnimatedCircularProgressBar
+              value={32}
               gaugePrimaryColor="rgb(79 70 229)"
-              gaugeSecondaryColor="rgba(0, 0, 0, 0.1)" />
-            <CardTitle>
+              gaugeSecondaryColor="rgba(0, 0, 0, 0.1)"
+            />
+            <FrameTitle>
               <LabelTooltip
                 label="Latest posts"
                 description="Lightweight timeline preview using /2/users/:id/tweets with tweet.fields=created_at,public_metrics."
               />
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {tweets.length > 0 ? (
-              tweets.map((tweet) => (
-                <article
-                  key={tweet.id}
-                  className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
-                >
-                  <div className="flex flex-col gap-3  md:items-start md:justify-between">
-                    <div className="space-y-2 ">
-                      <p className="text-sm leading-6 text-slate-700">
-                        {truncateTweet(tweet.text)}
-                      </p>
-                      <p className="text-xs uppercase tracking-[0.22em] text-slate-400">
-                        <LabelTooltip
-                          label={formatDate(tweet.created_at)}
-                          description="The creation date of this post as returned by the X timeline API."
-                        />
-                      </p>
-                    </div>
+            </FrameTitle>
+          </FrameHeader>
 
-                    <div className="flex min-w-55  gap-2 text-sm text-slate-500">
-                      <div>
-                        <LabelTooltip
-                          label={`Likes: ${formatCompactNumber(tweet.public_metrics?.like_count)}`}
-                          description="The number of likes on this post."
-                        />
-                      </div>
-                      <div>
-                        <LabelTooltip
-                          label={`Replies: ${formatCompactNumber(tweet.public_metrics?.reply_count)}`}
-                          description="The number of replies on this post."
-                        />
-                      </div>
-                      <div>
-                        <LabelTooltip
-                          label={`Retweets: ${formatCompactNumber(tweet.public_metrics?.retweet_count)}`}
-                          description="The number of reposts or retweets on this post."
-                        />
-                      </div>
-                      <div>
-                        <LabelTooltip
-                          label={`Quotes: ${formatCompactNumber(tweet.public_metrics?.quote_count)}`}
-                          description="The number of quote posts that reference this post."
-                        />
-                      </div>
+          {tweets.length > 0 ? (
+            tweets.map((tweet) => (
+              <FramePanel key={tweet.id} className="rounded-2xl p-4">
+                <div className="flex flex-col gap-3 md:items-start md:justify-between">
+                  <p className="text-sm leading-6">
+                    {truncateTweet(tweet.text)}
+                  </p>
+                  <div className="flex justify-between w-full  items-center space-y-2">
+
+
+                    <div className="flex min-w-55 flex-wrap items-center gap-2 text-sm text-muted-foreground">
+                      {[
+                        {
+                          key: 'replies',
+                          icon: ChatCircle,
+                          value: tweet.public_metrics?.reply_count,
+                          description: 'Replies on this post.',
+                        },
+                        {
+                          key: 'retweets',
+                          icon: ArrowsClockwise,
+                          value: tweet.public_metrics?.retweet_count,
+                          description: 'Reposts or retweets of this post.',
+                        },
+                        {
+                          key: 'likes',
+                          icon: Heart,
+                          value: tweet.public_metrics?.like_count,
+                          description: 'Likes on this post.',
+                        },
+                        {
+                          key: 'quotes',
+                          icon: Quotes,
+                          value: tweet.public_metrics?.quote_count,
+                          description: 'Quote posts referencing this post.',
+                        },
+                      ].map((metric) => (
+                        <Tooltip key={metric.key}>
+                          <TooltipTrigger asChild>
+                            <span className="inline-flex items-center gap-1.5 rounded-md border border-border/30 px-2 py-1">
+                              <metric.icon className="size-4" />
+                              <span className="text-xs font-medium">
+                                {formatCompactNumber(metric.value)}
+                              </span>
+                            </span>
+                          </TooltipTrigger>
+                          <TooltipContent side="top">{metric.description}</TooltipContent>
+                        </Tooltip>
+                      ))}
                     </div>
+                    <p className="text-xs uppercase font-mono">
+                      <LabelTooltip
+                        label={formatDate(tweet.created_at)}
+                        description="The creation date of this post as returned by the X timeline API."
+                      />
+                    </p>
                   </div>
-                </article>
-              ))
-            ) : (
-              <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm text-slate-500">
-                {isConnected
-                  ? 'No recent posts were returned for this account.'
-                  : canUsePublicFallback
-                    ? 'We know your X handle, but could not load recent posts right now.'
-                    : 'Connect an X account or save your X handle to show recent posts and engagement totals here.'}
-              </div>
-            )}
-          </CardContent>
-          <CardFooter className="border-t border-slate-100 text-xs text-slate-400">
+
+                </div>
+              </FramePanel>
+            ))
+          ) : (
+            <FramePanel className="rounded-2xl border-dashed bg-slate-50 p-6 text-sm text-slate-500">
+              {isConnected
+                ? 'No recent posts were returned for this account.'
+                : canUsePublicFallback
+                  ? 'We know your X handle, but could not load recent posts right now.'
+                  : 'Connect an X account or save your X handle to show recent posts and engagement totals here.'}
+            </FramePanel>
+          )}
+
+          <FramePanel className="text-xs">
             Scopes requested: {X_OAUTH_SCOPE_STRING}
-          </CardFooter>
-        </Card>
+          </FramePanel>
+        </Frame>
       </div>
 
 
     </div>
   );
 }
+

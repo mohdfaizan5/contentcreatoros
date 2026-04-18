@@ -65,15 +65,18 @@ const LandingHeader = () => {
                 className={cn(
                     'mx-auto flex max-w-7xl items-center justify-between rounded-2xl border px-3 py-2 backdrop-blur-xl transition-all duration-300',
                     isLight
-                        ? 'border-slate-200/80 bg-white/88 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.55)]'
-                        : 'border-white/20 bg-slate-950/55 shadow-[0_10px_35px_-20px_rgba(2,6,23,0.85)]',
+                        ? 'border-border/5 bg-white/88 shadow-[0_10px_30px_-20px_rgba(15,23,42,0.55)]'
+                        : 'border-white/5 bg-slate-950/55 shadow-[0_10px_35px_-20px_rgba(2,6,23,0.85)]',
                     isScrolled ? 'md:py-2' : 'md:py-3',
                 )}
             >
                 <Logo
                     full
+                    height={28}
+                    width={28}
+                    className='flex  items-center'
                     textClassName={cn(
-                        'font-bold transition-colors',
+                        'font-medium transition-colors',
                         isLight ? 'text-slate-950' : 'text-white',
                     )}
                 />
@@ -81,7 +84,7 @@ const LandingHeader = () => {
                 <div
                     className={cn(
                         'hidden items-center gap-1 rounded-full border p-1 md:flex',
-                        isLight ? 'border-slate-200 bg-slate-100/80' : 'border-white/20 bg-white/10',
+                        isLight ? 'border-border/40 bg-slate-100/80' : 'border-white/20 bg-white/10',
                     )}
                 >
                     {navItems.map((item, index) => (
@@ -166,7 +169,7 @@ const LandingHeader = () => {
                     className={cn(
                         'absolute left-4 right-4 top-full rounded-2xl border p-4 shadow-xl backdrop-blur-xl md:hidden',
                         isLight
-                            ? 'border-slate-200 bg-white/95 text-slate-900'
+                            ? 'border-border/40 bg-white/95 text-slate-900'
                             : 'border-white/20 bg-slate-950/90 text-white',
                     )}
                 >
@@ -184,7 +187,7 @@ const LandingHeader = () => {
                                 {item.label}
                             </Link>
                         ))}
-                        <hr className={cn('my-2', isLight ? 'border-slate-200' : 'border-white/20')} />
+                        <hr className={cn('my-2', isLight ? 'border-border/40' : 'border-white/20')} />
                         <Link
                             href="/auth/login"
                             onClick={() => setIsMenuOpen(false)}
@@ -215,3 +218,4 @@ const LandingHeader = () => {
 };
 
 export default LandingHeader;
+

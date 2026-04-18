@@ -201,7 +201,7 @@ export function BrandVisualRegenerateMenu({
             ) : null}
 
             {!hasSuccess && !isPending && detectedColors.length > 0 ? (
-              <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <div className="space-y-2 rounded-xl border border-border/40 bg-slate-50 p-3">
                 <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
                   Current detected colors
                 </p>

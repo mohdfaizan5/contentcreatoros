@@ -19,7 +19,7 @@ const platformConfig: Record<PlatformType, { icon: PhosphorIcon; color: string; 
     x: { icon: TwitterLogo, color: 'bg-sky-500/10 text-sky-600 border-sky-500/20', label: 'X (Twitter)' },
     youtube: { icon: YoutubeLogo, color: 'bg-red-500/10 text-red-600 border-red-500/20', label: 'YouTube' },
     linkedin: { icon: LinkedinLogo, color: 'bg-blue-600/10 text-blue-600 border-blue-600/20', label: 'LinkedIn' },
-    generic: { icon: Article, color: 'bg-gray-500/10 text-gray-600 border-gray-500/20', label: 'Generic' },
+    generic: { icon: Article, color: 'bg-gray-500/10 text-gray-600 border-border/20', label: 'Generic' },
 };
 
 interface TemplateDetailProps {
@@ -425,7 +425,7 @@ export function TemplateDetail({
             {/* Notes */}
             <div className="space-y-2">
                 <p className="text-sm font-medium text-muted-foreground ml-1">Notes</p>
-                <div className="p-4 rounded-xl bg-muted/30 border border-muted min-h-[100px]">
+                <div className="min-h-[100px] rounded-lg border border-border/40 bg-muted/30 p-4">
                     <textarea
                         ref={notesRef}
                         value={editedNotes}
@@ -556,7 +556,7 @@ function LinkedInInlineEditor({ content, onChange, readOnly = false }: InlineEdi
 
 function YouTubeInlineEditor({ content, onChange, readOnly = false }: InlineEditorProps) {
     return (
-        <div className="rounded-xl border bg-card p-4 flex items-start gap-3">
+        <div className="flex items-start gap-3 rounded-lg border border-border/40 bg-card p-4">
             <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
                 <YoutubeLogo className="h-5 w-5 text-red-500" weight="fill" />
             </div>
@@ -577,7 +577,7 @@ function YouTubeInlineEditor({ content, onChange, readOnly = false }: InlineEdit
 
 function GenericInlineEditor({ content, onChange, readOnly = false }: InlineEditorProps) {
     return (
-        <div className="rounded-xl border bg-card p-4">
+        <div className="rounded-lg border border-border/40 bg-card p-4">
             <HighlightedTextarea
                 value={content}
                 onChange={onChange}
@@ -589,3 +589,4 @@ function GenericInlineEditor({ content, onChange, readOnly = false }: InlineEdit
         </div>
     );
 }
+

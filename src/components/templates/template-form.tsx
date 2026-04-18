@@ -174,7 +174,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                             placeholder="e.g., Viral Tweet Thread"
                             value={name}
                             onChange={(e) => setName(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
+                            className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary transition-all"
                         />
                     </div>
 
@@ -217,7 +217,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                             placeholder="Comma-separated tags (optional)"
                             value={tagsInput}
                             onChange={(e) => setTagsInput(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                         />
                     </div>
                 </div>
@@ -238,7 +238,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                                 placeholder="e.g., Bold statement"
                                 value={hookStyle}
                                 onChange={(e) => setHookStyle(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                             />
                         </div>
 
@@ -249,7 +249,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                                 placeholder="e.g., Short (280 chars)"
                                 value={length}
                                 onChange={(e) => setLength(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                             />
                         </div>
 
@@ -260,7 +260,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                                 placeholder="e.g., Professional"
                                 value={tone}
                                 onChange={(e) => setTone(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                             />
                         </div>
 
@@ -271,7 +271,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                                 placeholder="e.g., Follow for more"
                                 value={ctaStyle}
                                 onChange={(e) => setCtaStyle(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                                className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                             />
                         </div>
                     </div>
@@ -283,7 +283,7 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                             value={instructions}
                             onChange={(e) => setInstructions(e.target.value)}
                             rows={2}
-                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                            className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
                         />
                     </div>
                 </div>
@@ -383,20 +383,20 @@ export function TemplateForm({ onClose }: TemplateFormProps) {
                     )}
 
                     {/* Add new reference form */}
-                    <div className="space-y-3 p-4 rounded-xl border border-dashed">
+                    <div className="space-y-3 rounded-lg border border-dashed p-4">
                         <input
                             type="url"
                             placeholder="Paste a link (X, LinkedIn, Instagram, etc.)"
                             value={newReferenceUrl}
                             onChange={(e) => setNewReferenceUrl(e.target.value)}
-                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                            className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                         />
                         <input
                             type="text"
                             placeholder="Title (optional)"
                             value={newReferenceTitle}
                             onChange={(e) => setNewReferenceTitle(e.target.value)}
-                            className="w-full px-4 py-2.5 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                            className="w-full px-4 py-2.5 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
                         />
                         <Button
                             variant="outline"
@@ -517,7 +517,7 @@ function LinkedInFormEditor({ value, onChange }: FormEditorProps) {
 
 function YouTubeFormEditor({ value, onChange }: FormEditorProps) {
     return (
-        <div className="rounded-xl border bg-card p-4 flex items-start gap-3">
+        <div className="flex items-start gap-3 rounded-lg border border-border/40 bg-card p-4">
             <div className="h-10 w-10 rounded-lg bg-red-500/10 flex items-center justify-center shrink-0">
                 <YoutubeLogo className="h-5 w-5 text-red-500" weight="fill" />
             </div>
@@ -537,7 +537,7 @@ function YouTubeFormEditor({ value, onChange }: FormEditorProps) {
 
 function GenericFormEditor({ value, onChange }: FormEditorProps) {
     return (
-        <div className="rounded-xl border bg-card p-4">
+        <div className="rounded-lg border border-border/40 bg-card p-4">
             <textarea
                 value={value}
                 onChange={(e) => onChange(e.target.value)}
@@ -588,14 +588,14 @@ function SmartExampleInput({ onAdd }: SmartExampleInputProps) {
     };
 
     return (
-        <div className="space-y-3 p-4 rounded-xl border border-dashed">
+        <div className="space-y-3 rounded-lg border border-dashed p-4">
             {isUrl ? (
                 <input
                     type="url"
                     value={input}
                     onChange={(e) => setInput(e.target.value)}
                     placeholder="Paste a URL to embed (X, LinkedIn, etc.)"
-                    className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                    className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                 />
             ) : (
                 <>
@@ -604,7 +604,7 @@ function SmartExampleInput({ onAdd }: SmartExampleInputProps) {
                         onChange={(e) => setInput(e.target.value)}
                         placeholder="Paste content or a URL..."
                         rows={3}
-                        className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                        className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
                     />
                     {input.trim() && (
                         <input
@@ -612,7 +612,7 @@ function SmartExampleInput({ onAdd }: SmartExampleInputProps) {
                             value={author}
                             onChange={(e) => setAuthor(e.target.value)}
                             placeholder="Author name (optional)"
-                            className="w-full px-4 py-2.5 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
+                            className="w-full px-4 py-2.5 rounded-lg border border-border/40 bg-background focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all text-sm"
                         />
                     )}
                 </>

@@ -4,6 +4,7 @@ import { parseISO, startOfDay } from 'date-fns';
 
 import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import { createClient } from '@/lib/server';
+import { buildTweetContentForScheduling } from '@/lib/x/tweet-text';
 import {
   buildDateRange,
   getBrandContextForUser,
@@ -574,10 +575,11 @@ export async function scheduleWorkflowPlannerRun(params: {
   });
 
   const rows = approvedItemsWithSchedule.map(({ item, scheduledDate }) => {
-    const content = (item.suggested_post || `${item.pillar}: ${item.angle}`)
-      .replace(/\s+/g, ' ')
-      .trim()
-      .slice(0, 280);
+    const content = buildTweetContentForScheduling(
+      item.suggested_post,
+      item.pillar,
+      item.angle,
+    );
 
     return {
       character_count: content.length,

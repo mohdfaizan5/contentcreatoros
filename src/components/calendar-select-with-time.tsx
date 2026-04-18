@@ -103,7 +103,7 @@ export default function CalendarSelectWithTime({
 
   return (
     <div className="space-y-4">
-      <div className="rounded-2xl border border-slate-200 bg-white">
+      <div className="rounded-lg border border-border/40 bg-card">
         <div className="flex max-sm:flex-col">
           <Calendar
             className="p-3 sm:pe-5"
@@ -122,7 +122,7 @@ export default function CalendarSelectWithTime({
               <ScrollArea className="h-full">
                 <div className="space-y-3">
                   <div className="flex h-5 shrink-0 items-center px-5">
-                    <p className="font-medium text-sm text-slate-700">
+                    <p className="font-medium text-sm text-foreground">
                       {format(date, "EEEE, MMM d")}
                     </p>
                   </div>
@@ -148,14 +148,14 @@ export default function CalendarSelectWithTime({
         </div>
       </div>
 
-      <div className="flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-border/40 bg-muted/40 px-4 py-3">
         <div>
-          <p className="text-sm font-medium text-slate-900">
+          <p className="text-sm font-medium text-foreground">
             {selectedDateTime
               ? `Selected: ${format(selectedDateTime, "PPP p")}`
               : "Choose a date and time"}
           </p>
-          <p className="text-xs text-slate-500">
+          <p className="text-xs text-muted-foreground">
             Past time slots for today are automatically disabled.
           </p>
         </div>

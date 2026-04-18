@@ -55,7 +55,7 @@ export function LeadMagnetForm({ magnet }: LeadMagnetFormProps) {
                                 placeholder="Your name"
                                 value={name}
                                 onChange={(e) => setName(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                                className="w-full rounded-lg border border-border/40 bg-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
                             />
                         )}
 
@@ -65,7 +65,7 @@ export function LeadMagnetForm({ magnet }: LeadMagnetFormProps) {
                             value={email}
                             onChange={(e) => setEmail(e.target.value)}
                             required
-                            className="w-full px-4 py-3 rounded-xl border bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                            className="w-full rounded-lg border border-border/40 bg-background px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary"
                         />
 
                         <Button

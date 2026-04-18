@@ -29,7 +29,7 @@ const platforms: { value: PlatformType; icon: PhosphorIcon; label: string; color
     { value: 'x', icon: TwitterLogo, label: 'X', color: 'hover:bg-sky-500/10 hover:text-sky-500 data-[active=true]:bg-sky-500/10 data-[active=true]:text-sky-500 data-[active=true]:border-sky-500/30' },
     // { value: 'linkedin', icon: LinkedinLogo, label: 'LinkedIn', color: 'hover:bg-blue-600/10 hover:text-blue-600 data-[active=true]:bg-blue-600/10 data-[active=true]:text-blue-600 data-[active=true]:border-blue-600/30' },
     // { value: 'youtube', icon: YoutubeLogo, label: 'YouTube Title', color: 'hover:bg-red-500/10 hover:text-red-500 data-[active=true]:bg-red-500/10 data-[active=true]:text-red-500 data-[active=true]:border-red-500/30' },
-    // { value: 'generic', icon: Article, label: 'Other', color: 'hover:bg-gray-500/10 hover:text-gray-500 data-[active=true]:bg-gray-500/10 data-[active=true]:text-gray-500 data-[active=true]:border-gray-500/30' },
+    // { value: 'generic', icon: Article, label: 'Other', color: 'hover:bg-gray-500/10 hover:text-gray-500 data-[active=true]:bg-gray-500/10 data-[active=true]:text-gray-500 data-[active=true]:border-border/30' },
 ];
 
 export default function CreateTemplatePage() {
@@ -165,7 +165,7 @@ export default function CreateTemplatePage() {
                         placeholder="Template name (optional) — auto-generated if empty"
                         value={name}
                         onChange={(e) => setName(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                     />
                 </div>
 
@@ -190,7 +190,7 @@ export default function CreateTemplatePage() {
                         placeholder="Tags (comma-separated), e.g. hooks, x-growth, storytelling"
                         value={tagsInput}
                         onChange={(e) => setTagsInput(e.target.value)}
-                        className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                     />
                 </div>
 
@@ -201,7 +201,7 @@ export default function CreateTemplatePage() {
                         value={notes}
                         onChange={(e) => setNotes(e.target.value)}
                         rows={2}
-                        className="w-full px-4 py-3 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
+                        className="w-full px-4 py-3 rounded-lg border border-border/40 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 resize-none transition-all"
                     />
                 </div>
             </div>
@@ -261,7 +261,7 @@ export default function CreateTemplatePage() {
                                 setNewExampleUrl('');
                             }
                         }}
-                        className="flex-1 px-4 py-2.5 rounded-xl border bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                        className="flex-1 px-4 py-2.5 rounded-lg border border-border/40 bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
                     />
                     <Button
                         variant="outline"
@@ -296,3 +296,4 @@ export default function CreateTemplatePage() {
         </div>
     );
 }
+

@@ -12,7 +12,7 @@ export default function Page() {
       {/* Decorative floating elements - matching landing page style */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Top left decoratives */}
-        <div className="absolute top-20 left-8 w-8 h-8 border-2 border-gray-200 rounded-lg rotate-12 animate-float-slow" />
+        <div className="absolute top-20 left-8 w-8 h-8 border-2 border-border/40 rounded-lg rotate-12 animate-float-slow" />
         <div className="absolute top-32 left-24 w-6 h-6 bg-gray-100 rounded-full animate-float animation-delay-200" />
         <div className="absolute top-48 left-12">
           <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#ddd" strokeWidth="1.5" className="animate-pulse-glow">
@@ -34,7 +34,7 @@ export default function Page() {
             <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
           </svg>
         </div>
-        <div className="absolute bottom-24 right-32 w-8 h-8 border-2 border-gray-200 rounded-full animate-float animation-delay-800" />
+        <div className="absolute bottom-24 right-32 w-8 h-8 border-2 border-border/40 rounded-full animate-float animation-delay-800" />
 
         {/* Gradient sphere effects */}
         <div className="absolute top-1/4 right-1/4 w-24 h-24 rounded-full bg-linear-to-br from-[#2F92C7]/10 to-transparent blur-2xl animate-float-slow" />

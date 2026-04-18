@@ -13,7 +13,7 @@ import { InfoIcon } from "@phosphor-icons/react/dist/ssr";
 export function LabelTooltip({ label, description }: { label: string; description: string }) {
   return (
     <span className="inline-flex items-center gap-1.5 align-middle">
-      <span>{label}</span>
+      <span className="">{label}</span>
       <Tooltip>
         <TooltipTrigger asChild>
           <button

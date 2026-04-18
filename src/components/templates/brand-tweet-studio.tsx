@@ -151,10 +151,10 @@ export function BrandTweetStudio({
   };
 
   return (
-    <section className="rounded-[28px] border border-slate-200 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(241,245,249,0.94))] p-6 shadow-[0_32px_80px_-50px_rgba(15,23,42,0.5)]">
-      <div className="flex flex-col gap-4 border-b border-slate-200 pb-5 lg:flex-row lg:items-center lg:justify-between">
+    <section className="rounded-[28px] border border-border/40 bg-[linear-gradient(145deg,rgba(255,255,255,0.96),rgba(241,245,249,0.94))] p-6 shadow-[0_32px_80px_-50px_rgba(15,23,42,0.5)]">
+      <div className="flex flex-col gap-4 border-b border-border/40 pb-5 lg:flex-row lg:items-center lg:justify-between">
         <div className="space-y-2">
-          {/* <div className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
+          {/* <div className="inline-flex items-center gap-2 rounded-full border border-border/40 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-500">
             Brand Engine
           </div> */}
           <div>
@@ -391,7 +391,7 @@ export function BrandTweetStudio({
             );
           })
         ) : (
-          <div className="rounded-[26px] border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
+          <div className="rounded-[26px] border border-dashed border-border/50 bg-slate-50 px-5 py-8 text-center">
             <p className="text-base font-medium text-slate-900">
               No brand-generated tweets yet
             </p>

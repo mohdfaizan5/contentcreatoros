@@ -165,7 +165,7 @@ const FaviconSearch = React.forwardRef<HTMLInputElement, FaviconSearchProps>(
           onKeyDown={handleKeyDown}
           placeholder={placeholder}
           className={cn(
-            "flex w-full rounded-xl border border-border bg-background",
+            "flex w-full rounded-lg border border-border bg-background",
             "pl-10 pr-10 py-2.5 text-sm text-foreground",
             "placeholder:text-muted-foreground",
             "outline-none ring-offset-background",

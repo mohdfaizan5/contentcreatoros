@@ -7,6 +7,31 @@ import { WorkflowRunStatusBadge } from '@/components/workflow/workflow-run-statu
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
+import {
+    BoltIcon,
+    BookOpenIcon,
+    ChevronDownIcon,
+    Layers2Icon,
+    LogOutIcon,
+    PinIcon,
+    UserPenIcon,
+} from "lucide-react";
+
+import {
+    Avatar,
+    AvatarFallback,
+    AvatarImage,
+} from "@/components/ui/avatar";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { PlusIcon } from '@phosphor-icons/react/dist/ssr';
 function formatDateRange(startDate: string, endDate: string) {
     return `${format(parseISO(startDate), 'MMM d')} — ${format(parseISO(endDate), 'MMM d, yyyy')}`;
 }
@@ -15,8 +40,8 @@ export default async function WorkflowPage() {
     const runs = await listWorkflowPlannerRuns({ limit: 24 });
 
     return (
-        <div className="space-y-4 max-w-3xl">
-            <section className="flex flex-wrap items-center justify-between gap-3 mb-8">
+        <div className="space-y-4 max-w-3xl mx-auto">
+            <section className="flex flex-wrap items-center justify-between gap-3 mt-4 mb-8">
                 <div className="space-y-1">
                     <h1 className="text-3xl font-semibold tracking-tight">Workflow</h1>
                     <p className="max-w-2xl text-sm text-muted-foreground">
@@ -24,12 +49,73 @@ export default async function WorkflowPage() {
                     </p>
                 </div>
 
-                <Button asChild className="gap-2">
-                    <Link href="/app/workflow/new">
-                        <Sparkles className="h-4 w-4" />
-                        New 7-Day Run
-                    </Link>
-                </Button>
+                <div className='flex gap-0'>
+                    <Button asChild className="flex gap-2">
+                        <Link href="/app/workflow/new">
+                            {/* <Sparkles className="h-4 w-4" />
+                            New 7-Day Run */}
+                            New Campain 
+                            <PlusIcon size={28}/>
+                        </Link>
+                    </Button>
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button className="h-auto px-2 hover:bg-primary/85" variant="default">
+                                {/* <Avatar>
+                                    <AvatarImage alt="Profile image" src="/origin/avatar.jpg" />
+                                    <AvatarFallback>KK</AvatarFallback>
+                                </Avatar> */}
+                                <ChevronDownIcon
+                                    aria-hidden="true"
+                                    className="opacity-60"
+                                    size={16}
+                                />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent className="max-w-64">
+                            <DropdownMenuLabel className="flex min-w-0 flex-col">
+                                <span className="truncate font-medium text-foreground text-sm">
+                                    Keith Kennedy
+                                </span>
+                                <span className="truncate font-normal text-muted-foreground text-xs">
+                                    k.kennedy@coss.com
+                                </span>
+                            </DropdownMenuLabel>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                    <BoltIcon aria-hidden="true" className="opacity-60" size={16} />
+                                    <span>Option 1</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <Layers2Icon aria-hidden="true" className="opacity-60" size={16} />
+                                    <span>Option 2</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <BookOpenIcon aria-hidden="true" className="opacity-60" size={16} />
+                                    <span>Option 3</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuGroup>
+                                <DropdownMenuItem>
+                                    <PinIcon aria-hidden="true" className="opacity-60" size={16} />
+                                    <span>Option 4</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem>
+                                    <UserPenIcon aria-hidden="true" className="opacity-60" size={16} />
+                                    <span>Option 5</span>
+                                </DropdownMenuItem>
+                            </DropdownMenuGroup>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem>
+                                <LogOutIcon aria-hidden="true" className="opacity-60" size={16} />
+                                <span>Logout</span>
+                            </DropdownMenuItem>
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+
             </section>
 
             {runs.length === 0 ? (
@@ -46,46 +132,48 @@ export default async function WorkflowPage() {
             ) : (
                 <div className="grid gap-4">
                     {runs.map((run) => (
-                        <Card key={run.id}>
-                            <CardHeader className="space-y-3">
+                        <Card key={run.id} >
+                            <CardHeader className=" space-y-3">
                                 <div className="flex flex-wrap items-center justify-between gap-3">
                                     <div>
                                         <CardTitle className="text-lg">{formatDateRange(run.start_date, run.end_date)}</CardTitle>
                                         <CardDescription>
-                                            Created {format(parseISO(run.created_at), 'MMM d, yyyy h:mm a')}
+                                            <span className='font-medium mr-1'>
+                                                Created
+                                            </span>
+                                            {format(parseISO(run.created_at), 'MMM d, yyyy h:mm a')}
+                                            <span className='mx-1'>·</span>
+                                            <WorkflowRunStatusBadge status={run.status} />
                                         </CardDescription>
                                     </div>
-
-                                    <WorkflowRunStatusBadge status={run.status} />
+                                    <Button asChild variant="outline" className="gap-2">
+                                        <Link href={`/app/workflow/${run.id}`}>
+                                            Open Campain
+                                            <ArrowRight className="h-4 w-4" />
+                                        </Link>
+                                    </Button>
                                 </div>
 
                                 <div className="grid gap-2 sm:grid-cols-4">
-                                    <div className="rounded-md border bg-muted/20 p-2">
+                                    <div className="rounded-md flex items-center justify-between border bg-muted/20 px-2 py-1">
                                         <p className="text-xs text-muted-foreground">Pending</p>
                                         <p className="text-lg font-semibold">{run.pending_count}</p>
                                     </div>
-                                    <div className="rounded-md border bg-muted/20 p-2">
+                                    <div className="rounded-md flex items-center justify-between border bg-muted/20 px-2 py-1">
                                         <p className="text-xs text-muted-foreground">Approved</p>
                                         <p className="text-lg font-semibold">{run.approved_count}</p>
                                     </div>
-                                    <div className="rounded-md border bg-muted/20 p-2">
+                                    <div className="rounded-md flex items-center justify-between border bg-muted/20 px-2 py-1">
                                         <p className="text-xs text-muted-foreground">Rejected</p>
                                         <p className="text-lg font-semibold">{run.rejected_count}</p>
                                     </div>
-                                    <div className="rounded-md border bg-muted/20 p-2">
+                                    <div className="rounded-md flex items-center justify-between border bg-muted/20 px-2 py-1  ">
                                         <p className="text-xs text-muted-foreground">Scheduled</p>
                                         <p className="text-lg font-semibold">{run.scheduled_count}</p>
                                     </div>
                                 </div>
 
-                                <div>
-                                    <Button asChild variant="outline" className="gap-2">
-                                        <Link href={`/app/workflow/${run.id}`}>
-                                            Open run
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
-                                </div>
+                               
                             </CardHeader>
                         </Card>
                     ))}

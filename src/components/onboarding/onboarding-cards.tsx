@@ -66,8 +66,8 @@ function ChoiceCard({
         className={cn(
           'inline-flex min-h-8 items-center rounded-md border px-4 text-sm font-medium transition-all duration-200',
           active
-            ? 'border-slate-900 bg-slate-900 text-white shadow-[0_10px_24px_-14px_rgba(15,23,42,0.85)]'
-            : 'border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50',
+            ? 'border-border/90 bg-slate-900 text-white shadow-[0_10px_24px_-14px_rgba(15,23,42,0.85)]'
+            : 'border-border/40 bg-white text-slate-700 hover:border-border/50 hover:bg-slate-50',
         )}
       >
         {renderedIcon ? <span className="mr-2 inline-flex shrink-0">{renderedIcon}</span> : null}
@@ -81,15 +81,15 @@ function ChoiceCard({
       className={cn(
         'rounded-lg border p-3.5 transition-all duration-200',
         active
-          ? 'border-slate-900 bg-slate-900 text-white shadow-[0_14px_32px_-24px_rgba(15,23,42,0.8)]'
-          : 'border-slate-200 bg-white text-slate-900 hover:border-slate-300 hover:bg-slate-50',
+          ? 'border-border/90 bg-slate-900 text-white shadow-[0_14px_32px_-24px_rgba(15,23,42,0.8)]'
+          : 'border-border/40 bg-white  hover:border-border/50 hover:bg-slate-50',
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
             {renderedIcon ? <span className="inline-flex shrink-0">{renderedIcon}</span> : null}
-            <p className="text-sm font-semibold">{label}</p>
+            <p className={cn("text-sm font-semibold ", active ? "text-white" : "text-slate-900")}>{label}</p>
           </div>
           {description && (
             <p
@@ -107,7 +107,7 @@ function ChoiceCard({
             'mt-0.5 flex size-5 items-center justify-center rounded-full border',
             active
               ? 'border-white/30 bg-white/10 text-white'
-              : 'border-slate-200 bg-slate-50 text-transparent',
+              : 'border-border/40 bg-slate-50 text-transparent',
           )}
         >
           <Check className="size-3" weight="bold" />
@@ -224,7 +224,7 @@ export function OnboardingTagInput({
   };
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-2.5 shadow-sm shadow-slate-950/5">
+    <div className="rounded-lg border border-border/40 bg-card p-2.5 shadow-sm shadow-slate-950/5">
       <div className="flex flex-wrap gap-2">
         {values.map((value) => (
           <span
@@ -260,7 +260,7 @@ export function OnboardingTagInput({
           }}
           onBlur={commitDraft}
           placeholder={placeholder}
-          className="h-10 rounded-md border-slate-200 bg-slate-50"
+          className="h-10 border-border/40 bg-background"
         />
       </div>
     </div>
@@ -336,7 +336,7 @@ export function OnboardingField({
   return (
     <div className="space-y-2">
       <div className="flex items-center gap-1.5">
-        <Label className="text-lg font-semibold text-slate-900">
+        <Label className="text-lg font-semibold ">
           {label}
           {required && <span className="ml-1 text-slate-400">*</span>}
         </Label>
@@ -360,3 +360,4 @@ export function OnboardingField({
     </div>
   );
 }
+

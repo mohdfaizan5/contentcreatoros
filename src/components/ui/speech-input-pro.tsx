@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
+import { Textarea } from '@/components/ui/textarea-speech-input';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_MODEL_ID = 'whisper-1';
@@ -82,7 +82,7 @@ function RecorderControls({
 }) {
   if (isRecording) {
     return (
-      <div className="inline-flex items-center gap-0 rounded-xl border border-zinc-700/80 bg-zinc-900 shadow-sm">
+      <div className="inline-flex items-center gap-0 rounded-xl border border-border/80 bg-zinc-900 shadow-sm">
         <Button
           type="button"
           variant="ghost"
@@ -353,7 +353,7 @@ export function SpeechInputPro(props: SpeechInputProProps) {
             placeholder={placeholder}
             rows={props.rows ?? 4}
             disabled={disabled}
-            className={cn('resize-none pb-14', className)}
+            className={cn('resize-none pb-0 ', className)}
           />
 
           <div className="absolute right-3 bottom-3 flex items-center gap-2">
@@ -404,3 +404,4 @@ export function SpeechInputPro(props: SpeechInputProProps) {
     </div>
   );
 }
+

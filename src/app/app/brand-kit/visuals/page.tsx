@@ -344,7 +344,7 @@ export default async function BrandVisualsPage() {
                     className="relative flex h-34.5 items-center justify-center rounded-2xl"
                     style={{ backgroundColor: blendHex(theme.background, '#0B131F', 0.75) }}
                   >
-                    <div className="h-30.5 w-17.5 rounded-[20px] border border-slate-500/60 bg-slate-900 shadow-inner" />
+                    <div className="h-30.5 w-17.5 rounded-[20px] border border-border/60 bg-slate-900 shadow-inner" />
                     <div className="absolute top-8 grid grid-cols-3 gap-1.5">
                       {Array.from({ length: 9 }).map((_, index) => (
                         <span
@@ -1039,3 +1039,4 @@ function Panel({
     </section>
   );
 }
+

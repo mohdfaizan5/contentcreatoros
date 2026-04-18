@@ -103,7 +103,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
+                className="h-12 border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
               />
             </div>
 
@@ -127,7 +127,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
+                className="h-12 border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
               />
             </div>
 
@@ -172,7 +172,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
               variant="outline"
               onClick={handleXSignIn}
               disabled={isLoading || isXAuthLoading}
-              className="w-full h-12 rounded-xl border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+              className="w-full h-12 rounded-xl border-border/40 bg-white text-gray-900 hover:bg-gray-50"
             >
               {isXAuthLoading ? (
                 <span className="flex items-center gap-2">
@@ -200,7 +200,7 @@ export function LoginForm({ className, ...props }: React.ComponentPropsWithoutRe
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-border/40" />
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white text-gray-400">or</span>

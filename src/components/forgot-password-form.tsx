@@ -63,7 +63,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
         {/* Subtle gradient glow behind card */}
         <div className="absolute -inset-1 bg-linear-to-r from-[#2F92C7]/20 via-transparent to-[#1F92F9]/20 rounded-3xl blur-xl opacity-60" />
 
-        <div className="relative bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 p-8">
+        <div className="relative bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-border/30 p-8">
           {success ? (
             <div className="flex flex-col items-center gap-6 py-4">
               <div className="w-16 h-16 bg-green-50 rounded-full flex items-center justify-center">
@@ -76,7 +76,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
               <Button
                 onClick={() => setSuccess(false)}
                 variant="outline"
-                className="w-full h-12 rounded-xl border-gray-200"
+                className="w-full h-12 rounded-xl border-border/40"
               >
                 Use a different email
               </Button>
@@ -95,7 +95,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="h-12 rounded-xl border-gray-200 bg-gray-50/50 focus:bg-white focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
+                  className="h-12 border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
                 />
               </div>
 
@@ -140,7 +140,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
           {/* Divider */}
           <div className="relative my-6">
             <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200" />
+              <div className="w-full border-t border-border/40" />
             </div>
             <div className="relative flex justify-center text-sm">
               <span className="px-4 bg-white text-gray-400">or</span>

@@ -12,12 +12,12 @@ const STATUS_LABELS: Record<SevenDayPlanningRunStatus, string> = {
 };
 
 const STATUS_CLASSNAMES: Record<SevenDayPlanningRunStatus, string> = {
-  cancelled: 'border-slate-300 text-slate-600',
-  failed: 'border-rose-300 bg-rose-50 text-rose-700',
-  generating: 'border-sky-300 bg-sky-50 text-sky-700',
-  pending_approval: 'border-amber-300 bg-amber-50 text-amber-700',
-  queued: 'border-violet-300 bg-violet-50 text-violet-700',
-  scheduled: 'border-emerald-300 bg-emerald-50 text-emerald-700',
+  cancelled: 'border-border/50 text-slate-600',
+  failed: 'bg-rose-50 text-rose-700',
+  generating: 'bg-sky-50 text-sky-700',
+  pending_approval: 'bg-amber-50 text-amber-700',
+  queued: 'bg-violet-50 text-violet-700',
+  scheduled: 'bg-emerald-50 text-emerald-700',
 };
 
 export function WorkflowRunStatusBadge({

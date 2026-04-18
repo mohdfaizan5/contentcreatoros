@@ -391,7 +391,7 @@ export function AICofounderInput({
             layoutId="ai-input-container"
             layout
             transition={{ duration: 0.3, ease: 'easeInOut' }}
-            className="relative bg-white dark:bg-[#09090b] rounded-[32px] border border-black/5 dark:border-white/5"
+            className="relative rounded-3xl border border-border/40 bg-card"
           >
             <input
               ref={fileInputRef}
@@ -421,7 +421,7 @@ export function AICofounderInput({
                 onKeyDown={handleKeyDown}
                 disabled={isLoading}
                 placeholder={isLoading ? 'Thinking...' : placeholder}
-                className="w-full bg-transparent text-lg text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500 resize-none outline-none min-h-10 max-h-50"
+                className="w-full min-h-10 max-h-50 resize-none bg-transparent text-lg text-foreground placeholder:text-muted-foreground outline-none"
                 rows={1}
                 style={{ minHeight: '44px', height: 'auto' }}
                 onInput={(e) => {

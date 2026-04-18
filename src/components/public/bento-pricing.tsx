@@ -60,7 +60,7 @@ export const PricingBento: React.FC<PricingBentoProps> = ({ plans, className }) 
         <section className={cn("w-full py-14 sm:py-20", className)}>
             <div className="mx-auto max-w-7xl px-4 sm:px-6">
                 <div className="mx-auto max-w-3xl text-center">
-                    {/* <Badge className="border border-slate-200 bg-white px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-700 hover:bg-white">
+                    {/* <Badge className="border border-border/40 bg-white px-4 py-1.5 text-[11px] font-semibold uppercase tracking-[0.24em] text-slate-700 hover:bg-white">
                         Done-for-you X content
                     </Badge> */}
                     <h1 className="mt-6 font-serif text-4xl  text-slate-950 sm:text-5xl lg:text-5xl">
@@ -311,7 +311,7 @@ const GrowthPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boole
                                 text={plan.secondaryCtaText}
                                 href={plan.secondaryCtaHref}
                                 variant="outline"
-                                className="h-12 flex-1 justify-between border-slate-300 bg-white/70 px-5 text-slate-900 hover:bg-white"
+                                className="h-12 flex-1 justify-between border-border/50 bg-white/70 px-5 text-slate-900 hover:bg-white"
                             />
                         ) : null}
                     </div>
@@ -408,12 +408,12 @@ const BasicPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boolea
     const displayedPrice = getDisplayedPrice(plan, isYearly);
 
     return (
-        <Card className="self-start overflow-hidden border border-slate-200 bg-white shadow-[0_20px_60px_-36px_rgba(15,23,42,0.3)]">
+        <Card className="self-start overflow-hidden border border-border/40 bg-white shadow-[0_20px_60px_-36px_rgba(15,23,42,0.3)]">
             <div className="px-6 py-6 sm:px-7 sm:py-7">
                 <div className="flex flex-col items-start justify-between gap-3">
                     <div>
                         {plan.badge ? (
-                            <Badge className="border border-slate-200 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-700 hover:bg-slate-50">
+                            <Badge className="border border-border/40 bg-slate-50 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-700 hover:bg-slate-50">
                                 {plan.badge}
                             </Badge>
                         ) : null}
@@ -447,7 +447,7 @@ const BasicPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boolea
 
                 <div className="mt-6 grid gap-3">
                     {plan.audienceLabel && (
-                        <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                        <div className="rounded-2xl border border-border/40 bg-slate-50/80 p-4">
                             <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Best for</p>
                             <p className="mt-2 text-sm font-medium text-slate-900">{plan.audienceLabel}</p>
                         </div>
@@ -455,7 +455,7 @@ const BasicPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boolea
                     }
 
 
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50/80 p-4">
+                    <div className="rounded-2xl border border-border/40 bg-slate-50/80 p-4">
                         <p className="text-xs uppercase tracking-[0.18em] text-slate-500">Publishing cadence</p>
                         <p className="mt-2 text-sm font-medium text-slate-900">{plan.cadenceLabel}</p>
                     </div>
@@ -476,7 +476,7 @@ const BasicPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boolea
 
                 <div className="space-y-3">
                     {plan.features.length > 0 && plan.features.map((feature) => (
-                        <div key={feature} className="rounded-2xl border border-slate-200 p-3 text-sm leading-6 text-slate-700">
+                        <div key={feature} className="rounded-2xl border border-border/40 p-3 text-sm leading-6 text-slate-700">
                             {feature}
                         </div>
                     ))}
@@ -485,7 +485,7 @@ const BasicPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boolea
 
             {/* {plan.ctaText || plan.secondaryCtaText && (
 
-                <div className="border-t border-slate-200 bg-slate-50/70 p-6 sm:p-7">
+                <div className="border-t border-border/40 bg-slate-50/70 p-6 sm:p-7">
 
                     {plan.ctaText && (<CtaButton
                         text={plan.ctaText}
@@ -497,7 +497,7 @@ const BasicPlanCard = ({ plan, isYearly }: { plan: PricingPlan; isYearly: boolea
                             text={plan.secondaryCtaText}
                             href={plan.secondaryCtaHref}
                             variant="outline"
-                            className="mt-3 h-12 w-full justify-between border-slate-300 bg-white px-5 text-slate-900 hover:bg-slate-100"
+                            className="mt-3 h-12 w-full justify-between border-border/50 bg-white px-5 text-slate-900 hover:bg-slate-100"
                         />
                     ) : null}
                 </div>

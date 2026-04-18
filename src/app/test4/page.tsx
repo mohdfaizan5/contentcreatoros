@@ -62,7 +62,7 @@ function RecorderControls({
     return (
       <div
         className={cn(
-          'inline-flex items-center gap-0 rounded-xl border border-zinc-700/80 bg-zinc-900 shadow-sm',
+          'inline-flex items-center gap-0 rounded-xl border border-border/80 bg-zinc-900 shadow-sm',
           className,
         )}
       >
