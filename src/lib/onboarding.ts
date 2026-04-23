@@ -64,6 +64,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         description: 'We scrape this URL to infer your onboarding answers.',
         placeholder: 'https://yourwebsite.com',
         required: true,
+        important: true,
       },
       {
         key: 'x_account',
@@ -102,6 +103,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         label: 'What does your company do in one clear sentence?',
         placeholder: 'We help founders automate social media content planning and execution.',
         required: true,
+        important: true,
         rows: 3,
       },
       {
@@ -152,6 +154,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         label: 'Who are you trying to reach?',
         description: 'Pick the main audiences you want this plan to attract.',
         required: true,
+        important: true,
         maxSelections: 4,
         otherOption: {
           answerKey: 'target_audience_other',
@@ -211,6 +214,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         label: 'What do you want from your content?',
         description: 'Select the top outcomes you want the plan to optimize for.',
         required: true,
+        important: true,
         minSelections: 1,
         maxSelections: 3,
         otherOption: {
@@ -255,6 +259,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         layout: 'cards',
         label: 'What tone should the content use?',
         required: true,
+        important: true,
         options: [
           { value: 'professional', label: 'Professional', description: 'Polished and credible' },
           { value: 'casual', label: 'Casual', description: 'Friendly and relaxed' },
@@ -269,6 +274,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         layout: 'cards',
         label: 'What writing style do you want most?',
         required: true,
+        important: true,
         options: [
           { value: 'short_posts', label: 'Short tweets', description: 'Fast, lightweight, and frequent' },
           { value: 'threads', label: 'Threads', description: 'Deeper educational breakdowns' },
@@ -310,6 +316,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         layout: 'cards',
         label: 'How often do you want to post?',
         required: true,
+        important: true,
         options: [
           { value: '2_per_week', label: '2/week', description: 'Easy mode' },
           { value: '3_per_week', label: '3/week', description: 'Balanced pace' },
@@ -324,6 +331,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         label: 'Which content pillars should anchor the plan?',
         description: 'Pick three to five categories you want to post about repeatedly.',
         required: true,
+        important: true,
         minSelections: 3,
         maxSelections: 5,
         options: [
@@ -373,6 +381,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         label: 'What makes you different from alternatives?',
         placeholder: 'We turn positioning into distribution-ready content in minutes, not days.',
         required: true,
+        important: true,
         rows: 4,
       },
       {
@@ -409,6 +418,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         layout: 'pills',
         label: 'What is your pricing model?',
         required: true,
+        important: true,
         otherOption: {
           answerKey: 'pricing_model_other',
           label: 'Other pricing model',
@@ -428,6 +438,7 @@ export const CONTENT_ONBOARDING_STEPS: OnboardingStepDefinition[] = [
         layout: 'pills',
         label: 'What stage is the product in?',
         required: true,
+        important: true,
         options: [
           { value: 'got_started', label: 'Got started' },
           { value: 'just_launched', label: 'Just launched' },
@@ -545,6 +556,36 @@ export function getQuestionSteps() {
   );
 }
 
+export function getAllOnboardingQuestions() {
+  return getQuestionSteps().flatMap((step) => step.questions);
+}
+
+export function getImportantQuestions() {
+  return getAllOnboardingQuestions().filter((question) => Boolean(question.important));
+}
+
+export function getOptionalQuestions() {
+  return getAllOnboardingQuestions().filter((question) => !question.important);
+}
+
+export function getOnboardingQuestionImportanceAudit() {
+  return getQuestionSteps().map((step) => {
+    const importantKeys = step.questions
+      .filter((question) => Boolean(question.important))
+      .map((question) => question.key);
+    const optionalKeys = step.questions
+      .filter((question) => !question.important)
+      .map((question) => question.key);
+
+    return {
+      stepId: step.id,
+      stepTitle: step.title,
+      importantKeys,
+      optionalKeys,
+    };
+  });
+}
+
 export function getInitialOnboardingAnswers() {
   return getQuestionSteps().reduce<OnboardingAnswers>((accumulator, step) => {
     step.questions.forEach((question) => {
@@ -623,7 +664,7 @@ export function getAnswersFromPersistedRows(rows: PersistedOnboardingAnswerRow[]
   return answers;
 }
 
-function hasValue(value: unknown) {
+export function hasAnswerValue(value: unknown) {
   if (Array.isArray(value)) {
     return value.length > 0;
   }
@@ -633,6 +674,57 @@ function hasValue(value: unknown) {
   }
 
   return Boolean(value);
+}
+
+function hasValue(value: unknown) {
+  return hasAnswerValue(value);
+}
+
+type OnboardingProgressBucket = {
+  total: number;
+  answeredCount: number;
+  remainingCount: number;
+  answeredKeys: string[];
+  remainingKeys: string[];
+};
+
+export type OnboardingImportanceProgress = {
+  important: OnboardingProgressBucket;
+  optional: OnboardingProgressBucket;
+};
+
+function buildProgressBucket(
+  questions: OnboardingQuestion[],
+  answers: OnboardingAnswers,
+): OnboardingProgressBucket {
+  const answeredKeys = questions
+    .filter((question) => hasAnswerValue(answers[question.key]))
+    .map((question) => question.key);
+
+  const answeredKeySet = new Set(answeredKeys);
+  const remainingKeys = questions
+    .filter((question) => !answeredKeySet.has(question.key))
+    .map((question) => question.key);
+
+  return {
+    total: questions.length,
+    answeredCount: answeredKeys.length,
+    remainingCount: remainingKeys.length,
+    answeredKeys,
+    remainingKeys,
+  };
+}
+
+export function getOnboardingImportanceProgress(
+  answers: OnboardingAnswers,
+): OnboardingImportanceProgress {
+  const importantQuestions = getImportantQuestions();
+  const optionalQuestions = getOptionalQuestions();
+
+  return {
+    important: buildProgressBucket(importantQuestions, answers),
+    optional: buildProgressBucket(optionalQuestions, answers),
+  };
 }
 
 export function isOtherOptionSelected(question: OnboardingQuestion, answers: OnboardingAnswers) {
@@ -764,6 +856,7 @@ export function getPersistedQuestionDefinitions() {
       flowKey: ONBOARDING_FLOW_KEY,
       questionKey: question.key,
       question: question.label,
+      important: Boolean(question.important),
     })),
   );
 }

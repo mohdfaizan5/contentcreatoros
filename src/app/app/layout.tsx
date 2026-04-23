@@ -6,6 +6,7 @@ import { UserDropdown } from '@/components/user-dropdown';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { createClient } from '@/lib/server';
 import AppNotifications from '@/components/app-notifications';
+import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast"
 
 export default async function DashboardLayout({
     children,
@@ -16,7 +17,7 @@ export default async function DashboardLayout({
     const { data, error } = await supabase.auth.getUser();
 
     if (error || !data?.user) {
-        redirect('/auth/login');
+        redirect('/login');
     }
 
     const { count: onboardingAnswerCount, error: onboardingAnswersError } = await supabase
@@ -42,9 +43,13 @@ export default async function DashboardLayout({
                             <UserDropdown email={data.user.email} />
                         </div>
                     </header>
-                    <main className="flex-1 overflow-auto px-6 pb-4 pt-2">
-                        {children}
-                    </main>
+                    <ToastProvider>
+                        <AnchoredToastProvider>
+                            <main className="flex-1 overflow-auto px-6 pb-4 pt-2">
+                                {children}
+                            </main>
+                        </AnchoredToastProvider>
+                    </ToastProvider>
                 </SidebarInset>
             </SidebarProvider>
         </TooltipProvider>

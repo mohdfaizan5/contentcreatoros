@@ -46,6 +46,7 @@ type InferPromptQuestion = {
   label: string;
   type: OnboardingQuestion['type'];
   required: boolean;
+  important: boolean;
   options?: Array<{ value: string; label: string }>;
 };
 
@@ -167,6 +168,7 @@ function toPromptQuestions(): InferPromptQuestion[] {
       label: question.label,
       type: question.type,
       required: Boolean(question.required),
+      important: Boolean(question.important),
       options:
         question.type === 'single-select' || question.type === 'multi-select'
           ? question.options.map((option) => ({
@@ -239,6 +241,7 @@ function buildInferencePrompt(params: {
     label: question.label,
     type: question.type,
     required: question.required,
+    important: question.important,
     options: question.options,
   }));
 

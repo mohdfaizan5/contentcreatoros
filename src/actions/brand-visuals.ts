@@ -27,6 +27,23 @@ export type RegenerateBrandVisualIdentityResult = {
   };
 };
 
+type SaveBrandVisualThemeErrorCode =
+  | 'INVALID_COLORS'
+  | 'UNAUTHENTICATED'
+  | 'DB_READ_FAILED'
+  | 'DB_WRITE_FAILED';
+
+export type SaveBrandVisualThemeInput = {
+  colors: string[];
+};
+
+export type SaveBrandVisualThemeResult = {
+  success: boolean;
+  error?: string;
+  errorCode?: SaveBrandVisualThemeErrorCode;
+  colors?: string[];
+};
+
 function createRequestId() {
   return `brand_visuals_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -131,5 +148,102 @@ export async function regenerateBrandVisualIdentity(
       normalizedUrl: scrapeResult.normalizedUrl,
       domain: scrapeResult.domain,
     },
+  };
+}
+
+function normalizeMetadata(value: unknown) {
+  return value && typeof value === 'object' && !Array.isArray(value)
+    ? (value as Record<string, unknown>)
+    : {};
+}
+
+export async function saveBrandVisualThemeColors(
+  input: SaveBrandVisualThemeInput,
+): Promise<SaveBrandVisualThemeResult> {
+  const colors = buildBrandVisualIdentity({ colors: input.colors }).colors;
+
+  if (colors.length === 0) {
+    return {
+      success: false,
+      errorCode: 'INVALID_COLORS',
+      error: 'Please choose at least one valid hex color before saving.',
+    };
+  }
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return {
+      success: false,
+      errorCode: 'UNAUTHENTICATED',
+      error: 'Please sign in and try again.',
+    };
+  }
+
+  const { data: existingProfile, error: existingProfileError } = await supabase
+    .from('onboarding_autofill_profiles')
+    .select(
+      'brand_identity, source_url, source_domain, x_handle, inferred_answers, scrape_payload, model, prompt_version, run_metadata',
+    )
+    .eq('user_id', user.id)
+    .eq('flow_key', ONBOARDING_FLOW_KEY)
+    .maybeSingle();
+
+  if (existingProfileError) {
+    return {
+      success: false,
+      errorCode: 'DB_READ_FAILED',
+      error: 'Unable to load your current brand profile. Please try again.',
+    };
+  }
+
+  const existingIdentity = buildBrandVisualIdentity(
+    (existingProfile?.brand_identity as Partial<BrandVisualIdentity>) ?? {},
+  );
+
+  const nextIdentity = buildBrandVisualIdentity({
+    ...existingIdentity,
+    colors,
+  });
+
+  const now = new Date().toISOString();
+  const { error: upsertError } = await supabase.from('onboarding_autofill_profiles').upsert(
+    {
+      user_id: user.id,
+      flow_key: ONBOARDING_FLOW_KEY,
+      source_url: existingProfile?.source_url ?? null,
+      source_domain: existingProfile?.source_domain ?? nextIdentity.sourceDomain ?? null,
+      x_handle: existingProfile?.x_handle ?? null,
+      scrape_payload: existingProfile?.scrape_payload ?? {},
+      brand_identity: nextIdentity,
+      inferred_answers: existingProfile?.inferred_answers ?? {},
+      model: existingProfile?.model ?? 'manual-brand-theme-v1',
+      prompt_version: existingProfile?.prompt_version ?? 'brand-visual-theme-save-v1',
+      run_metadata: {
+        ...normalizeMetadata(existingProfile?.run_metadata),
+        manualThemeUpdatedAt: now,
+        manualThemeColorCount: nextIdentity.colors.length,
+      },
+      updated_at: now,
+    },
+    { onConflict: 'user_id' },
+  );
+
+  if (upsertError) {
+    return {
+      success: false,
+      errorCode: 'DB_WRITE_FAILED',
+      error: 'Unable to save your theme colors right now. Please try again.',
+    };
+  }
+
+  revalidateAppPaths(['/app/brand-kit', '/app/brand-kit/visuals']);
+
+  return {
+    success: true,
+    colors: nextIdentity.colors,
   };
 }

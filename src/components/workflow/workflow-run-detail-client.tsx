@@ -4,46 +4,85 @@ import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import {
     AlertCircle,
-    CalendarClock,
     CheckCircle2,
     ChevronLeft,
     ChevronRight,
+    ImagePlus,
     Loader2,
     RefreshCcw,
     Timer,
     XCircle,
 } from 'lucide-react';
-import { useEffect, useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 
 import {
+    formatWorkflowPlannerItemSuggestedPost,
     regenerateWorkflowPlannerItem,
+    removeWorkflowPlannerItemMedia,
     retryWorkflowPlannerRun,
     scheduleWorkflowPlannerRun,
     setWorkflowPlannerItemDecision,
     triggerWorkflowPlannerRun,
     updateWorkflowPlannerItemSuggestedPost,
+    uploadWorkflowPlannerItemMedia,
 } from '@/actions/workflow-planner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { useFileUpload, type FileWithPreview } from '@/hooks/use-file-upload';
 import { cn } from '@/lib/utils';
+import { POST_GIF_MAX_BYTES, POST_MEDIA_ACCEPT } from '@/lib/x/post-media';
 import type {
+    PostMediaAttachment,
     SevenDayPlanningItem,
     SevenDayPlanningItemApprovalStatus,
     SevenDayPlanningRun,
 } from '@/types/database';
 import { WorkflowRunStatusBadge } from './workflow-run-status-badge';
 import { Tooltip, TooltipPopup, TooltipTrigger } from '../ui/tooltip';
-import { QuestionMarkIcon } from '@phosphor-icons/react/dist/ssr';
+import { ArticleNyTimesIcon, QuestionMarkIcon } from '@phosphor-icons/react/dist/ssr';
 import {
     Popover,
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
 import CalendarSelectWithTime from '@/components/calendar-select-with-time';
+import { Avatar, AvatarFallback, AvatarImage, } from '../ui/avatar';
+
+type WorkflowPostingAccountProfile = {
+    name: string;
+    title: string | null;
+    username: string;
+    avatarUrl: string | null;
+};
+
+function formatUsername(username: string) {
+    return username.startsWith('@') ? username : `@${username}`;
+}
+
+function getInitials(value: string) {
+    const tokens = value.split(' ');
+    const initials: string[] = [];
+
+    for (const token of tokens) {
+        const trimmed = token.trim();
+
+        if (!trimmed) {
+            continue;
+        }
+
+        initials.push(trimmed[0]?.toUpperCase() ?? '');
+
+        if (initials.length === 2) {
+            break;
+        }
+    }
+
+    return initials.join('') || 'X';
+}
 
 function ItemStatusBadge({ status }: { status: SevenDayPlanningItemApprovalStatus }) {
     const className =
@@ -91,12 +130,26 @@ function buildDefaultItemScheduleDate(itemDateISO: string, approvedIndex: number
     return date;
 }
 
+function formatAttachmentSize(bytes: number) {
+    if (bytes < 1024 * 1024) {
+        return `${Math.max(1, Math.round(bytes / 1024))}KB`;
+    }
+
+    return `${(bytes / (1024 * 1024)).toFixed(1)}MB`;
+}
+
+function getAttachmentLabel(attachment: PostMediaAttachment) {
+    return attachment.media_type === 'gif' ? 'GIF' : 'Image';
+}
+
 export default function WorkflowRunDetailClient({
     run,
     items,
+    xProfile,
 }: {
     run: SevenDayPlanningRun;
     items: SevenDayPlanningItem[];
+    xProfile: WorkflowPostingAccountProfile | null;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -104,9 +157,16 @@ export default function WorkflowRunDetailClient({
     const [noteByItemId, setNoteByItemId] = useState<Record<string, string>>({});
     const [suggestedPostByItemId, setSuggestedPostByItemId] = useState<Record<string, string>>({});
     const [scheduledAtByItemId, setScheduledAtByItemId] = useState<Record<string, string>>({});
+    const [mediaAttachmentsByItemId, setMediaAttachmentsByItemId] = useState<Record<string, PostMediaAttachment[]>>({});
+    const [uploadingMediaItemId, setUploadingMediaItemId] = useState<string | null>(null);
+    const [removingMediaAttachmentId, setRemovingMediaAttachmentId] = useState<string | null>(null);
     const [isSchedulePickerOpen, setIsSchedulePickerOpen] = useState(false);
+    const mediaUploadActionsRef = useRef<{ clearFiles: () => void } | null>(null);
 
-    const selectedItem = items[selectedIndex] ?? null;
+    const boundedSelectedIndex = items.length > 0
+        ? Math.min(selectedIndex, items.length - 1)
+        : 0;
+    const selectedItem = items[boundedSelectedIndex] ?? null;
     const CHARACTER_LIMIT = 280;
     const suggestedPostText = selectedItem
         ? (suggestedPostByItemId[selectedItem.id] ?? selectedItem.suggested_post ?? '')
@@ -118,6 +178,24 @@ export default function WorkflowRunDetailClient({
         ? suggestedPostText !== (selectedItem.suggested_post ?? '')
         : false;
     const canEditSuggestedPost = canModerateRun(run.status);
+    const canEditSelectedItemMedia = Boolean(
+        selectedItem && canEditSuggestedPost && selectedItem.approval_status !== 'scheduled',
+    );
+    const selectedItemMediaAttachments = selectedItem
+        ? (mediaAttachmentsByItemId[selectedItem.id] ?? selectedItem.media_attachments ?? [])
+        : [];
+    const selectedItemHasMedia = selectedItemMediaAttachments.length > 0;
+    const selectedItemHasGif = selectedItemMediaAttachments.some(
+        (attachment) => attachment.media_type === 'gif',
+    );
+    const selectedItemHasMaxImages =
+        !selectedItemHasGif && selectedItemMediaAttachments.length >= 4;
+    const canAddSelectedItemMedia =
+        canEditSelectedItemMedia && !selectedItemHasGif && !selectedItemHasMaxImages;
+    const isMediaBusy = Boolean(uploadingMediaItemId || removingMediaAttachmentId);
+    const remainingMediaSlots = selectedItemHasGif
+        ? 0
+        : Math.max(1, 4 - selectedItemMediaAttachments.length);
     const shouldPollRun = run.status === 'queued' || run.status === 'generating';
     const approvedItemIndexById = useMemo(() => {
         const indexById: Record<string, number> = {};
@@ -148,9 +226,28 @@ export default function WorkflowRunDetailClient({
     };
 
     const selectedItemScheduledDate = selectedItem ? getItemScheduledDate(selectedItem) : null;
-    const selectedItemHasCustomSchedule = selectedItem
-        ? Boolean(scheduledAtByItemId[selectedItem.id])
-        : false;
+    const postingAccountName = xProfile?.name?.trim() || 'Connected X Account';
+    const postingAccountTitle = xProfile?.title?.trim() || null;
+    const postingAccountUsername = xProfile?.username
+        ? formatUsername(xProfile.username)
+        : '@x-account';
+    const postingAccountInitials = useMemo(
+        () => getInitials(postingAccountName),
+        [postingAccountName],
+    );
+
+    const handleSelectIndex = (nextIndex: number) => {
+        setSelectedIndex(nextIndex);
+        setIsSchedulePickerOpen(false);
+    };
+
+    useEffect(() => {
+        setMediaAttachmentsByItemId(
+            Object.fromEntries(
+                items.map((item) => [item.id, item.media_attachments ?? []]),
+            ),
+        );
+    }, [items]);
 
     useEffect(() => {
         if (!shouldPollRun) {
@@ -165,46 +262,6 @@ export default function WorkflowRunDetailClient({
             window.clearInterval(interval);
         };
     }, [router, shouldPollRun]);
-
-    useEffect(() => {
-        if (items.length === 0) {
-            setSelectedIndex(0);
-            return;
-        }
-
-        if (selectedIndex > items.length - 1) {
-            setSelectedIndex(items.length - 1);
-        }
-    }, [items.length, selectedIndex]);
-
-    useEffect(() => {
-        if (!selectedItem) {
-            return;
-        }
-
-        const serverSuggestedPost = selectedItem.suggested_post ?? '';
-
-        setSuggestedPostByItemId((current) => {
-            const localSuggestedPost = current[selectedItem.id];
-
-            if (localSuggestedPost === undefined) {
-                return {
-                    ...current,
-                    [selectedItem.id]: serverSuggestedPost,
-                };
-            }
-
-            if (localSuggestedPost === serverSuggestedPost) {
-                return current;
-            }
-
-            return current;
-        });
-    }, [selectedItem?.id, selectedItem?.suggested_post]);
-
-    useEffect(() => {
-        setIsSchedulePickerOpen(false);
-    }, [selectedItem?.id]);
 
     const rangeLabel = useMemo(() => {
         const startDate = parseISO(run.start_date);
@@ -286,6 +343,97 @@ export default function WorkflowRunDetailClient({
         toast.success('Date and time updated for this day.');
     };
 
+    const handleMediaUpload = async (itemId: string, files: FileList | File[] | null) => {
+        const selectedFiles = Array.from(files ?? []);
+
+        if (!selectedFiles.length) {
+            return;
+        }
+
+        setUploadingMediaItemId(itemId);
+
+        try {
+            const formData = new FormData();
+            formData.append('runId', run.id);
+            formData.append('itemId', itemId);
+
+            for (const file of selectedFiles) {
+                formData.append('files', file);
+            }
+
+            const result = await uploadWorkflowPlannerItemMedia(formData);
+
+            setMediaAttachmentsByItemId((current) => ({
+                ...current,
+                [result.itemId]: result.mediaAttachments,
+            }));
+            toast.success(
+                result.mediaAttachments.length === 1
+                    ? 'Media attached to this post.'
+                    : `${result.mediaAttachments.length} media files attached to this post.`,
+            );
+            router.refresh();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Unable to upload media.');
+        } finally {
+            setUploadingMediaItemId(null);
+        }
+    };
+
+    const handleRemoveMedia = async (itemId: string, attachmentId: string) => {
+        setRemovingMediaAttachmentId(attachmentId);
+
+        try {
+            const result = await removeWorkflowPlannerItemMedia({
+                attachmentId,
+                itemId,
+                runId: run.id,
+            });
+
+            setMediaAttachmentsByItemId((current) => ({
+                ...current,
+                [result.itemId]: result.mediaAttachments,
+            }));
+            toast.success('Media removed from this post.');
+            router.refresh();
+        } catch (error) {
+            toast.error(error instanceof Error ? error.message : 'Unable to remove media.');
+        } finally {
+            setRemovingMediaAttachmentId(null);
+        }
+    };
+
+    const [
+        { errors: mediaUploadErrors },
+        {
+            clearFiles: clearMediaUploadFiles,
+            getInputProps: getMediaInputProps,
+            openFileDialog: openMediaFileDialog,
+        },
+    ] = useFileUpload({
+        accept: POST_MEDIA_ACCEPT,
+        maxFiles: remainingMediaSlots,
+        maxSize: POST_GIF_MAX_BYTES,
+        multiple: true,
+        onFilesAdded: (addedFiles: FileWithPreview[]) => {
+            if (!selectedItem) {
+                return;
+            }
+
+            const files = addedFiles
+                .map((fileWithPreview) => fileWithPreview.file)
+                .filter((file): file is File => file instanceof File);
+
+            void handleMediaUpload(selectedItem.id, files).finally(() => {
+                mediaUploadActionsRef.current?.clearFiles();
+            });
+        },
+    });
+
+    mediaUploadActionsRef.current = {
+        clearFiles: clearMediaUploadFiles,
+    };
+
     const handleRetry = () => {
         startTransition(async () => {
             try {
@@ -343,13 +491,44 @@ export default function WorkflowRunDetailClient({
             }
         });
     };
+
+    const handleFormatSuggestedPost = (itemId: string) => {
+        startTransition(async () => {
+            try {
+                const suggestedPost = suggestedPostByItemId[itemId] ?? '';
+
+                const result = await formatWorkflowPlannerItemSuggestedPost({
+                    itemId,
+                    runId: run.id,
+                    suggestedPost,
+                });
+
+                setSuggestedPostByItemId((current) => ({
+                    ...current,
+                    [itemId]: result.suggestedPost,
+                }));
+
+                toast.success(
+                    result.changed
+                        ? 'Formatting applied without changing content.'
+                        : 'Already well-formatted. No changes made.',
+                );
+                router.refresh();
+            } catch (error) {
+                toast.error(
+                    error instanceof Error ? error.message : 'Unable to format suggested post.',
+                );
+            }
+        });
+    };
+
     return (
         <div className="space-y-4 max-w-5xl mx-auto">
             <Card>
                 <CardHeader className="space-y-3">
                     <div className="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <CardTitle className="text-2xl">7-Day Workflow Run</CardTitle>
+                            <CardTitle className="text-2xl">Workflow Campaign</CardTitle>
                             <div className='flex items-center gap-2'>
                                 <p className="mt-1 text-sm text-muted-foreground">{rangeLabel}</p>
                                 <WorkflowRunStatusBadge status={run.status} />
@@ -383,7 +562,7 @@ export default function WorkflowRunDetailClient({
                             )}
 
                             {run.status === 'pending_approval' && hasScheduleableItems(items) && (
-                                <Button className="gap-2" disabled={isPending} onClick={handleSchedule}>
+                                <Button className="gap-2" disabled={isPending || isMediaBusy} onClick={handleSchedule}>
                                     {isPending ? (
                                         <Loader2 className="h-4 w-4 animate-spin" />
                                     ) : (
@@ -448,63 +627,50 @@ export default function WorkflowRunDetailClient({
             ) : null}
 
             {items.length > 0 ? (
-                <div className="grid gap-4 lg:grid-cols-[3fr_1fr]">
+                <div className="grid gap-4 lg:grid-cols-[4fr_2fr]">
                     {selectedItem ? (
                         <Card>
                             <CardHeader className="space-y-2">
                                 <div className="flex items-center justify-between gap-2">
                                     <div>
-                                        <CardTitle className="text-xl">{selectedItem.day_label}</CardTitle>
-                                        <div className=' flex gap-2 items-center'>
-                                            <p className="mt-1 text-sm text-muted-foreground">{selectedItem.item_date}</p>
-                                            <ItemStatusBadge status={selectedItem.approval_status} />
-
+                                        <div className='flex items-center gap-2 '>
+                                            <Avatar className={"size-10"}>
+                                                <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
+                                                <AvatarFallback>{postingAccountInitials}</AvatarFallback>
+                                            </Avatar>
+                                            <div>
+                                                <p className='font-bold text-sm'>{postingAccountName}</p>
+                                                {postingAccountTitle ? (
+                                                    <p className='max-w-[30ch] truncate text-xs text-muted-foreground'>
+                                                        {postingAccountTitle}
+                                                    </p>
+                                                ) : null}
+                                                <p className='text-muted-foreground text-sm'>{postingAccountUsername}</p>
+                                            </div>
                                         </div>
-                                        {selectedItemScheduledDate ? (
-                                            <p className="mt-1 text-xs text-muted-foreground">
-                                                {selectedItemHasCustomSchedule ? 'Custom slot' : 'Default slot'}:{' '}
-                                                {format(selectedItemScheduledDate, 'PPP p')}
-                                            </p>
-                                        ) : null}
+                                        {/* <CardTitle className="text-xl">{selectedItem.day_label}</CardTitle> */}
+
                                     </div>
 
                                     <div className="flex items-center gap-2">
-                                        {canModerateRun(run.status) && selectedItemScheduledDate ? (
-                                            <Popover open={isSchedulePickerOpen} onOpenChange={setIsSchedulePickerOpen}>
-                                                <PopoverTrigger asChild>
-                                                    <Button className="gap-2" size="sm" variant="outline">
-                                                        <CalendarClock className="h-4 w-4" />
-                                                        <span className="hidden sm:inline">Edit Date & Time</span>
-                                                    </Button>
-                                                </PopoverTrigger>
-                                                <PopoverContent
-                                                    align="end"
-                                                    className="w-105 max-w-full p-3"
-                                                >
-                                                    <CalendarSelectWithTime
-                                                        confirmLabel="Save date & time"
-                                                        initialValue={selectedItemScheduledDate}
-                                                        isSubmitting={isPending}
-                                                        onConfirm={(value) =>
-                                                            handleUpdateItemSchedule(selectedItem.id, value)
-                                                        }
-                                                    />
-                                                </PopoverContent>
-                                            </Popover>
-                                        ) : null}
+                                        <div className="flex flex-wrap gap-2 text-sm">
+                                            <div className=' flex gap-2 items-center'>
+                                                <ItemStatusBadge status={selectedItem.approval_status} />
+                                            </div>
+                                            <Badge variant="outline">{selectedItem.pillar}</Badge>
+                                            <Badge variant="secondary">{selectedItem.content_type}</Badge>
+                                        </div>
                                         <Button
-                                            disabled={selectedIndex === 0 || isPending}
-                                            onClick={() => setSelectedIndex((current) => Math.max(0, current - 1))}
+                                            disabled={boundedSelectedIndex === 0 || isPending}
+                                            onClick={() => handleSelectIndex(Math.max(0, boundedSelectedIndex - 1))}
                                             size="icon"
                                             variant="outline"
                                         >
                                             <ChevronLeft className="h-4 w-4" />
                                         </Button>
                                         <Button
-                                            disabled={selectedIndex === items.length - 1 || isPending}
-                                            onClick={() =>
-                                                setSelectedIndex((current) => Math.min(items.length - 1, current + 1))
-                                            }
+                                            disabled={boundedSelectedIndex === items.length - 1 || isPending}
+                                            onClick={() => handleSelectIndex(Math.min(items.length - 1, boundedSelectedIndex + 1))}
                                             size="icon"
                                             variant="outline"
                                         >
@@ -513,80 +679,245 @@ export default function WorkflowRunDetailClient({
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2 text-sm">
-                                    <Badge variant="outline">{selectedItem.pillar}</Badge>
-                                    <Badge variant="secondary">{selectedItem.content_type}</Badge>
-                                </div>
+
                             </CardHeader>
 
                             <CardContent className="space-y-4">
-                                <div className="max-w space-y-2">
-                                    <Textarea
-                                        textareaClassName='text-base'
-                                        aria-describedby="twitter-post-input-description"
-                                        className="max-w- text-[20px] leading-relaxed"
-                                        id="twitter-post-input"
-                                        onChange={(event) => {
-                                            if (!selectedItem) {
-                                                return;
-                                            }
-
-                                            const nextValue = event.target.value;
-
-                                            setSuggestedPostByItemId((current) => ({
-                                                ...current,
-                                                [selectedItem.id]: nextValue,
-                                            }));
-                                        }}
-                                        readOnly={!canEditSuggestedPost}
-                                        rows={6}
-                                        value={suggestedPostText}
-                                    />
-                                    <div className="flex items-center justify-between gap-3">
-                                        <p
-                                            aria-live="polite"
-                                            className={cn(
-                                                'text-xs',
-                                                hasExceededSuggestedPostLimit
-                                                    ? 'text-destructive'
-                                                    : 'text-muted-foreground',
-                                            )}
-                                            id="twitter-post-input-description"
-                                            role="status"
-                                        >
-                                            {hasExceededSuggestedPostLimit ? (
-                                                <>
-                                                    <span className="tabular-nums">
-                                                        {Math.abs(suggestedPostRemainingCharacters)}
-                                                    </span>{' '}
-                                                    characters exceeded
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <span className="tabular-nums">
-                                                        {suggestedPostRemainingCharacters}
-                                                    </span>{' '}
-                                                    characters left
-                                                </>
-                                            )}
-                                        </p>
-
-                                        {canEditSuggestedPost && hasSuggestedPostUnsavedChanges && selectedItem ? (
-                                            <Button
-                                                className="gap-2"
-                                                disabled={isPending}
-                                                onClick={() => handleSaveSuggestedPost(selectedItem.id)}
-                                                size="sm"
-                                                variant="secondary"
-                                            >
-                                                {isPending ? (
-                                                    <Loader2 className="h-4 w-4 animate-spin" />
-                                                ) : null}
-                                                Save text
-                                            </Button>
+                                {/* <div className='flex items-center gap-2 '>
+                                    <Avatar className={"size-10"}>
+                                        <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
+                                        <AvatarFallback>{postingAccountInitials}</AvatarFallback>
+                                    </Avatar>
+                                    <div>
+                                        <p className='font-bold text-sm'>{postingAccountName}</p>
+                                        {postingAccountTitle ? (
+                                            <p className='max-w-[30ch] truncate text-xs text-muted-foreground'>
+                                                {postingAccountTitle}
+                                            </p>
                                         ) : null}
+                                        <p className='text-muted-foreground text-sm'>{postingAccountUsername}</p>
                                     </div>
+                                </div> */}
+                                <div className="max-w space-y-2 pb-10 pt-2">
+                                    <div className='flex gap-2 items-start'>
+                                        {/* <Avatar className={"size-10"}>
+                                            <AvatarImage alt="Kelly King" src="" />
+                                            <AvatarFallback>KK</AvatarFallback>
+                                        </Avatar> */}
+                                        <Textarea
+                                            textareaClassName='text-base'
+                                            aria-describedby="twitter-post-input-description"
+                                            className="max-w-xl text-base  "
+                                            id="twitter-post-input"
+                                            onChange={(event) => {
+                                                if (!selectedItem) {
+                                                    return;
+                                                }
+
+                                                const nextValue = event.target.value;
+
+                                                setSuggestedPostByItemId((current) => ({
+                                                    ...current,
+                                                    [selectedItem.id]: nextValue,
+                                                }));
+                                            }}
+                                            readOnly={!canEditSuggestedPost}
+                                            rows={6}
+                                            value={suggestedPostText}
+                                        />
+                                    </div>
+
+                                    <div className="flex items-center justify-between gap-3 max-w-xl">
+                                        <div>
+                                            {selectedItemScheduledDate ? (
+                                                canModerateRun(run.status) ? (
+                                                    <Popover open={isSchedulePickerOpen} onOpenChange={setIsSchedulePickerOpen}>
+                                                        <PopoverTrigger asChild>
+                                                            <button
+                                                                className="text-sm text-muted-foreground underline-offset-4 transition hover:underline focus-visible:underline"
+                                                                disabled={isPending}
+                                                                type="button"
+                                                            >
+                                                                {format(selectedItemScheduledDate, 'p · MMM d, yyyy')}
+                                                            </button>
+                                                        </PopoverTrigger>
+                                                        <PopoverContent
+                                                            align="start"
+                                                            className="w-105 max-w-full p-3"
+                                                        >
+                                                            <CalendarSelectWithTime
+                                                                confirmLabel="Save date & time"
+                                                                initialValue={selectedItemScheduledDate}
+                                                                isSubmitting={isPending}
+                                                                onConfirm={(value) =>
+                                                                    handleUpdateItemSchedule(selectedItem.id, value)
+                                                                }
+                                                            />
+                                                        </PopoverContent>
+                                                    </Popover>
+                                                ) : (
+                                                    <p className='text-sm text-muted-foreground'>
+                                                        {format(selectedItemScheduledDate, 'p · MMM d, yyyy')}
+                                                    </p>
+                                                )
+                                            ) : null}
+
+                                        </div>
+                                        <div className='flex gap-2 '>
+                                            <p
+                                                aria-live="polite"
+                                                className={cn(
+                                                    'text-xs',
+                                                    hasExceededSuggestedPostLimit
+                                                        ? 'text-destructive'
+                                                        : 'text-muted-foreground',
+                                                )}
+                                                id="twitter-post-input-description"
+                                                role="status"
+                                            >
+                                                {hasExceededSuggestedPostLimit ? (
+                                                    <>
+                                                        <span className="tabular-nums">
+                                                            {Math.abs(suggestedPostRemainingCharacters)}
+                                                        </span>{' '}
+                                                        characters exceeded
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="tabular-nums">
+                                                            {suggestedPostRemainingCharacters}
+                                                        </span>{' '}
+                                                        characters left
+                                                    </>
+                                                )}
+                                            </p>
+
+                                            {canEditSuggestedPost && hasSuggestedPostUnsavedChanges && selectedItem ? (
+                                                <Button
+                                                    className="gap-2"
+                                                    disabled={isPending}
+                                                    onClick={() => handleSaveSuggestedPost(selectedItem.id)}
+                                                    size="sm"
+                                                    variant="secondary"
+                                                >
+                                                    {isPending ? (
+                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                    ) : null}
+                                                    Save text
+                                                </Button>
+                                            ) : null}
+
+                                        </div>
+                                    </div>
+                                    {selectedItem ? (
+                                        <div className="max-w-xl space-y-2">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {canEditSelectedItemMedia ? (
+                                                    <>
+                                                        <Button
+                                                            className="gap-2"
+                                                            disabled={!canAddSelectedItemMedia || isMediaBusy}
+                                                            onClick={openMediaFileDialog}
+                                                            size="sm"
+                                                            variant="outline"
+                                                        >
+                                                            {uploadingMediaItemId === selectedItem.id ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <ImagePlus className="h-4 w-4" />
+                                                            )}
+                                                            {selectedItemHasMedia ? 'Add media' : 'Upload media'}
+                                                        </Button>
+                                                        <input
+                                                            {...getMediaInputProps({
+                                                                'aria-label': 'Upload image or GIF file',
+                                                                className: 'sr-only',
+                                                                disabled: !canAddSelectedItemMedia || isMediaBusy,
+                                                                tabIndex: -1,
+                                                            })}
+                                                        />
+                                                    </>
+                                                ) : null}
+                                                <p className="text-xs text-muted-foreground">
+                                                    {selectedItemHasGif
+                                                        ? 'GIF attached. X allows only 1 GIF per post.'
+                                                        : selectedItemHasMaxImages
+                                                            ? '4 images attached. X image limit reached.'
+                                                            : 'Images up to 5MB, GIFs up to 15MB.'}
+                                                </p>
+                                            </div>
+
+                                            {mediaUploadErrors.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    {mediaUploadErrors.map((error) => (
+                                                        <p className="text-xs text-destructive" key={error}>
+                                                            {error}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+
+                                            {selectedItemHasMedia ? (
+                                                <div className="space-y-3">
+                                                    {selectedItemMediaAttachments.map((attachment) => (
+                                                        <div
+                                                            className="overflow-hidden rounded-lg border bg-background"
+                                                            key={attachment.id}
+                                                        >
+                                                            <div
+                                                                aria-label="Upload preview"
+                                                                className="relative flex aspect-video w-full items-center justify-center overflow-hidden bg-muted"
+                                                            >
+                                                                {attachment.signed_url ? (
+                                                                    // eslint-disable-next-line @next/next/no-img-element
+                                                                    <img
+                                                                        alt={attachment.file_name}
+                                                                        className="size-full object-contain"
+                                                                        src={attachment.signed_url}
+                                                                    />
+                                                                ) : (
+                                                                    <ImagePlus className="h-4 w-4 opacity-60" />
+                                                                )}
+                                                            </div>
+                                                            <div className="flex min-w-0 items-center justify-between gap-3 p-2 text-xs">
+                                                                <p className="truncate text-muted-foreground">
+                                                                    {attachment.file_name}
+                                                                </p>
+                                                                <div className="inline-flex gap-2">
+                                                                    <span className="text-muted-foreground">
+                                                                        {getAttachmentLabel(attachment)} - {formatAttachmentSize(attachment.size_bytes)}
+                                                                    </span>
+                                                                    {canEditSelectedItemMedia ? (
+                                                                        <button
+                                                                            aria-label={`Remove ${attachment.file_name}`}
+                                                                            className="font-medium text-destructive hover:underline disabled:opacity-60"
+                                                                            disabled={isMediaBusy}
+                                                                            onClick={() => handleRemoveMedia(selectedItem.id, attachment.id)}
+                                                                            type="button"
+                                                                        >
+                                                                            {removingMediaAttachmentId === attachment.id ? 'Removing...' : 'Remove'}
+                                                                        </button>
+                                                                    ) : null}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+                                        </div>
+                                    ) : null}
+                                    {/* <AspectRatio ratio={16 / 9} className='max-w-xl'>
+                                        <Image fill src={"/contentosx-template-1-16x9.png"}
+                                            alt="Image" className="rounded-md object-cover" />
+                                    </AspectRatio> */}
                                 </div>
+                                {/* <Image
+                                    alt="Selected item"
+                                    className="h-full w-full object-cover"
+                                    height={50}
+                                    src={"/contentosx-template-1-16x9.png"}
+                                    width={200}
+                                /> */}
 
                                 <div className="flex flex-wrap gap-6">
                                     <div className="flex  items-center  gap-2">
@@ -664,16 +995,16 @@ export default function WorkflowRunDetailClient({
                                         </Button>
                                         <Popover>
                                             <PopoverTrigger asChild>
-                                                <Button variant="outline">
+                                                <Button variant="outline" size={"icon-sm"}>
                                                     {isPending ? (
-                                                        <Loader2 className="h-4 w-4 animate-spin" />
+                                                        <Loader2 className="h-3 w-3 animate-spin" />
                                                     ) : (
-                                                        <RefreshCcw className="h-4 w-4" />
+                                                        <RefreshCcw className="h-3 w-3" />
                                                     )}
                                                 </Button>
                                             </PopoverTrigger>
                                             <PopoverContent className="w-72">
-                                                <h2 className="mb-2 font-semibold text-sm">Anything specific you'd like to share?</h2>
+                                                <h2 className="mb-2 font-semibold text-sm">Anything specific you&apos;d like to share?</h2>
                                                 <form className="space-y-3">
                                                     <Textarea
                                                         onChange={(event) =>
@@ -688,13 +1019,30 @@ export default function WorkflowRunDetailClient({
                                                         id="feedback"
                                                         placeholder="eg: 'Generate a post with a more casual tone' or 'The suggested post is great but the angle isn't quite right'"
                                                     />
-                                                    <div className="flex flex-col sm:flex-row sm:justify-end">
+                                                    <div className="flex flex-col sm:flex-row sm:justify-end gap-1">
+                                                        <Button
+                                                            className="gap-2"
+                                                            disabled={isPending}
+                                                            onClick={() => handleFormatSuggestedPost(selectedItem.id)}
+                                                            size="sm"
+                                                            variant="outline"
+                                                            type="button"
+                                                            aria-label="Format post text"
+                                                        >
+                                                            {isPending ? (
+                                                                <Loader2 className="h-4 w-4 animate-spin" />
+                                                            ) : (
+                                                                <ArticleNyTimesIcon className="h-4 w-4" />
+                                                            )}
+                                                            Format
+                                                        </Button>
                                                         <Button
                                                             className="gap-2"
                                                             disabled={isPending}
                                                             onClick={() => handleRegenerate(selectedItem.id)}
                                                             size="sm"
                                                             variant="default"
+                                                            type="button"
                                                         >
                                                             {isPending ? (
                                                                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -726,12 +1074,12 @@ export default function WorkflowRunDetailClient({
                                 <button
                                     className={cn(
                                         'w-full rounded-md border px-3 py-2 text-left transition-colors',
-                                        selectedIndex === index
+                                        boundedSelectedIndex === index
                                             ? 'border-primary bg-primary/5'
                                             : 'border-border hover:bg-muted/40',
                                     )}
                                     key={item.id}
-                                    onClick={() => setSelectedIndex(index)}
+                                    onClick={() => handleSelectIndex(index)}
                                     type="button"
                                 >
                                     <div className="flex items-center justify-between gap-2">

@@ -40,7 +40,7 @@ const LandingHero = () => {
                 </p>
 
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                    <Link href="/auth/sign-up">
+                    <Link href="/sign-up">
                         <Button className="rounded-full bg-white px-7 py-6 text-base font-semibold text-slate-950 hover:bg-slate-100">
                             Start for Free
                         </Button>

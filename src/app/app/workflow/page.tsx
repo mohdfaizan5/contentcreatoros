@@ -45,7 +45,7 @@ export default async function WorkflowPage() {
                 <div className="space-y-1">
                     <h1 className="text-3xl font-semibold tracking-tight">Workflow</h1>
                     <p className="max-w-2xl text-sm text-muted-foreground">
-                        Queue 7-day planning runs, review generated days, and schedule approved posts later.
+                        Queue campaign planning runs, review generated days, and schedule approved posts later.
                     </p>
                 </div>
 
@@ -122,13 +122,13 @@ export default async function WorkflowPage() {
                 <Card>
                     <CardContent className="flex flex-col items-start gap-3 py-8">
                         <p className="text-sm text-muted-foreground">
-                            No workflow runs yet. Create your first 7-day run to start reviewing and scheduling.
+                            No workflow runs yet. Create your first campaign to start reviewing and scheduling.
                         </p>
                         <Button asChild>
                             <Link href="/app/workflow/new">Create your first run</Link>
                         </Button>
                     </CardContent>
-                </Card>
+                </Card> 
             ) : (
                 <div className="grid gap-4">
                     {runs.map((run) => (

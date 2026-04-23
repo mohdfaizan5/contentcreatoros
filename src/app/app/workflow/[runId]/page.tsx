@@ -15,5 +15,11 @@ export default async function WorkflowRunPage({ params }: WorkflowRunPageProps) 
     notFound();
   }
 
-  return <WorkflowRunDetailClient items={details.items} run={details.run} />;
+  return (
+    <WorkflowRunDetailClient
+      items={details.items}
+      run={details.run}
+      xProfile={details.xProfile}
+    />
+  );
 }

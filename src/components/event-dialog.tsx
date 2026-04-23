@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import type { CalendarEvent, EventColor } from "./types";
+import { Badge } from "./ui/badge";
 
 interface EventDialogProps {
   event: CalendarEvent | null;
@@ -124,6 +125,7 @@ export function EventDialog({
   onDelete,
 }: EventDialogProps) {
   const router = useRouter();
+  console.log("EventDialog render", { event, isOpen, readOnly });
   const initialDraft = createDraftFromEvent(event);
   const [title, setTitle] = useState(initialDraft.title);
   const [description, setDescription] = useState(initialDraft.description);
@@ -311,10 +313,10 @@ export function EventDialog({
         <DialogHeader>
           <DialogTitle>
             {readOnly
-              ? "Event details"
+              ? "Post details"
               : event?.id
-                ? "Edit Event"
-                : "Create Event"}
+                ? "Edit Post"
+                : "Create Post"}
           </DialogTitle>
           <DialogDescription className="sr-only">
             {readOnly
@@ -331,7 +333,11 @@ export function EventDialog({
         )}
         <DialogPanel>
           <div className="grid gap-4 py-1">
-            <div className="*:not-first:mt-1.5">
+            <div>
+
+              <Badge>{event?.metadata?.generatedTweetStatus|| "Default"}</Badge>
+            </div>
+            {/* <div className="*:not-first:mt-1.5">
               <Label htmlFor="title">Title</Label>
               <Input
                 disabled={readOnly}
@@ -340,10 +346,10 @@ export function EventDialog({
                 readOnly={readOnly}
                 value={title}
               />
-            </div>
+            </div> */}
 
             <div className="*:not-first:mt-1.5">
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor="description">Content</Label>
               <Textarea
                 disabled={readOnly}
                 id="description"
@@ -356,7 +362,7 @@ export function EventDialog({
 
             <div className="flex gap-4">
               <div className="flex-1 *:not-first:mt-1.5">
-                <Label htmlFor="start-date">Start Date</Label>
+                <Label htmlFor="start-date">Scheduled Date & Time</Label>
                 <Popover onOpenChange={setStartDateOpen} open={startDateOpen}>
                   <PopoverTrigger asChild>
                     <Button
@@ -406,7 +412,7 @@ export function EventDialog({
 
               {!allDay && (
                 <div className="min-w-28 *:not-first:mt-1.5">
-                  <Label htmlFor="start-time">Start Time</Label>
+                  <Label htmlFor="start-time">-</Label>
                   <Select
                     onValueChange={(value) => setStartTime(value ?? "")}
                     value={startTime}
@@ -426,7 +432,7 @@ export function EventDialog({
               )}
             </div>
 
-            <div className="flex gap-4">
+            {/* <div className="flex gap-4">
               <div className="flex-1 *:not-first:mt-1.5">
                 <Label htmlFor="end-date">End Date</Label>
                 <Popover onOpenChange={setEndDateOpen} open={endDateOpen}>
@@ -493,9 +499,9 @@ export function EventDialog({
                   </Select>
                 </div>
               )}
-            </div>
+            </div> */}
 
-            <div className="flex items-center gap-2">
+            {/* <div className="flex items-center gap-2">
               <Checkbox
                 checked={allDay}
                 disabled={readOnly}
@@ -503,7 +509,7 @@ export function EventDialog({
                 onCheckedChange={(checked) => setAllDay(checked === true)}
               />
               <Label htmlFor="all-day">All day</Label>
-            </div>
+            </div> */}
 
             {/* <div className="*:not-first:mt-1.5">
               <Label htmlFor="location">Location</Label>

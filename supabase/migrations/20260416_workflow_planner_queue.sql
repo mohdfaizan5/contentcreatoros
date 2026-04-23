@@ -95,7 +95,7 @@ CREATE TABLE IF NOT EXISTS public.seven_day_planning_items (
   CONSTRAINT seven_day_planning_items_status_check CHECK (
     approval_status IN ('pending', 'approved', 'rejected', 'scheduled')
   ),
-  CONSTRAINT seven_day_planning_items_day_index_check CHECK (day_index BETWEEN 0 AND 6),
+  CONSTRAINT seven_day_planning_items_day_index_check CHECK (day_index BETWEEN 0 AND 13),
   CONSTRAINT seven_day_planning_items_run_day_index_key UNIQUE (run_id, day_index),
   CONSTRAINT seven_day_planning_items_run_item_date_key UNIQUE (run_id, item_date)
 );

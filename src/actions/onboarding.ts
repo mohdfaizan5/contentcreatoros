@@ -66,6 +66,7 @@ async function syncOnboardingQuestionSchema() {
         flow_key: question.flowKey,
         question_key: question.questionKey,
         question: question.question,
+        is_important: Boolean(question.important),
         is_active: true,
         updated_at: now,
       })),

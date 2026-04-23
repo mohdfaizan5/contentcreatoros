@@ -30,7 +30,7 @@ function getProxyAwareRedirectUrl(request: NextRequest, nextPath: string) {
 
 function redirectWithError(request: NextRequest, message: string) {
   return NextResponse.redirect(
-    new URL(`/auth/error?error=${encodeURIComponent(message)}`, request.url),
+    new URL(`/error?error=${encodeURIComponent(message)}`, request.url),
   )
 }
 

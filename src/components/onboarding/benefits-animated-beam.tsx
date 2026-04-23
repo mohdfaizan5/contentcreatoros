@@ -1,6 +1,6 @@
 "use client"
 
-import React, { forwardRef, useRef } from "react"
+import React, { forwardRef, useEffect, useRef, useState } from "react"
 import {
   BriefcaseIcon,
   CalendarDotsIcon,
@@ -61,6 +61,7 @@ export function BenfitsAnimatedBeam({
 }: {
   className?: string
 }) {
+  const [mounted, setMounted] = useState(false)
   const containerRef = useRef<HTMLDivElement>(null)
   const div1Ref = useRef<HTMLDivElement>(null)
   const div2Ref = useRef<HTMLDivElement>(null)
@@ -69,6 +70,22 @@ export function BenfitsAnimatedBeam({
   const div5Ref = useRef<HTMLDivElement>(null)
   const div6Ref = useRef<HTMLDivElement>(null)
   const div7Ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
+  if (!mounted) {
+    return (
+      <div
+        className={cn(
+          "relative flex h-92.5 w-full items-center justify-center overflow-hidden",
+          className,
+        )}
+        aria-hidden="true"
+      />
+    )
+  }
 
   return (
     <div
@@ -81,13 +98,13 @@ export function BenfitsAnimatedBeam({
       <div className="flex size-full max-w-lg flex-row items-stretch justify-between gap-10">
         <div className="flex flex-col justify-center">
           <Circle ref={div7Ref}>
-            <XLogoIcon size={30} />
+            <XLogoIcon size={24} className="dark:text-black" />
           </Circle>
         </div>
 
         <div className="flex flex-col justify-center">
           <Circle ref={div6Ref} className="size-16">
-            <Logo height={32} width={32} />
+            <Logo height={28} width={28} />
           </Circle>
         </div>
 

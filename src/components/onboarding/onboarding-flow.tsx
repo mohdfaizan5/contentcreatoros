@@ -25,9 +25,10 @@ import { saveOnboarding } from '@/actions/onboarding';
 import {
   CONTENT_ONBOARDING_STEPS,
   getInitialOnboardingAnswers,
+  hasAnswerValue,
+  getOnboardingImportanceProgress,
   isQuestionComplete,
   isStepComplete,
-  isStepSkippable,
 } from '@/lib/onboarding';
 import {
   getFlowQuestionSteps,
@@ -70,12 +71,14 @@ import { OnboardingTerminal } from './onboarding-end-animation-terminal';
 import { XLogoIcon } from '@phosphor-icons/react/dist/ssr';
 import { BrandVisualOverview } from '../brand-kit/brand-visual-overview';
 import type { BrandVisualIdentity } from '@/lib/brand-visuals';
+import { OnboardingOptionalPersonalizationPrompt } from './onboarding-optional-personalization-prompt';
+import confetti from 'canvas-confetti';
 
 type OnboardingStepRendererProps = {
   answers: OnboardingAnswers;
   currentStepIndex: number;
   onBack: () => void;
-  onNext: () => void; 
+  onNext: () => void;
   progressPercentage: number;
   step: OnboardingScreenStepDefinition;
   totalSteps: number;
@@ -89,6 +92,8 @@ type OnboardingFlowProps = {
     Record<string, (props: OnboardingStepRendererProps) => React.ReactNode>
   >;
 };
+
+type OnboardingQuestionPhase = 'important' | 'all';
 
 const slideVariants = {
   enter: (direction: number) => ({
@@ -122,6 +127,31 @@ function withOptionVisuals(options: OnboardingOption[]) {
   }));
 }
 
+function getVisibleQuestionsForStep(
+  step: OnboardingQuestionStepDefinition | null,
+  phase: OnboardingQuestionPhase,
+  answers?: OnboardingAnswers,
+  prioritizePrefilled = false,
+) {
+  if (!step) {
+    return [];
+  }
+
+  const baseQuestions =
+    step.id === 'source-setup' || phase === 'all'
+      ? step.questions
+      : step.questions.filter((question) => Boolean(question.important));
+
+  if (!prioritizePrefilled || !answers || step.id === 'source-setup') {
+    return baseQuestions;
+  }
+
+  const prefilled = baseQuestions.filter((question) => hasAnswerValue(answers[question.key]));
+  const empty = baseQuestions.filter((question) => !hasAnswerValue(answers[question.key]));
+
+  return [...prefilled, ...empty];
+}
+
 
 
 export default function OnboardingFlow({
@@ -152,6 +182,9 @@ export default function OnboardingFlow({
   const [autofillSourceDomain, setAutofillSourceDomain] = useState<string | null>(null);
   const [autofillBrandIdentity, setAutofillBrandIdentity] = useState<BrandVisualIdentity | null>(null);
   const [showBrandGuidelinesOnly, setShowBrandGuidelinesOnly] = useState(false);
+  const [questionPhase, setQuestionPhase] = useState<OnboardingQuestionPhase>('important');
+  const [showOptionalPersonalizationPrompt, setShowOptionalPersonalizationPrompt] = useState(false);
+  const [hasHandledOptionalPersonalizationPrompt, setHasHandledOptionalPersonalizationPrompt] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [isAutofillPending, startAutofillTransition] = useTransition();
@@ -161,7 +194,16 @@ export default function OnboardingFlow({
       ? CONTENT_ONBOARDING_STEPS[currentStepIndex]
       : null;
   const activeQuestionStep = activeStep?.kind === 'questions' ? activeStep : null;
-  const canContinue = activeQuestionStep ? isStepComplete(activeQuestionStep, answers) : true;
+  const shouldPrioritizePrefilledQuestions = autofillApplied && questionPhase === 'important';
+  const visibleQuestions = getVisibleQuestionsForStep(
+    activeQuestionStep,
+    questionPhase,
+    answers,
+    shouldPrioritizePrefilledQuestions,
+  );
+  const canContinue = activeQuestionStep
+    ? visibleQuestions.every((question) => isQuestionComplete(question, answers))
+    : true;
   const progressPercentage = getProgressPercentage(currentStepIndex);
   const questionStepNumber = activeQuestionStep
     ? getQuestionStepNumber(activeQuestionStep.id)
@@ -173,15 +215,21 @@ export default function OnboardingFlow({
   const activeQuestionIndex = activeQuestionStep
     ? Math.min(
       questionIndexByStep[activeQuestionStep.id] ?? 0,
-      Math.max(activeQuestionStep.questions.length - 1, 0),
+      Math.max(visibleQuestions.length - 1, 0),
     )
     : 0;
   const currentQuestion = activeQuestionStep
-    ? activeQuestionStep.questions[activeQuestionIndex]
+    ? visibleQuestions[activeQuestionIndex] ?? null
     : null;
+  const isCurrentQuestionPrefilled = currentQuestion
+    ? hasAnswerValue(answers[currentQuestion.key])
+    : false;
   const isLastQuestionInStep = activeQuestionStep
-    ? activeQuestionIndex >= activeQuestionStep.questions.length - 1
+    ? activeQuestionIndex >= visibleQuestions.length - 1
     : true;
+  const isVisibleStepSkippable = activeQuestionStep
+    ? visibleQuestions.every((question) => !question.required)
+    : false;
   const isLastStepInFlow = currentStepIndex >= CONTENT_ONBOARDING_STEPS.length - 1;
   const isFinalQuestionInFlow =
     Boolean(activeQuestionStep) && isLastStepInFlow && isLastQuestionInStep;
@@ -198,6 +246,16 @@ export default function OnboardingFlow({
     activeQuestionStep?.id === 'company-basics' &&
     showBrandGuidelinesOnly &&
     Boolean(autofillBrandIdentity);
+  const importanceProgress = useMemo(
+    () => getOnboardingImportanceProgress(answers),
+    [answers],
+  );
+  const shouldOfferOptionalPersonalization =
+    questionPhase === 'important' &&
+    !hasHandledOptionalPersonalizationPrompt &&
+    importanceProgress.important.total > 0 &&
+    importanceProgress.important.remainingCount === 0 &&
+    importanceProgress.optional.remainingCount > 0;
 
   const summaryCards = useMemo(
     () => getOnboardingSummaryCards(answers),
@@ -235,6 +293,38 @@ export default function OnboardingFlow({
     return () => clearTimeout(timeout);
   }, [redirectTo, router, showSuccess]);
 
+  useEffect(() => {
+    if (!activeQuestionStep || questionPhase !== 'important') {
+      return;
+    }
+
+    if (showOptionalPersonalizationPrompt || isSourceSetupStep || isBrandGuidelinesOnlyView) {
+      return;
+    }
+
+    if (visibleQuestions.length > 0) {
+      return;
+    }
+
+    if (shouldOfferOptionalPersonalization) {
+      setShowOptionalPersonalizationPrompt(true);
+      return;
+    }
+
+    setDirection(1);
+    setCurrentStepIndex((currentIndex) =>
+      Math.min(CONTENT_ONBOARDING_STEPS.length - 1, currentIndex + 1),
+    );
+  }, [
+    activeQuestionStep,
+    isBrandGuidelinesOnlyView,
+    isSourceSetupStep,
+    questionPhase,
+    shouldOfferOptionalPersonalization,
+    showOptionalPersonalizationPrompt,
+    visibleQuestions.length,
+  ]);
+
   const updateAnswer = (key: string, value: OnboardingAnswers[string]) => {
     setSaveError(null);
     setAnswers((currentAnswers) => ({
@@ -254,8 +344,21 @@ export default function OnboardingFlow({
     }));
   };
 
+  const maybeShowOptionalPersonalizationPrompt = () => {
+    if (!shouldOfferOptionalPersonalization || showOptionalPersonalizationPrompt) {
+      return false;
+    }
+
+    setShowOptionalPersonalizationPrompt(true);
+    return true;
+  };
+
   const goNext = () => {
     setSaveError(null);
+
+    if (activeQuestionStep && !isSourceSetupStep && maybeShowOptionalPersonalizationPrompt()) {
+      return;
+    }
 
     if (activeQuestionStep && currentStepIndex >= CONTENT_ONBOARDING_STEPS.length - 1) {
       handleSubmit();
@@ -284,6 +387,10 @@ export default function OnboardingFlow({
       return;
     }
 
+    if (maybeShowOptionalPersonalizationPrompt()) {
+      return;
+    }
+
     if (isLastQuestionInStep) {
       goNext();
       return;
@@ -291,6 +398,51 @@ export default function OnboardingFlow({
 
     setSaveError(null);
     setActiveQuestionIndex(activeQuestionIndex + 1);
+  };
+
+  const continueWithOptionalPersonalization = () => {
+    if (!activeQuestionStep) {
+      return;
+    }
+
+    setSaveError(null);
+    setShowOptionalPersonalizationPrompt(false);
+    setHasHandledOptionalPersonalizationPrompt(true);
+    setQuestionPhase('all');
+
+    const currentQuestionKey = currentQuestion?.key;
+
+    if (!currentQuestionKey) {
+      setQuestionIndexByStep((current) => ({
+        ...current,
+        [activeQuestionStep.id]: 0,
+      }));
+      return;
+    }
+
+    const currentIndexInFullStep = activeQuestionStep.questions.findIndex(
+      (question) => question.key === currentQuestionKey,
+    );
+    const nextQuestionIndex = currentIndexInFullStep + 1;
+
+    if (nextQuestionIndex >= 0 && nextQuestionIndex < activeQuestionStep.questions.length) {
+      setQuestionIndexByStep((current) => ({
+        ...current,
+        [activeQuestionStep.id]: nextQuestionIndex,
+      }));
+      return;
+    }
+
+    setDirection(1);
+    setCurrentStepIndex((currentIndex) =>
+      Math.min(CONTENT_ONBOARDING_STEPS.length - 1, currentIndex + 1),
+    );
+  };
+
+  const skipOptionalQuestionsForNow = () => {
+    setShowOptionalPersonalizationPrompt(false);
+    setHasHandledOptionalPersonalizationPrompt(true);
+    handleSubmit();
   };
 
   const goToPreviousQuestion = () => {
@@ -343,10 +495,47 @@ export default function OnboardingFlow({
         setShowBrandGuidelinesOnly(Boolean(result.brandIdentity));
         setAutofillHint('We prefilled your onboarding using your website. Review and edit anything before saving.');
 
-        setDirection(1);
-        setCurrentStepIndex((currentIndex) =>
-          Math.min(CONTENT_ONBOARDING_STEPS.length - 1, currentIndex + 1),
+        const sourceSetupIndex = CONTENT_ONBOARDING_STEPS.findIndex(
+          (step): step is OnboardingQuestionStepDefinition =>
+            step.kind === 'questions' && step.id === 'source-setup',
         );
+
+        const firstPrefilledImportantStepIndex = CONTENT_ONBOARDING_STEPS.findIndex(
+          (step, index): step is OnboardingQuestionStepDefinition =>
+            index > sourceSetupIndex &&
+            step.kind === 'questions' &&
+            step.id !== 'source-setup' &&
+            getVisibleQuestionsForStep(step, 'important', mergedAnswers, true).some((question) =>
+              hasAnswerValue(mergedAnswers[question.key]),
+            ),
+        );
+
+        const fallbackQuestionStepIndex = CONTENT_ONBOARDING_STEPS.findIndex(
+          (step, index): step is OnboardingQuestionStepDefinition =>
+            index > sourceSetupIndex && step.kind === 'questions',
+        );
+
+        const nextStepIndex =
+          firstPrefilledImportantStepIndex >= 0
+            ? firstPrefilledImportantStepIndex
+            : fallbackQuestionStepIndex >= 0
+              ? fallbackQuestionStepIndex
+              : Math.min(CONTENT_ONBOARDING_STEPS.length - 1, sourceSetupIndex + 1);
+
+        setDirection(1);
+        setCurrentStepIndex(nextStepIndex);
+        setQuestionIndexByStep((current) => {
+          const targetStep = CONTENT_ONBOARDING_STEPS[nextStepIndex];
+
+          if (!targetStep || targetStep.kind !== 'questions') {
+            return current;
+          }
+
+          return {
+            ...current,
+            [targetStep.id]: 0,
+          };
+        });
       } catch {
         setSaveError('Unexpected issue while prefilling onboarding. Please try again.');
       } finally {
@@ -558,39 +747,83 @@ export default function OnboardingFlow({
     }
   };
 
+  useEffect(() => {
+    if (!showSuccess) {
+      return
+    }
+
+    const end = Date.now() + 3 * 1000
+    const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"]
+    let animationFrameId = 0
+
+    const frame = () => {
+      if (Date.now() > end) {
+        return
+      }
+
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 0, y: 0.5 },
+        colors,
+      })
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 1, y: 0.5 },
+        colors,
+      })
+
+      animationFrameId = requestAnimationFrame(frame)
+    }
+
+    animationFrameId = requestAnimationFrame(frame)
+
+    return () => {
+      if (animationFrameId) {
+        cancelAnimationFrame(animationFrameId)
+      }
+    }
+  }, [showSuccess])
+
   if (isAutofillProcessing) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-[#eef2f8] p-6 ">
+      <div className="flex min-h-svh items-center justify-center  p-6 ">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-2xl space-y-5"
-        > 
+        >
           <OnboardingTerminal mode="processing" />
 
-          <div className="rounded-xl border border-border/40 bg-white p-4 text-sm text-slate-600 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+          <div className="rounded-xl border border-border/40  p-4 text-sm bg-card shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
             Analyzing your website, extracting brand signals, and prefilling your answers...
           </div>
         </motion.div>
       </div>
     );
   }
-
   if (showSuccess) {
     return (
-      <div className="flex min-h-svh items-center justify-center bg-[#eef2f8] p-6">
+      <div className="flex min-h-svh items-center justify-center  p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.96 }}
           animate={{ opacity: 1, scale: 1 }}
           className="w-full max-w-2xl space-y-5"
         >
+          {/* <Button onClick={handleClick}>Trigger Side Cannons</Button> */}
+
           <OnboardingTerminal mode="complete" />
 
           <div className="flex items-center justify-between rounded-xl border border-border/40 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
             <p className="text-sm text-slate-600">Finalizing your setup and taking you to the workspace...</p>
             <Button
               className="h-10 rounded-full px-5"
-              onClick={() => router.push(redirectTo)}
+            // onClick={() => router.push(redirectTo)}
             >
               Continue now
               <ArrowRight className="size-4" />
@@ -613,7 +846,7 @@ export default function OnboardingFlow({
               height={20}
               width={20}
               full
-              textClassName="ml-[1px] text-base font-semibold text-slate-950"
+              textClassName="ml-[1px] text-base font-semibold "
             />
           </div>
           <p className="ml-auto text-xs text-slate-500">
@@ -626,6 +859,27 @@ export default function OnboardingFlow({
             </a>
           </p>
         </div>
+
+        {activeQuestionStep && !isBrandGuidelinesOnlyView ? (
+          <div className="pt-4 pb-1 flex items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1f6fff]">
+              {activeQuestionStep.eyebrow}
+            </p>
+            <h2 className="font-medium text-base md:text-">
+              {activeQuestionStep.title}
+            </h2>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon-sm">
+                  <FaInfoCircle />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>{activeQuestionStep.description}</p>
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        ) : null}
 
         {activeQuestionStep ? (
           <div className="mt-4 space-y-2">
@@ -672,33 +926,6 @@ export default function OnboardingFlow({
 
               {activeQuestionStep ? (
                 <section className=" ">
-                  {!isBrandGuidelinesOnlyView ? (
-                    <div className=" pb-5 flex items-center gap-2">
-                      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[#1f6fff]">
-                        {activeQuestionStep.eyebrow}
-                      </p>
-                      <h2 className=" font-medium text-base  text-slate-900 md:text-">
-                        {activeQuestionStep.title}
-                      </h2>
-                      <Tooltip>
-                        <TooltipTrigger>
-                          <Button variant="ghost" size="icon-sm">
-                            <FaInfoCircle />
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          <p>{activeQuestionStep.description}</p>
-                        </TooltipContent>
-                      </Tooltip>
-                      {/* <p className="text-sm  text-slate-500 ">
-                        
-                      </p> */}
-                      {/* <div className="inline-flex items-center rounded-md border border-border/40 bg-slate-50 px-3 py-1 text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">
-                              Question {activeQuestionIndex + 1} of {activeQuestionStep.questions.length}
-                            </div> */}
-                    </div>
-                  ) : null}
-
                   {isSourceSetupStep ? (
                     <div className="space-y-5">
                       <OnboardingField
@@ -749,6 +976,15 @@ export default function OnboardingFlow({
                       }}
                       title="Brand Guidelines"
                     />
+                  ) : showOptionalPersonalizationPrompt ? (
+                    <OnboardingOptionalPersonalizationPrompt
+                      importantAnsweredCount={importanceProgress.important.answeredCount}
+                      importantTotal={importanceProgress.important.total}
+                      optionalRemainingCount={importanceProgress.optional.remainingCount}
+                      isBusy={isBusy}
+                      onContinuePersonalization={continueWithOptionalPersonalization}
+                      onSkipToWorkflow={skipOptionalQuestionsForNow}
+                    />
                   ) : (
                     <>
                       {autofillApplied ? (
@@ -757,11 +993,17 @@ export default function OnboardingFlow({
                         </div>
                       ) : null}
 
+                      {autofillApplied && currentQuestion && isCurrentQuestionPrefilled ? (
+                        <div className="mb-3 inline-flex items-center rounded-md border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-800">
+                          Prefilled from website context. Edit if needed.
+                        </div>
+                      ) : null}
+
                       <div className="space-y-7">
                         {currentQuestion ? renderQuestion(currentQuestion) : null}
                       </div>
 
-                      {isStepSkippable(activeQuestionStep) ? (
+                      {isVisibleStepSkippable ? (
                         <div className="mt-6 inline-flex items-center gap-2 rounded-md border border-border/40 bg-slate-50 px-4 py-2 text-xs font-medium uppercase tracking-[0.14em] text-slate-500">
                           <Lifebuoy className="size-3.5" weight="bold" />
                           Optional section
@@ -782,7 +1024,7 @@ export default function OnboardingFlow({
         </div>
       </main>
 
-      {activeStep?.kind !== 'screen' ? (
+      {activeStep?.kind !== 'screen' && !showOptionalPersonalizationPrompt ? (
         <footer className="  py-4  end-0">
           <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-4">
             <Button
@@ -803,7 +1045,7 @@ export default function OnboardingFlow({
             </Button>
 
             <div className="flex items-center gap-3">
-              {activeQuestionStep && isStepSkippable(activeQuestionStep) ? (
+              {activeQuestionStep && isVisibleStepSkippable ? (
                 <Button
                   type="button"
                   variant="ghost"
@@ -831,11 +1073,11 @@ export default function OnboardingFlow({
                     ? websiteUrlValue.trim().length === 0 || isBusy
                     : isBrandGuidelinesOnlyView
                       ? isBusy
-                    : activeQuestionStep
-                    ? isLastQuestionInStep
-                      ? !canContinue || isBusy
-                      : !isCurrentQuestionComplete
-                    : false
+                      : activeQuestionStep
+                        ? isLastQuestionInStep
+                          ? !canContinue || isBusy
+                          : !isCurrentQuestionComplete
+                        : false
                 }
                 className="h-11 rounded-md bg-[#1f6fff] px-6 text-white hover:bg-[#1959db]"
               >
@@ -855,11 +1097,11 @@ export default function OnboardingFlow({
                       ? 'Confirm website and continue'
                       : isBrandGuidelinesOnlyView
                         ? 'Continue to Company Basics'
-                      : activeQuestionStep && !isLastQuestionInStep
-                      ? 'Next question'
-                      : isFinalQuestionInFlow
-                        ? 'Save and continue'
-                        : 'Continue'}
+                        : activeQuestionStep && !isLastQuestionInStep
+                          ? 'Next question'
+                          : isFinalQuestionInFlow
+                            ? 'Save and continue'
+                            : 'Continue'}
                     <ArrowRight className="size-4" />
                   </>
                 )}
@@ -932,7 +1174,7 @@ function DefaultEntryStep({
     <section className="flex flex-col items-center justify-between h-[80dvh] ">
       <div className="mt-12 space-y-4">
         <h1 className="text-3xl font-  mx-auto text-center max-w-xl text-[#1f6fff]">
-          A few clicks away from creating <br />  perfect <XLogoIcon className='inline-flex'/> 
+          A few clicks away from creating <br />  perfect <XLogoIcon className='inline-flex' />
           {/* A few clicks away from creating <br />  your strategy. */}
         </h1>
         <BenfitsAnimatedBeam className='-my-10' />

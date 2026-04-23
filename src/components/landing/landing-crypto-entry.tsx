@@ -65,7 +65,7 @@ const LandingCryptoEntry = () => {
                         solo creators who want to stay consistent without the chaos.
                     </p>
 
-                    <Link href="/auth/sign-up">
+                    <Link href="/sign-up">
                         <Button
                             className="bg-[#000100] text-white hover:bg-gray-800 rounded-full px-6 py-3 font-medium inline-flex items-center gap-2"
                         >

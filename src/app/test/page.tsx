@@ -1,7 +1,8 @@
 'use client';
 
-import { Loader2, Mic, RotateCcw, Sparkles, Square } from 'lucide-react';
+import { ArrowRight, Loader2, Mic, RotateCcw, Sparkles, Square } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import confetti from "canvas-confetti"
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -13,6 +14,7 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { BenfitsAnimatedBeam } from '@/components/onboarding/benefits-animated-beam';
+import { OnboardingTerminal } from '@/components/onboarding/onboarding-end-animation-terminal';
 
 type StreamStatus = 'idle' | 'streaming' | 'done' | 'error';
 
@@ -167,6 +169,7 @@ function payloadToString(payload: unknown): string {
     return String(payload);
   }
 }
+import { AnimatePresence, motion } from 'motion/react';
 
 export default function TestVoicePage() {
   const [transcript, setTranscript] = useState('');
@@ -234,7 +237,7 @@ export default function TestVoicePage() {
         setStreamStatus('error');
         setStreamError(
           extractTextCandidate(parsedEvent.data) ||
-            'Stream returned an error event.',
+          'Stream returned an error event.',
         );
         return;
       }
@@ -494,11 +497,74 @@ export default function TestVoicePage() {
         return 'outline' as const;
     }
   }, [streamStatus]);
+  const handleClick = () => {
+    const end = Date.now() + 3 * 1000 // 3 seconds
+    const colors = ["#a786ff", "#fd8bbc", "#eca184", "#f8deb1"]
+    const frame = () => {
+      if (Date.now() > end) return
+      confetti({
+        particleCount: 2,
+        angle: 60,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 0, y: 0.5 },
+        colors: colors,
+      })
+      confetti({
+        particleCount: 2,
+        angle: 120,
+        spread: 55,
+        startVelocity: 60,
+        origin: { x: 1, y: 0.5 },
+        colors: colors,
+      })
+      requestAnimationFrame(frame)
+    }
+    frame()
+  }
 
+  useEffect(() => {
+      handleClick()
+  }, []);
   return (
     <main className="min-h-screen bg-[radial-gradient(circle_at_10%_10%,hsl(var(--primary)/0.16),transparent_40%),radial-gradient(circle_at_90%_90%,hsl(var(--accent)/0.2),transparent_45%),linear-gradient(180deg,hsl(var(--background)),hsl(var(--muted)/0.22))] px-4 py-10 md:px-8">
-          <BenfitsAnimatedBeam />
-      <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
+      <div className="flex min-h-svh items-center justify-center  p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-2xl space-y-5"
+        >
+          {/* <Button onClick={handleClick}>Trigger Side Cannons</Button> */}
+
+          <OnboardingTerminal mode="complete" />
+
+          <div className="flex items-center justify-between rounded-xl border border-border/40 bg-white p-4 shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+            <p className="text-sm text-slate-600">Finalizing your setup and taking you to the workspace...</p>
+            <Button
+              className="h-10 rounded-full px-5"
+            // onClick={() => router.push(redirectTo)}
+            >
+              Continue now
+              <ArrowRight className="size-4" />
+            </Button>
+          </div>
+        </motion.div>
+      </div>
+      {/* <div className="flex min-h-svh items-center justify-center  p-6 ">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.96 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full max-w-2xl space-y-5"
+        >
+          <OnboardingTerminal mode="processing" />
+
+          <div className="rounded-xl border border-border/40  p-4 text-sm bg-card shadow-[0_24px_50px_-40px_rgba(15,23,42,0.55)]">
+            Analyzing your website, extracting brand signals, and prefilling your answers...
+          </div>
+        </motion.div>
+      </div> */}
+      {/* <BenfitsAnimatedBeam /> */}
+      {/* <div className="mx-auto flex w-full max-w-5xl flex-col gap-6">
         <header className="space-y-3">
           <Badge variant="outline" className="w-fit bg-background/70">
             Nova Sonic Test Surface
@@ -630,7 +696,7 @@ export default function TestVoicePage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </div> */}
     </main>
   );
 }

@@ -9,6 +9,12 @@ import {
 } from '@/lib/x/x-oauth';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { extractXHandle } from '@/lib/x/x-handle';
+import {
+  normalizePostMediaAttachments,
+  POST_MEDIA_BUCKET,
+  validatePostMediaAttachmentSet,
+} from '@/lib/x/post-media';
+import type { PostMediaAttachment } from '@/types/database';
 
 const X_STATE_COOKIE = 'x_oauth_state';
 const X_CODE_VERIFIER_COOKIE = 'x_oauth_code_verifier';
@@ -705,7 +711,97 @@ async function refreshStoredXAccount(account: StoredXAccount) {
   );
 }
 
-export async function publishTweetWithStoredConnection(accountId: string, text: string) {
+function getTweetMediaCategory(attachment: PostMediaAttachment) {
+  return attachment.media_type === 'gif' ? 'tweet_gif' : 'tweet_image';
+}
+
+function toTweetMediaIds(mediaIds: string[]) {
+  switch (mediaIds.length) {
+    case 0:
+      return undefined;
+    case 1:
+      return [mediaIds[0]] as [string];
+    case 2:
+      return [mediaIds[0], mediaIds[1]] as [string, string];
+    case 3:
+      return [mediaIds[0], mediaIds[1], mediaIds[2]] as [string, string, string];
+    default:
+      return [mediaIds[0], mediaIds[1], mediaIds[2], mediaIds[3]] as [
+        string,
+        string,
+        string,
+        string,
+      ];
+  }
+}
+
+async function uploadPostMediaAttachmentsToX(
+  client: TwitterApi,
+  attachments: PostMediaAttachment[],
+) {
+  const normalizedAttachments = normalizePostMediaAttachments(attachments);
+
+  validatePostMediaAttachmentSet(normalizedAttachments);
+
+  if (!normalizedAttachments.length) {
+    return [];
+  }
+
+  const supabase = createAdminClient();
+  const mediaIds: string[] = [];
+
+  for (const attachment of normalizedAttachments) {
+    const { data, error } = await supabase.storage
+      .from(attachment.bucket || POST_MEDIA_BUCKET)
+      .download(attachment.path);
+
+    if (error || !data) {
+      throw new Error(`Unable to download attached media: ${attachment.file_name}.`);
+    }
+
+    const buffer = Buffer.from(await data.arrayBuffer());
+    const mediaId = await client.v2.uploadMedia(buffer, {
+      media_category: getTweetMediaCategory(attachment),
+      media_type: attachment.mime_type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+    });
+
+    mediaIds.push(mediaId);
+  }
+
+  return mediaIds;
+}
+
+async function createTweetWithMedia(
+  account: StoredXAccount,
+  text: string,
+  mediaAttachments: PostMediaAttachment[],
+  delegateUserId?: string,
+) {
+  const client = createXUserClient(account.access_token);
+  const mediaIds = await uploadPostMediaAttachmentsToX(client, mediaAttachments);
+  const tweetMediaIds = toTweetMediaIds(mediaIds);
+
+  const delegateHeaders = delegateUserId
+    ? { 'x-as-user-id': delegateUserId }
+    : undefined;
+
+  if (!tweetMediaIds) {
+    return client.v2.tweet(text);
+  }
+
+  if (delegateHeaders) {
+    return client.v2.tweet(text, { media: { media_ids: tweetMediaIds } } as never);
+  }
+
+  return client.v2.tweet(text, { media: { media_ids: tweetMediaIds } });
+}
+
+export async function publishTweetWithStoredConnection(
+  accountId: string,
+  text: string,
+  mediaAttachments: PostMediaAttachment[] = [],
+  delegateUserId?: string,
+) {
   let account = await getStoredXAccountById(accountId);
   const expiresAt = account.expires_at ? new Date(account.expires_at).getTime() : null;
 
@@ -720,8 +816,7 @@ export async function publishTweetWithStoredConnection(accountId: string, text: 
   }
 
   try {
-    const client = createXUserClient(account.access_token);
-    const response = await client.v2.tweet(text);
+    const response = await createTweetWithMedia(account, text, mediaAttachments, delegateUserId);
     return response.data;
   } catch (error) {
     if (!account.refresh_token) {
@@ -729,8 +824,7 @@ export async function publishTweetWithStoredConnection(accountId: string, text: 
     }
 
     const refreshedAccount = await refreshStoredXAccount(account);
-    const client = createXUserClient(refreshedAccount.access_token);
-    const response = await client.v2.tweet(text);
+    const response = await createTweetWithMedia(refreshedAccount, text, mediaAttachments, delegateUserId);
     return response.data;
   }
 }

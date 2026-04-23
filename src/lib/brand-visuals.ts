@@ -184,6 +184,150 @@ export function hexToRgba(hex: string, alpha: number) {
   return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
+function hexToHsl(hex: string): { h: number; s: number; l: number } {
+  const { r, g, b } = hexToRgb(hex);
+  const rNorm = r / 255;
+  const gNorm = g / 255;
+  const bNorm = b / 255;
+  const max = Math.max(rNorm, gNorm, bNorm);
+  const min = Math.min(rNorm, gNorm, bNorm);
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (max !== min) {
+    const d = max - min;
+    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
+    switch (max) {
+      case rNorm:
+        h = ((gNorm - bNorm) / d + (gNorm < bNorm ? 6 : 0)) / 6;
+        break;
+      case gNorm:
+        h = ((bNorm - rNorm) / d + 2) / 6;
+        break;
+      case bNorm:
+        h = ((rNorm - gNorm) / d + 4) / 6;
+        break;
+    }
+  }
+
+  return { h: h * 360, s: s * 100, l: l * 100 };
+}
+
+function hslToHex(h: number, s: number, l: number): string {
+  const hNorm = h / 360;
+  const sNorm = s / 100;
+  const lNorm = l / 100;
+
+  let r: number, g: number, b: number;
+
+  if (sNorm === 0) {
+    r = g = b = lNorm;
+  } else {
+    const hue2rgb = (p: number, q: number, t: number) => {
+      if (t < 0) t += 1;
+      if (t > 1) t -= 1;
+      if (t < 1 / 6) return p + (q - p) * 6 * t;
+      if (t < 1 / 2) return q;
+      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
+      return p;
+    };
+
+    const q = lNorm < 0.5 ? lNorm * (1 + sNorm) : lNorm + sNorm - lNorm * sNorm;
+    const p = 2 * lNorm - q;
+    r = hue2rgb(p, q, hNorm + 1 / 3);
+    g = hue2rgb(p, q, hNorm);
+    b = hue2rgb(p, q, hNorm - 1 / 3);
+  }
+
+  return rgbToHex(r * 255, g * 255, b * 255);
+}
+
+function shiftHue(hex: string, degrees: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex((h + degrees + 360) % 360, s, l);
+}
+
+function adjustSaturation(hex: string, factor: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h, clamp(s * factor, 0, 100), l);
+}
+
+function adjustLightness(hex: string, factor: number): string {
+  const { h, s, l } = hexToHsl(hex);
+  return hslToHex(h, s, clamp(l * factor, 0, 100));
+}
+
+function getComplementary(hex: string): string {
+  return shiftHue(hex, 180);
+}
+
+function getAnalogous(hex: string, index: number): string {
+  return shiftHue(hex, index * 30);
+}
+
+export function remixBrandColors(colors: string[], seed?: number): string[] {
+  if (colors.length === 0) {
+    return ['#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#F59E0B'];
+  }
+
+  const hash = seed ?? Date.now();
+  const random = (n: number) => {
+    const x = Math.sin(hash + n) * 10000;
+    return x - Math.floor(x);
+  };
+
+  const strategy = Math.floor(random(0) * 5);
+
+  const normalizedColors = colors
+    .map((c) => normalizeHexColor(c))
+    .filter((c): c is string => Boolean(c));
+
+  if (normalizedColors.length === 0) {
+    return ['#6366F1', '#8B5CF6', '#EC4899', '#14B8A6', '#F59E0B'];
+  }
+
+  const baseColor = normalizedColors[0];
+
+  switch (strategy) {
+    case 0: {
+      const hueShift = (random(1) - 0.5) * 120;
+      return normalizedColors.map((c, i) => shiftHue(c, hueShift + i * 15));
+    }
+    case 1: {
+      return [
+        baseColor,
+        getComplementary(baseColor),
+        getAnalogous(baseColor, 1),
+        getAnalogous(baseColor, -1),
+        adjustLightness(baseColor, random(2) > 0.5 ? 1.3 : 0.7),
+      ];
+    }
+    case 2: {
+      const satFactor = 0.5 + random(1);
+      return normalizedColors.map((c) => adjustSaturation(c, satFactor));
+    }
+    case 3: {
+      const base = hexToHsl(baseColor);
+      return [
+        hslToHex(base.h, base.s, clamp(base.l * 0.6, 10, 90)),
+        hslToHex(base.h, clamp(base.s * 1.2, 20, 100), clamp(base.l * 0.8, 15, 85)),
+        hslToHex((base.h + 30) % 360, base.s, base.l),
+        hslToHex((base.h + 180) % 360, base.s, base.l),
+        hslToHex(base.h, base.s, clamp(base.l * 1.4, 20, 95)),
+      ];
+    }
+    case 4:
+    default: {
+      const lighter = adjustLightness(baseColor, 1.4);
+      const darker = adjustLightness(baseColor, 0.6);
+      const shifted = shiftHue(baseColor, 60);
+      const comp = getComplementary(baseColor);
+      return [baseColor, lighter, darker, shifted, comp].slice(0, 5);
+    }
+  }
+}
+
 function buildSwatches(colors: string[]): [string, string, string, string, string] {
   const keyColors = toBrandKeyColorSet(colors);
   return [

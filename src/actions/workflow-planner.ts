@@ -1,12 +1,24 @@
 'use server';
 
 import { parseISO, startOfDay } from 'date-fns';
+import { randomUUID } from 'crypto';
 
 import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
+import { createAdminClient } from '@/lib/server-admin';
 import { createClient } from '@/lib/server';
 import { buildTweetContentForScheduling } from '@/lib/x/tweet-text';
+import { getAuthenticatedXUser } from '@/lib/x/x';
+import {
+  getPostMediaExtension,
+  normalizePostMediaAttachments,
+  POST_MEDIA_BUCKET,
+  stripPostMediaSignedUrls,
+  validatePostMediaAttachmentSet,
+  validatePostMediaFile,
+} from '@/lib/x/post-media';
 import {
   buildDateRange,
+  formatWorkflowSuggestedPost,
   getBrandContextForUser,
   regenerateSevenDayDraftItem,
   type PlannerDraftItem,
@@ -19,6 +31,7 @@ import type {
   SevenDayPlanningItem,
   SevenDayPlanningItemApprovalStatus,
   SevenDayPlanningRun,
+  PostMediaAttachment,
 } from '@/types/database';
 
 type WorkflowRunListOptions = {
@@ -28,6 +41,12 @@ type WorkflowRunListOptions = {
 export type WorkflowPlannerRunDetails = {
   run: SevenDayPlanningRun;
   items: SevenDayPlanningItem[];
+  xProfile: {
+    name: string;
+    title: string | null;
+    username: string;
+    avatarUrl: string | null;
+  } | null;
 };
 
 async function getAuthenticatedUserAndClient() {
@@ -132,6 +151,82 @@ function buildDefaultWorkflowScheduledDate(itemDateISO: string, approvedIndex: n
   return baseDate;
 }
 
+function getWorkflowMediaStoragePath(params: {
+  userId: string;
+  runId: string;
+  itemId: string;
+  fileName: string;
+  mimeType: string;
+}) {
+  const extension = getPostMediaExtension(params.fileName, params.mimeType);
+  return `${params.userId}/${params.runId}/${params.itemId}/${randomUUID()}.${extension}`;
+}
+
+function getAttachmentPreviewName(file: File) {
+  return file.name?.trim().slice(0, 120) || 'post-media';
+}
+
+function getSupabaseErrorMessage(error: unknown) {
+  if (!error || typeof error !== 'object') {
+    return null;
+  }
+
+  const record = error as Record<string, unknown>;
+  const message = typeof record.message === 'string' ? record.message : null;
+  const details = typeof record.details === 'string' ? record.details : null;
+  const hint = typeof record.hint === 'string' ? record.hint : null;
+
+  return [message, details, hint].filter(Boolean).join(' ');
+}
+
+async function addSignedUrlsToPostMediaAttachments(
+  attachments: PostMediaAttachment[],
+): Promise<PostMediaAttachment[]> {
+  const normalizedAttachments = normalizePostMediaAttachments(attachments);
+
+  if (!normalizedAttachments.length) {
+    return [];
+  }
+
+  const paths = normalizedAttachments
+    .filter((attachment) => attachment.bucket === POST_MEDIA_BUCKET)
+    .map((attachment) => attachment.path);
+
+  if (!paths.length) {
+    return normalizedAttachments;
+  }
+
+  const admin = createAdminClient();
+  const { data, error } = await admin.storage
+    .from(POST_MEDIA_BUCKET)
+    .createSignedUrls(paths, 60 * 60);
+
+  if (error) {
+    return normalizedAttachments.map((attachment) => ({
+      ...attachment,
+      signed_url: null,
+    }));
+  }
+
+  const signedUrlByPath = new Map(
+    (data ?? []).map((item) => [item.path, item.signedUrl ?? null]),
+  );
+
+  return normalizedAttachments.map((attachment) => ({
+    ...attachment,
+    signed_url: signedUrlByPath.get(attachment.path) ?? null,
+  }));
+}
+
+async function addSignedUrlsToPlanningItems(items: SevenDayPlanningItem[]) {
+  return Promise.all(
+    items.map(async (item) => ({
+      ...item,
+      media_attachments: await addSignedUrlsToPostMediaAttachments(item.media_attachments),
+    })),
+  );
+}
+
 export async function enqueueWorkflowPlannerRun(params: {
   startDateISO: string;
   endDateISO: string;
@@ -197,7 +292,11 @@ export async function getWorkflowPlannerRun(
 ): Promise<WorkflowPlannerRunDetails | null> {
   const { supabase, user } = await getAuthenticatedUserAndClient();
 
-  const [{ data: run, error: runError }, { data: items, error: itemsError }] =
+  const [
+    { data: run, error: runError },
+    { data: items, error: itemsError },
+    { data: xAccount, error: xAccountError },
+  ] =
     await Promise.all([
       supabase
         .from('seven_day_planning_runs')
@@ -211,9 +310,14 @@ export async function getWorkflowPlannerRun(
         .eq('run_id', runId)
         .eq('user_id', user.id)
         .order('day_index', { ascending: true }),
+      supabase
+        .from('x_accounts')
+        .select('access_token, username')
+        .eq('user_id', user.id)
+        .maybeSingle(),
     ]);
 
-  if (runError || itemsError) {
+  if (runError || itemsError || xAccountError) {
     throw new Error('Unable to load this workflow run.');
   }
 
@@ -221,9 +325,31 @@ export async function getWorkflowPlannerRun(
     return null;
   }
 
+  let xProfile: WorkflowPlannerRunDetails['xProfile'] = null;
+
+  if (xAccount?.access_token) {
+    try {
+      const profile = await getAuthenticatedXUser(xAccount.access_token);
+      xProfile = {
+        name: profile.name || xAccount.username,
+        title: profile.description?.trim() || null,
+        username: profile.username || xAccount.username,
+        avatarUrl: profile.profile_image_url ?? null,
+      };
+    } catch {
+      xProfile = {
+        name: xAccount.username,
+        title: null,
+        username: xAccount.username,
+        avatarUrl: null,
+      };
+    }
+  }
+
   return {
-    items: (items ?? []) as SevenDayPlanningItem[],
+    items: await addSignedUrlsToPlanningItems((items ?? []) as SevenDayPlanningItem[]),
     run: run as SevenDayPlanningRun,
+    xProfile,
   };
 }
 
@@ -378,6 +504,303 @@ export async function updateWorkflowPlannerItemSuggestedPost(params: {
   return {
     itemId: data.id,
     suggestedPost: normalizedSuggestedPost,
+  };
+}
+
+export async function formatWorkflowPlannerItemSuggestedPost(params: {
+  runId: string;
+  itemId: string;
+  suggestedPost: string;
+}): Promise<{ itemId: string; suggestedPost: string; changed: boolean }> {
+  const { supabase, user } = await getAuthenticatedUserAndClient();
+
+  const normalizedSuggestedPost = params.suggestedPost
+    .replace(/\r\n/g, '\n')
+    .trim();
+
+  if (!normalizedSuggestedPost) {
+    throw new Error('Suggested post cannot be empty.');
+  }
+
+  const { data: item, error: itemError } = await supabase
+    .from('seven_day_planning_items')
+    .select('id')
+    .eq('id', params.itemId)
+    .eq('run_id', params.runId)
+    .eq('user_id', user.id)
+    .maybeSingle();
+
+  if (itemError || !item?.id) {
+    throw new Error('Unable to load this workflow item for formatting.');
+  }
+
+  const result = await formatWorkflowSuggestedPost({
+    suggestedPost: normalizedSuggestedPost,
+  });
+
+  if (!result.changed) {
+    return {
+      itemId: params.itemId,
+      suggestedPost: result.formattedPost,
+      changed: false,
+    };
+  }
+
+  const { data, error } = await supabase
+    .from('seven_day_planning_items')
+    .update({
+      suggested_post: result.formattedPost,
+    })
+    .eq('id', params.itemId)
+    .eq('run_id', params.runId)
+    .eq('user_id', user.id)
+    .select('id')
+    .single();
+
+  if (error || !data?.id) {
+    throw new Error('Unable to save formatted suggested post.');
+  }
+
+  revalidateAppPaths(['/workflow', '/workflow/' + params.runId, '/']);
+
+  return {
+    itemId: data.id,
+    suggestedPost: result.formattedPost,
+    changed: true,
+  };
+}
+
+export async function uploadWorkflowPlannerItemMedia(
+  formData: FormData,
+): Promise<{ itemId: string; mediaAttachments: PostMediaAttachment[] }> {
+  const { supabase, user } = await getAuthenticatedUserAndClient();
+  const runId = String(formData.get('runId') ?? '');
+  const itemId = String(formData.get('itemId') ?? '');
+  const files = formData
+    .getAll('files')
+    .filter((value): value is File => value instanceof File && value.size > 0);
+
+  if (!runId || !itemId) {
+    throw new Error('Unable to attach media to this workflow item.');
+  }
+
+  if (!files.length) {
+    throw new Error('Choose at least one image or GIF to upload.');
+  }
+
+  const [{ data: run, error: runError }, { data: item, error: itemError }] =
+    await Promise.all([
+      supabase
+        .from('seven_day_planning_runs')
+        .select('id, status')
+        .eq('id', runId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('seven_day_planning_items')
+        .select('id, media_attachments, approval_status')
+        .eq('id', itemId)
+        .eq('run_id', runId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+
+  if (runError) {
+    throw new Error(
+      `Unable to load this workflow run for media upload. ${getSupabaseErrorMessage(runError) ?? ''}`.trim(),
+    );
+  }
+
+  if (itemError) {
+    throw new Error(
+      `Unable to load this workflow item for media upload. ${getSupabaseErrorMessage(itemError) ?? ''}`.trim(),
+    );
+  }
+
+  if (!run || !item) {
+    throw new Error('Unable to find this workflow item for media upload.');
+  }
+
+  if (run.status !== 'pending_approval' || item.approval_status === 'scheduled') {
+    throw new Error('Media can only be changed before this workflow item is scheduled.');
+  }
+
+  const existingAttachments = normalizePostMediaAttachments(item.media_attachments);
+  const nextAttachmentDrafts = files.map((file) => {
+    const mediaType = validatePostMediaFile({
+      mimeType: file.type,
+      sizeBytes: file.size,
+    });
+
+    return {
+      bucket: POST_MEDIA_BUCKET,
+      file_name: getAttachmentPreviewName(file),
+      id: randomUUID(),
+      media_type: mediaType,
+      mime_type: file.type,
+      path: getWorkflowMediaStoragePath({
+        fileName: file.name,
+        itemId,
+        mimeType: file.type,
+        runId,
+        userId: user.id,
+      }),
+      size_bytes: file.size,
+      uploaded_at: new Date().toISOString(),
+    } satisfies PostMediaAttachment;
+  });
+
+  const nextAttachments = [...existingAttachments, ...nextAttachmentDrafts];
+  validatePostMediaAttachmentSet(nextAttachments);
+
+  const admin = createAdminClient();
+  const uploadedPaths: string[] = [];
+
+  try {
+    for (let index = 0; index < files.length; index += 1) {
+      const file = files[index];
+      const attachment = nextAttachmentDrafts[index];
+
+      const { error: uploadError } = await admin.storage
+        .from(POST_MEDIA_BUCKET)
+        .upload(attachment.path, file, {
+          cacheControl: '3600',
+          contentType: file.type,
+          upsert: false,
+        });
+
+      if (uploadError) {
+        throw new Error(uploadError.message);
+      }
+
+      uploadedPaths.push(attachment.path);
+    }
+
+    const attachmentsForStorage = stripPostMediaSignedUrls(nextAttachments);
+    const { data: updatedItem, error: updateError } = await supabase
+      .from('seven_day_planning_items')
+      .update({
+        media_attachments: attachmentsForStorage,
+      })
+      .eq('id', itemId)
+      .eq('run_id', runId)
+      .eq('user_id', user.id)
+      .select('id, media_attachments')
+      .single();
+
+    if (updateError || !updatedItem?.id) {
+      throw new Error(
+        `Unable to save media on this workflow item. ${getSupabaseErrorMessage(updateError) ?? ''}`.trim(),
+      );
+    }
+
+    revalidateAppPaths(['/workflow', '/workflow/' + runId, '/']);
+
+    return {
+      itemId: updatedItem.id,
+      mediaAttachments: await addSignedUrlsToPostMediaAttachments(
+        updatedItem.media_attachments,
+      ),
+    };
+  } catch (error) {
+    if (uploadedPaths.length) {
+      await admin.storage.from(POST_MEDIA_BUCKET).remove(uploadedPaths);
+    }
+
+    throw new Error(
+      error instanceof Error ? error.message : 'Unable to upload media for this post.',
+    );
+  }
+}
+
+export async function removeWorkflowPlannerItemMedia(params: {
+  runId: string;
+  itemId: string;
+  attachmentId: string;
+}): Promise<{ itemId: string; mediaAttachments: PostMediaAttachment[] }> {
+  const { supabase, user } = await getAuthenticatedUserAndClient();
+
+  const [{ data: run, error: runError }, { data: item, error: itemError }] =
+    await Promise.all([
+      supabase
+        .from('seven_day_planning_runs')
+        .select('id, status')
+        .eq('id', params.runId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabase
+        .from('seven_day_planning_items')
+        .select('id, media_attachments, approval_status')
+        .eq('id', params.itemId)
+        .eq('run_id', params.runId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+
+  if (runError) {
+    throw new Error(
+      `Unable to load this workflow run for media removal. ${getSupabaseErrorMessage(runError) ?? ''}`.trim(),
+    );
+  }
+
+  if (itemError) {
+    throw new Error(
+      `Unable to load this workflow item for media removal. ${getSupabaseErrorMessage(itemError) ?? ''}`.trim(),
+    );
+  }
+
+  if (!run || !item) {
+    throw new Error('Unable to find this workflow item for media removal.');
+  }
+
+  if (run.status !== 'pending_approval' || item.approval_status === 'scheduled') {
+    throw new Error('Media can only be changed before this workflow item is scheduled.');
+  }
+
+  const existingAttachments = normalizePostMediaAttachments(item.media_attachments);
+  const removedAttachment = existingAttachments.find(
+    (attachment) => attachment.id === params.attachmentId,
+  );
+
+  if (!removedAttachment) {
+    throw new Error('Unable to find that media attachment.');
+  }
+
+  const nextAttachments = existingAttachments.filter(
+    (attachment) => attachment.id !== params.attachmentId,
+  );
+
+  const { data: updatedItem, error: updateError } = await supabase
+    .from('seven_day_planning_items')
+    .update({
+      media_attachments: stripPostMediaSignedUrls(nextAttachments),
+    })
+    .eq('id', params.itemId)
+    .eq('run_id', params.runId)
+    .eq('user_id', user.id)
+    .select('id, media_attachments')
+    .single();
+
+  if (updateError || !updatedItem?.id) {
+    throw new Error(
+      `Unable to remove media from this workflow item. ${getSupabaseErrorMessage(updateError) ?? ''}`.trim(),
+    );
+  }
+
+  if (removedAttachment.bucket === POST_MEDIA_BUCKET) {
+    await createAdminClient()
+      .storage
+      .from(POST_MEDIA_BUCKET)
+      .remove([removedAttachment.path]);
+  }
+
+  revalidateAppPaths(['/workflow', '/workflow/' + params.runId, '/']);
+
+  return {
+    itemId: updatedItem.id,
+    mediaAttachments: await addSignedUrlsToPostMediaAttachments(
+      updatedItem.media_attachments,
+    ),
   };
 }
 
@@ -580,15 +1003,22 @@ export async function scheduleWorkflowPlannerRun(params: {
       item.pillar,
       item.angle,
     );
+    const mediaAttachments = stripPostMediaSignedUrls(
+      normalizePostMediaAttachments(item.media_attachments),
+    );
+
+    validatePostMediaAttachmentSet(mediaAttachments);
 
     return {
       character_count: content.length,
       content,
+      media_attachments: mediaAttachments,
       model: run.generation_model ?? 'claude-haiku-4-5',
       prompt_snapshot: {
         angle: item.angle,
         contentType: item.content_type,
         itemId: item.id,
+        mediaAttachmentIds: mediaAttachments.map((attachment) => attachment.id),
         pillar: item.pillar,
         runId: params.runId,
         source: 'workflow_planner',

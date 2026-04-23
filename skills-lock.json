@@ -11,10 +11,20 @@
       "sourceType": "github",
       "computedHash": "84247f4175e5ab6104aa2c4ff4038f1eae98d992a253755ca18d3b62e28a7b5c"
     },
+    "karpathy-guidelines": {
+      "source": "forrestchang/andrej-karpathy-skills",
+      "sourceType": "github",
+      "computedHash": "41e8ca055bbde13d240776a14a076a59614057200340c243130a76ba4e64cac8"
+    },
     "livekit-agents": {
       "source": "livekit/agent-skills",
       "sourceType": "github",
       "computedHash": "373669b9a938ced840f301173e838a0046408acd0397c02c03420cc9b6a8cb42"
+    },
+    "x": {
+      "source": "docs.x.com",
+      "sourceType": "well-known",
+      "computedHash": "4b4082921918d68346f3c4e2b84fd2b7b2b0aebefaf0c132e5a98f9fe7377f67"
     }
   }
 }

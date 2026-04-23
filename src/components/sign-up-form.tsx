@@ -11,6 +11,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Logo from '@/components/logo'
+import { ArrowRightIcon, XLogoIcon } from '@phosphor-icons/react/dist/ssr'
 
 /**
  * Sign Up Form Component
@@ -48,7 +49,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
         },
       })
       if (error) throw error
-      router.push('/auth/sign-up-success')
+      router.push('/sign-up-success')
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : 'An error occurred')
     } finally {
@@ -83,13 +84,13 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       <div className="text-center">
         <div className="flex justify-center mb-6">
           <Link href="/">
-            <Logo full height={28} />
+            <Logo full height={24} width={24} className='gap-2' />
           </Link>
         </div>
-        <h1 className="text-3xl font-semibold text-gray-900 mb-2">
+        <h1 className="text-3xl font-semibold  mb-2">
           Create your account
         </h1>
-        <p className="text-gray-500">
+        <p className="text-muted-foreground">
           Start organizing your content ideas today
         </p>
       </div>
@@ -97,13 +98,13 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
       {/* Form Card */}
       <div className="relative">
         {/* Subtle gradient glow behind card */}
-        <div className="absolute -inset-1 bg-linear-to-r from-[#2F92C7]/20 via-transparent to-[#1F92F9]/20 rounded-3xl blur-xl opacity-60" />
+        {/* <div className="absolute -inset-1 bg-linear-to-r from-[#2F92C7]/20 via-transparent to-[#1F92F9]/20 rounded-3xl blur-xl opacity-60" /> */}
 
-        <div className="relative bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-border/30 p-8">
+        <div className="relative  rounded-2xl  p-8">
           <form onSubmit={handleSignUp} className="space-y-5">
             {/* Email Field */}
             <div className="space-y-2">
-              <Label htmlFor="email" className="text-gray-700 font-medium">
+              <Label htmlFor="email" className="font-medium">
                 Email address
               </Label>
               <Input
@@ -113,13 +114,13 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="h-12 border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
+                // className=" border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
               />
             </div>
 
             {/* Password Field */}
             <div className="space-y-2">
-              <Label htmlFor="password" className="text-gray-700 font-medium">
+              <Label htmlFor="password" className="font-medium">
                 Password
               </Label>
               <Input
@@ -129,13 +130,13 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="h-12 border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
+                className=" border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
               />
             </div>
 
             {/* Confirm Password Field */}
             <div className="space-y-2">
-              <Label htmlFor="repeat-password" className="text-gray-700 font-medium">
+              <Label htmlFor="repeat-password" className="font-medium">
                 Confirm password
               </Label>
               <Input
@@ -145,7 +146,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                 required
                 value={repeatPassword}
                 onChange={(e) => setRepeatPassword(e.target.value)}
-                className="h-12 border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
+                className=" border-border/40 bg-background focus:border-[#2F92C7] focus:ring-[#2F92C7]/20 transition-all"
               />
             </div>
 
@@ -163,7 +164,7 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
             <Button
               type="submit"
               disabled={isLoading || isXAuthLoading}
-              className="w-full h-12 bg-[#000100] text-white hover:bg-gray-800 rounded-xl font-medium text-base shadow-lg shadow-gray-300/30 transition-all hover:shadow-xl hover:shadow-gray-300/40"
+              className="w-full  "
             >
               {isLoading ? (
                 <span className="flex items-center gap-2">
@@ -174,23 +175,30 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                   Creating your account...
                 </span>
               ) : (
-                <span className="flex items-center justify-center gap-2">
+                <span className="flex items-center justify-center gap-1">
                   Create account
-                  <span className="w-6 h-6 bg-[#1F92F9] rounded-md flex items-center justify-center">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                      <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                    </svg>
+                  <span className="w-6 h-6 flex items-center justify-center">
+                    <ArrowRightIcon/>
+
                   </span>
                 </span>
               )}
             </Button>
-
+            {/* Divider */}
+            <div className="relative mb-6 mt-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-border/40" />
+              </div>
+              <div className="relative flex justify-center text-sm">
+                <span className="px-4 ">or</span>
+              </div>
+            </div>
             <Button
               type="button"
               variant="outline"
               onClick={handleXSignUp}
               disabled={isLoading || isXAuthLoading}
-              className="w-full h-12 rounded-xl border-border/40 bg-white text-gray-900 hover:bg-gray-50"
+              className="w-full mb-2"
             >
               {isXAuthLoading ? (
                 <span className="flex items-center gap-2">
@@ -202,34 +210,25 @@ export function SignUpForm({ className, ...props }: React.ComponentPropsWithoutR
                 </span>
               ) : (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="inline-flex h-6 w-6 items-center justify-center rounded-md bg-black text-[11px] font-semibold text-white">
-                    X
-                  </span>
-                  Continue with X
+
+                  Continue with
+                  <XLogoIcon />
                 </span>
               )}
             </Button>
 
-            <p className="text-xs leading-5 text-gray-500">
+            <p className="text-[10px] mb-2 leading-5 text-muted-foreground text-center">
               X will show its official consent screen with the permissions this app requests.
             </p>
           </form>
 
-          {/* Divider */}
-          <div className="relative my-6">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-border/40" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-400">or</span>
-            </div>
-          </div>
+
 
           {/* Login Link */}
-          <p className="text-center text-gray-600">
+          <p className="text-center text-sm text-gray-600">
             Already have an account?{' '}
             <Link
-              href="/auth/login"
+              href="/login"
               className="font-medium text-[#2F92C7] hover:text-[#1F92F9] transition-colors"
             >
               Sign in

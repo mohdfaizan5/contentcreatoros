@@ -30,7 +30,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
 
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
+        redirectTo: `${window.location.origin}/update-password`,
       })
       if (error) throw error
       setSuccess(true)
@@ -151,7 +151,7 @@ export function ForgotPasswordForm({ className, ...props }: React.ComponentProps
           <p className="text-center text-gray-600">
             Remember your password?{' '}
             <Link
-              href="/auth/login"
+              href="/login"
               className="font-medium text-[#2F92C7] hover:text-[#1F92F9] transition-colors"
             >
               Sign in

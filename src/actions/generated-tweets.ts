@@ -151,7 +151,7 @@ export async function getGeneratedTweetCalendarEvents(): Promise<CalendarEventIn
       return [
         {
           color: getCalendarEventColor(tweet.status),
-          description: buildCalendarDescription(tweet),
+          description: tweet.content,
           end: end.toISOString(),
           id: tweet.id,
           location: 'X',
@@ -162,7 +162,10 @@ export async function getGeneratedTweetCalendarEvents(): Promise<CalendarEventIn
             source: 'generated_tweet',
           },
           start: start.toISOString(),
-          title: getCalendarTitle(tweet.content, tweet.status),
+          // title: getCalendarTitle(tweet.content, tweet.status),
+          title: tweet.content,
+          tweetContent: tweet.content,
+          tweetStatus: tweet.status,
         },
       ];
     },
@@ -370,7 +373,11 @@ export async function publishGeneratedTweetNow(generatedTweetId: string) {
     .eq('user_id', user.id);
 
   try {
-    const publishedTweet = await publishTweetWithStoredConnection(xAccountId, tweet.content);
+    const publishedTweet = await publishTweetWithStoredConnection(
+      xAccountId,
+      tweet.content,
+      tweet.media_attachments,
+    );
 
     const { data: updatedTweet, error: updatedTweetError } = await supabase
       .from('generated_tweets')

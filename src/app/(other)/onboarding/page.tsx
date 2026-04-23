@@ -39,7 +39,7 @@ export default async function OnboardingPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   const { count: onboardingAnswerCount, error: onboardingAnswersError } = await supabase

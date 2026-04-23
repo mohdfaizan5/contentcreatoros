@@ -10,6 +10,10 @@ import { toast } from 'sonner';
 import { enqueueWorkflowPlannerRun } from '@/actions/workflow-planner';
 import TwoCalendarRange from '@/components/two-calendar-range';
 import { Button } from '@/components/ui/button';
+import {
+  WORKFLOW_PLANNER_MAX_DAYS,
+  WORKFLOW_PLANNER_MIN_DAYS,
+} from '@/lib/workflow-planner-limits';
 
 function toDateInputValue(date: Date) {
   return format(date, 'yyyy-MM-dd');
@@ -22,7 +26,7 @@ export default function WorkflowNewRunClient() {
   const defaultRange = useMemo<DateRange>(
     () => ({
       from: today,
-      to: addDays(today, 6),
+      to: addDays(today, Math.min(6, WORKFLOW_PLANNER_MAX_DAYS - 1)),
     }),
     [today],
   );
@@ -37,7 +41,9 @@ export default function WorkflowNewRunClient() {
     return differenceInCalendarDays(selectedRange.to, selectedRange.from) + 1;
   }, [selectedRange]);
 
-  const hasExactSevenDayRange = selectedDayCount === 7;
+  const hasValidSelectedRange =
+    selectedDayCount >= WORKFLOW_PLANNER_MIN_DAYS &&
+    selectedDayCount <= WORKFLOW_PLANNER_MAX_DAYS;
 
   const startDateISO = selectedRange?.from
     ? toDateInputValue(selectedRange.from)
@@ -45,8 +51,10 @@ export default function WorkflowNewRunClient() {
   const endDateISO = selectedRange?.to ? toDateInputValue(selectedRange.to) : '';
 
   const handleQueueRun = () => {
-    if (!hasExactSevenDayRange || !startDateISO || !endDateISO) {
-      toast.error('Select exactly 7 days before queueing this workflow run.');
+    if (!hasValidSelectedRange || !startDateISO || !endDateISO) {
+      toast.error(
+        `Select ${WORKFLOW_PLANNER_MIN_DAYS}-${WORKFLOW_PLANNER_MAX_DAYS} days before queueing this workflow run.`,
+      );
       return;
     }
 
@@ -74,7 +82,7 @@ export default function WorkflowNewRunClient() {
       <TwoCalendarRange
         value={selectedRange}
         onChange={setSelectedRange}
-        maxDays={7}
+        maxDays={WORKFLOW_PLANNER_MAX_DAYS}
         className='bg-background/70'
         minDate={today}
       />
@@ -82,17 +90,19 @@ export default function WorkflowNewRunClient() {
       <p className="text-sm text-muted-foreground">
         {selectedRange?.from && selectedRange?.to
           ? `${format(selectedRange.from, 'MMM d')} - ${format(selectedRange.to, 'MMM d, yyyy')} (${selectedDayCount} days selected)`
-          : 'Select a start and end date for your next 7 days.'}
+          : `Select ${WORKFLOW_PLANNER_MIN_DAYS}-${WORKFLOW_PLANNER_MAX_DAYS} days for your next campaign.`}
       </p>
 
-      {selectedDayCount > 0 && !hasExactSevenDayRange ? (
-        <p className="text-sm text-destructive">Select exactly 7 days to continue.</p>
+      {selectedDayCount > 0 && !hasValidSelectedRange ? (
+        <p className="text-sm text-destructive">
+          Select {WORKFLOW_PLANNER_MIN_DAYS}-{WORKFLOW_PLANNER_MAX_DAYS} days to continue.
+        </p>
       ) : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
           className="gap-2"
-          disabled={isPending || !hasExactSevenDayRange}
+          disabled={isPending || !hasValidSelectedRange}
           onClick={handleQueueRun}
         >
           {isPending ? (
@@ -100,7 +110,7 @@ export default function WorkflowNewRunClient() {
           ) : (
             <Sparkles className="h-4 w-4" />
           )}
-          Queue 7-Day Workflow
+          Queue Campaign
         </Button>
 
         <p className="text-xs text-muted-foreground">

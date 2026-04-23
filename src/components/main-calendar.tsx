@@ -24,9 +24,9 @@ function normalizeEvents(events: CalendarEventInput[]) {
       start: normalizeEventDate(event.start),
     }))
     .filter(
-      (event): event is CalendarEvent =>
+      (event) =>
         !Number.isNaN(event.start.getTime()) && !Number.isNaN(event.end.getTime()),
-    );
+    ) as CalendarEvent[];
 }
 
 export default function MainCalendar({
@@ -38,7 +38,7 @@ export default function MainCalendar({
     [initialEvents],
   );
   const [editableEvents, setEditableEvents] = useState<CalendarEvent[]>(
-    normalizedInitialEvents,
+    () => normalizedInitialEvents,
   );
   const events = readOnly ? normalizedInitialEvents : editableEvents;
 

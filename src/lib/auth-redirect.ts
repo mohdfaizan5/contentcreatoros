@@ -44,7 +44,7 @@ export function getAuthOrigin() {
 
 export function getOAuthRedirectTo(nextPath = '/app') {
   const normalizedNextPath = nextPath.startsWith('/') ? nextPath : '/app';
-  const callbackUrl = new URL('/auth/callback', getAuthOrigin());
+  const callbackUrl = new URL('/callback', getAuthOrigin());
   callbackUrl.searchParams.set('next', normalizedNextPath);
   return callbackUrl.toString();
 }

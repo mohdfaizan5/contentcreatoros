@@ -9,13 +9,26 @@ type DispatchPayload = {
   runId?: string;
   source?: string;
 };
-
+// IMPROVEMENT: keep types seperate from code or in sometimes it make sense to colocate, but in this case it adds noise to the main logic of the route handler.
 type WorkflowDispatchCode =
   | 'unauthorized'
   | 'missing-service-role'
   | 'no-queued-runs'
   | 'processed'
   | 'failed';
+
+
+
+export async function GET(request: NextRequest) {
+  const payload = await parsePayload(request);
+  return runDispatch(request, payload);
+}
+
+export async function POST(request: NextRequest) {
+  const payload = await parsePayload(request);
+  // 
+  return runDispatch(request, payload);
+}
 
 function normalizeSource(
   payload: DispatchPayload,
@@ -139,14 +152,4 @@ async function runDispatch(request: NextRequest, payload: DispatchPayload = {}) 
       source,
     });
   }
-}
-
-export async function GET(request: NextRequest) {
-  const payload = await parsePayload(request);
-  return runDispatch(request, payload);
-}
-
-export async function POST(request: NextRequest) {
-  const payload = await parsePayload(request);
-  return runDispatch(request, payload);
 }

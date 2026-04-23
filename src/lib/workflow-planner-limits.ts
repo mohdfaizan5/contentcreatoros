@@ -1,0 +1,3 @@
+export const WORKFLOW_PLANNER_MIN_DAYS = 1;
+export const WORKFLOW_PLANNER_MAX_DAYS = 14;
+

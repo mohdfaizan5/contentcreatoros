@@ -109,7 +109,7 @@ const LandingHeader = () => {
 
                 <div className="hidden items-center gap-3 md:flex">
                     <Link
-                        href="/auth/login"
+                        href="/login"
                         className={cn(
                             'text-sm font-semibold transition-colors hover:underline',
                             isLight ? 'text-slate-950' : 'text-white',
@@ -117,7 +117,7 @@ const LandingHeader = () => {
                     >
                         Log In
                     </Link>
-                    <Link href="/auth/sign-up">
+                    <Link href="/sign-up">
                         <Button
                             className={cn(
                                 'rounded-full px-6 py-2 font-semibold',
@@ -189,7 +189,7 @@ const LandingHeader = () => {
                         ))}
                         <hr className={cn('my-2', isLight ? 'border-border/40' : 'border-white/20')} />
                         <Link
-                            href="/auth/login"
+                            href="/login"
                             onClick={() => setIsMenuOpen(false)}
                             className={cn(
                                 'rounded-lg px-4 py-3 text-center text-sm font-semibold',
@@ -198,7 +198,7 @@ const LandingHeader = () => {
                         >
                             Log In
                         </Link>
-                        <Link href="/auth/sign-up">
+                        <Link href="/sign-up">
                             <Button
                                 className={cn(
                                     'w-full rounded-lg py-3 font-semibold',

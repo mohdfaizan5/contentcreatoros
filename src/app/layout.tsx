@@ -85,7 +85,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("font-sans", inter.variable, interHeading.variable)}>
+    <html
+      lang="en"
+      className={cn("font-sans", inter.variable, interHeading.variable)}
+      suppressHydrationWarning
+    >
       <body
         className={`${serif.variable} ${inter.variable} font-sans antialiased overflow-x-hidden`}
       >

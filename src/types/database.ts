@@ -37,6 +37,7 @@ export type SevenDayPlanningItemApprovalStatus =
     | 'approved'
     | 'rejected'
     | 'scheduled';
+export type PostMediaAttachmentType = 'image' | 'gif';
 
 // ============================================
 // EDITOR.JS TYPES
@@ -234,6 +235,18 @@ export interface XAccount {
     updated_at: string;
 }
 
+export interface PostMediaAttachment {
+    id: string;
+    bucket: string;
+    path: string;
+    file_name: string;
+    mime_type: string;
+    media_type: PostMediaAttachmentType;
+    size_bytes: number;
+    uploaded_at: string;
+    signed_url?: string | null;
+}
+
 export interface OnboardingAutofillProfile {
     id: string;
     user_id: string;
@@ -263,6 +276,7 @@ export interface GeneratedTweet {
     published_at: string | null;
     x_tweet_id: string | null;
     error_message: string | null;
+    media_attachments: PostMediaAttachment[];
     model: string | null;
     prompt_snapshot: Record<string, unknown>;
     created_at: string;
@@ -308,6 +322,7 @@ export interface SevenDayPlanningItem {
     rejected_at: string | null;
     regeneration_count: number;
     regeneration_history: Array<Record<string, unknown>>;
+    media_attachments: PostMediaAttachment[];
     generated_tweet_id: string | null;
     created_at: string;
     updated_at: string;

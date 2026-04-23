@@ -1,10 +1,11 @@
 import { createAdminClient } from '@/lib/server-admin';
 import { publishTweetWithStoredConnection } from '@/lib/x/x';
-import type { ScheduledDispatchRunStatus } from '@/types/database';
+import type { PostMediaAttachment, ScheduledDispatchRunStatus } from '@/types/database';
 
 type ScheduledTweetRow = {
   id: string;
   content: string;
+  media_attachments: PostMediaAttachment[];
   user_id: string;
   x_account_id: string | null;
 };
@@ -202,7 +203,7 @@ export async function dispatchScheduledTweets(
 
     let dueTweetsQuery = supabase
       .from('generated_tweets')
-      .select('id, content, user_id, x_account_id')
+      .select('id, content, media_attachments, user_id, x_account_id')
       .eq('status', 'scheduled')
       .lte('scheduled_for', now)
       .order('scheduled_for', { ascending: true })
@@ -336,6 +337,7 @@ export async function dispatchScheduledTweets(
         const publishedTweet = await publishTweetWithStoredConnection(
           accountId,
           row.content,
+          row.media_attachments,
         );
 
         const { error: publishUpdateError } = await supabase

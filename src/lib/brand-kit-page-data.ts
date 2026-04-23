@@ -51,7 +51,7 @@ export async function getBrandKitPageData() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect('/auth/login');
+    redirect('/login');
   }
 
   const { data: answerRows, error } = await supabase

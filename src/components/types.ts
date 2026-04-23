@@ -20,9 +20,11 @@ export interface CalendarEvent {
 }
 
 export interface CalendarEventInput
-  extends Omit<CalendarEvent, "start" | "end"> {
+  extends Omit<CalendarEvent, "start" | "end" | "tweetContent" | "tweetStatus"> {
   start: Date | string;
   end: Date | string;
+  tweetContent: string;
+  tweetStatus: string;
 }
 
 export type EventColor =

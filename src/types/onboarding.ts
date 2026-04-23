@@ -38,6 +38,7 @@ interface OnboardingQuestionBase {
   description?: string;
   helperText?: string;
   required?: boolean;
+  important?: boolean;
 }
 
 export interface OnboardingTextQuestion extends OnboardingQuestionBase {

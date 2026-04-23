@@ -79,7 +79,7 @@ const LandingExpansion = () => {
                         content series that build your audience over time.
                     </p>
 
-                    <Link href="/auth/sign-up">
+                    <Link href="/sign-up">
                         <Button
                             className="bg-[#2F92C7] text-white hover:bg-[#258ab8] rounded-full px-8 py-4 font-medium inline-flex items-center gap-2 shadow-lg shadow-[#2F92C7]/30"
                         >
