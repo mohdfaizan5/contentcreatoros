@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { toPng } from 'html-to-image';
 import {
   ArrowClockwise,
   DownloadSimple,
@@ -9,7 +10,6 @@ import {
   MagicWand,
   WarningCircle,
 } from '@phosphor-icons/react';
-import { useToImage } from 'react-to-image';
 
 import { generateImageTemplateCopy } from '@/actions/image-generation';
 import {
@@ -82,7 +82,9 @@ export function ImageTemplateWorkbench({
   const [isGenerating, startGenerationTransition] = useTransition();
   const [remixVariant, setRemixVariant] = useState<number | null>(null);
   const [isRemixing, startRemixTransition] = useTransition();
+  const [isExporting, setIsExporting] = useState(false);
   const lastAutoGenerateNonceRef = useRef<number | undefined>(undefined);
+  const exportRef = useRef<HTMLDivElement | null>(null);
   const direction = initialDirection || sourceTweet;
 
   const companyName =
@@ -101,25 +103,6 @@ export function ImageTemplateWorkbench({
     () => `${toSlug(companyName || 'brand')}-${templateId}-16x9`,
     [companyName, templateId],
   );
-
-  const {
-    ref: exportRef,
-    getPng,
-    isLoading: isExporting,
-    error: exportError,
-  } = useToImage<HTMLDivElement>({
-    backgroundColor: previewTheme.background,
-    cacheBust: true,
-    fileName: exportFileName,
-    pixelRatio: 2,
-  });
-
-  const exportErrorMessage =
-    exportError instanceof Error
-      ? exportError.message
-      : typeof exportError === 'string'
-        ? exportError
-        : null;
 
   const updateField = (key: ImageTemplateFieldKey, nextValue: string) => {
     setCopyByTemplate((current) => ({
@@ -178,9 +161,35 @@ export function ImageTemplateWorkbench({
   const handleExport = async () => {
     setError(null);
     setFeedback(null);
+    const node = exportRef.current;
 
-    await getPng();
-    setFeedback('Exported 16:9 PNG from the current template preview.');
+    if (!node) {
+      setError('Unable to find the template preview to export.');
+      return;
+    }
+
+    setIsExporting(true);
+
+    try {
+      const dataUrl = await toPng(node, {
+        backgroundColor: previewTheme.background,
+        cacheBust: true,
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.download = `${exportFileName}.png`;
+      link.href = dataUrl;
+      link.click();
+      setFeedback('Exported 16:9 PNG from the current template preview.');
+    } catch (exportError) {
+      setError(
+        exportError instanceof Error
+          ? exportError.message
+          : 'Unable to export the current template preview.',
+      );
+    } finally {
+      setIsExporting(false);
+    }
   };
 
   const handleRemixColors = () => {
@@ -357,10 +366,10 @@ export function ImageTemplateWorkbench({
                 </p>
               ) : null}
 
-              {error || exportErrorMessage ? (
+              {error ? (
                 <p className="inline-flex items-center gap-2 rounded-lg border border-rose-300/80 bg-rose-50 px-3 py-2 text-sm text-rose-700">
                   <WarningCircle className="size-4" weight="fill" />
-                  {error || exportErrorMessage}
+                  {error}
                 </p>
               ) : null}
             </section>
