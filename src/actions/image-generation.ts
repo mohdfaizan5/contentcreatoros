@@ -1,7 +1,7 @@
 'use server';
 
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
+import { anthropic } from '@/lib/anthropic';
 
 import {
   IMAGE_TEMPLATE_DEFINITIONS,
@@ -35,6 +35,7 @@ type StoredOnboardingAnswerRow = {
 export type GenerateImageTemplateCopyInput = {
   templateId: ImageTemplateId;
   direction?: string;
+  sourceTweet?: string;
   existingCopy?: Partial<Record<ImageTemplateFieldKey, string>>;
 };
 
@@ -251,6 +252,7 @@ export async function generateImageTemplateCopy(
 
   const templateId = input.templateId;
   const direction = readString(input.direction);
+  const sourceTweet = trimTweetToLimit(readString(input.sourceTweet));
   const existingCopy = normalizeImageTemplateCopy(templateId, input.existingCopy ?? {});
   const template = IMAGE_TEMPLATE_DEFINITIONS[templateId];
 
@@ -364,10 +366,14 @@ export async function generateImageTemplateCopy(
     existingCopyPreview.length
       ? `User-edited field seeds:\n${existingCopyPreview.join('\n')}`
       : 'User-edited field seeds: none',
+    sourceTweet
+      ? `Workflow post context (primary idea source):\n${sourceTweet}`
+      : 'Workflow post context: none',
     direction ? `Creative direction from user: ${direction}` : 'Creative direction from user: none',
     '',
     'Task:',
     '- Write one X post and one image copy object.',
+    '- When workflow post context is provided, treat it as the primary message to translate into the image copy.',
     '- Keep the post readable with clean line breaks.',
     '- Match tone and audience from context. Do not invent offers not implied by the context.',
     '- Respect all field character limits exactly.',

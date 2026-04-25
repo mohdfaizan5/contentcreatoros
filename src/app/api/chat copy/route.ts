@@ -22,7 +22,7 @@ const SYSTEM_PROMPT = `You are a helpful AI assistant for content creators. You 
 Be concise, creative, and actionable. Tailor your suggestions to the platform and content type when relevant.`;
 
 import { streamText, UIMessage, convertToModelMessages } from 'ai';
-import { anthropic } from "@ai-sdk/anthropic";
+import { anthropic } from '@/lib/anthropic';
 
 export async function POST(req: Request) {
   const { messages }: { messages: UIMessage[] } = await req.json();

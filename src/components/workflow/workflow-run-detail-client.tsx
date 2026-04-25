@@ -5,6 +5,7 @@ import { format, parseISO } from 'date-fns';
 import {
     AlertCircle,
     CheckCircle2,
+    ChevronDownIcon,
     ChevronLeft,
     ChevronRight,
     ImagePlus,
@@ -16,7 +17,14 @@ import {
 import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { MagicWandIcon } from '@phosphor-icons/react/dist/ssr';
 import {
     formatWorkflowPlannerItemSuggestedPost,
     regenerateWorkflowPlannerItem,
@@ -41,6 +49,7 @@ import type {
     SevenDayPlanningItemApprovalStatus,
     SevenDayPlanningRun,
 } from '@/types/database';
+import type { BrandVisualIdentity } from '@/lib/brand-visuals';
 import { WorkflowRunStatusBadge } from './workflow-run-status-badge';
 import { Tooltip, TooltipPopup, TooltipTrigger } from '../ui/tooltip';
 import { ArticleNyTimesIcon, QuestionMarkIcon } from '@phosphor-icons/react/dist/ssr';
@@ -51,12 +60,27 @@ import {
 } from "@/components/ui/popover";
 import CalendarSelectWithTime from '@/components/calendar-select-with-time';
 import { Avatar, AvatarFallback, AvatarImage, } from '../ui/avatar';
+import {
+    Dialog,
+    DialogDescription,
+    DialogHeader,
+    DialogPanel,
+    DialogPopup,
+    DialogTitle,
+} from '@/components/ui/dialog';
+import { ImageTemplateWorkbench } from '@/components/images/image-template-workbench';
 
 type WorkflowPostingAccountProfile = {
     name: string;
     title: string | null;
     username: string;
     avatarUrl: string | null;
+};
+
+type WorkflowImageStudioContext = {
+    brandIdentity: BrandVisualIdentity;
+    companyOverview: string;
+    initialWebsiteUrl: string;
 };
 
 function formatUsername(username: string) {
@@ -125,9 +149,20 @@ function buildDefaultItemScheduleDate(itemDateISO: string, approvedIndex: number
         return new Date();
     }
 
-    date.setUTCHours(14, approvedIndex * 3, 0, 0);
+    date.setUTCHours(14 + approvedIndex * 3, 0, 0, 0);
 
     return date;
+}
+
+function getItemSlotIndex(dayLabel: string) {
+    const match = dayLabel.match(/post\s+(\d+)$/i);
+
+    if (!match) {
+        return 0;
+    }
+
+    const parsedIndex = Number.parseInt(match[1] ?? '1', 10);
+    return Number.isFinite(parsedIndex) && parsedIndex > 0 ? parsedIndex - 1 : 0;
 }
 
 function formatAttachmentSize(bytes: number) {
@@ -146,10 +181,12 @@ export default function WorkflowRunDetailClient({
     run,
     items,
     xProfile,
+    imageStudioContext,
 }: {
     run: SevenDayPlanningRun;
     items: SevenDayPlanningItem[];
     xProfile: WorkflowPostingAccountProfile | null;
+    imageStudioContext: WorkflowImageStudioContext;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
@@ -161,6 +198,8 @@ export default function WorkflowRunDetailClient({
     const [uploadingMediaItemId, setUploadingMediaItemId] = useState<string | null>(null);
     const [removingMediaAttachmentId, setRemovingMediaAttachmentId] = useState<string | null>(null);
     const [isSchedulePickerOpen, setIsSchedulePickerOpen] = useState(false);
+    const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
+    const [imageStudioNonce, setImageStudioNonce] = useState(0);
     const mediaUploadActionsRef = useRef<{ clearFiles: () => void } | null>(null);
 
     const boundedSelectedIndex = items.length > 0
@@ -197,18 +236,6 @@ export default function WorkflowRunDetailClient({
         ? 0
         : Math.max(1, 4 - selectedItemMediaAttachments.length);
     const shouldPollRun = run.status === 'queued' || run.status === 'generating';
-    const approvedItemIndexById = useMemo(() => {
-        const indexById: Record<string, number> = {};
-
-        items
-            .filter((item) => item.approval_status === 'approved')
-            .forEach((item, index) => {
-                indexById[item.id] = index;
-            });
-
-        return indexById;
-    }, [items]);
-
     const getItemScheduledDate = (item: SevenDayPlanningItem) => {
         const savedISO = scheduledAtByItemId[item.id];
 
@@ -220,9 +247,7 @@ export default function WorkflowRunDetailClient({
             }
         }
 
-        const approvedIndex = approvedItemIndexById[item.id] ?? item.day_index;
-
-        return buildDefaultItemScheduleDate(item.item_date, approvedIndex);
+        return buildDefaultItemScheduleDate(item.item_date, getItemSlotIndex(item.day_label));
     };
 
     const selectedItemScheduledDate = selectedItem ? getItemScheduledDate(selectedItem) : null;
@@ -326,7 +351,7 @@ export default function WorkflowRunDetailClient({
                             ? scopedScheduleOverrides
                             : undefined,
                 });
-                toast.success(`Scheduled ${result.scheduledCount} approved day(s).`);
+                toast.success(`Scheduled ${result.scheduledCount} approved post(s).`);
                 router.refresh();
             } catch (error) {
                 toast.error(error instanceof Error ? error.message : 'Unable to schedule this run.');
@@ -340,7 +365,7 @@ export default function WorkflowRunDetailClient({
             [itemId]: scheduledAt.toISOString(),
         }));
         setIsSchedulePickerOpen(false);
-        toast.success('Date and time updated for this day.');
+        toast.success('Date and time updated for this post.');
     };
 
     const handleMediaUpload = async (itemId: string, files: FileList | File[] | null) => {
@@ -401,6 +426,15 @@ export default function WorkflowRunDetailClient({
         } finally {
             setRemovingMediaAttachmentId(null);
         }
+    };
+
+    const handleOpenImageStudio = () => {
+        if (!selectedItem) {
+            return;
+        }
+
+        setImageStudioNonce((current) => current + 1);
+        setIsImageStudioOpen(true);
     };
 
     const [
@@ -811,52 +845,6 @@ export default function WorkflowRunDetailClient({
                                     </div>
                                     {selectedItem ? (
                                         <div className="max-w-xl space-y-2">
-                                            <div className="flex flex-wrap items-center gap-2">
-                                                {canEditSelectedItemMedia ? (
-                                                    <>
-                                                        <Button
-                                                            className="gap-2"
-                                                            disabled={!canAddSelectedItemMedia || isMediaBusy}
-                                                            onClick={openMediaFileDialog}
-                                                            size="sm"
-                                                            variant="outline"
-                                                        >
-                                                            {uploadingMediaItemId === selectedItem.id ? (
-                                                                <Loader2 className="h-4 w-4 animate-spin" />
-                                                            ) : (
-                                                                <ImagePlus className="h-4 w-4" />
-                                                            )}
-                                                            {selectedItemHasMedia ? 'Add media' : 'Upload media'}
-                                                        </Button>
-                                                        <input
-                                                            {...getMediaInputProps({
-                                                                'aria-label': 'Upload image or GIF file',
-                                                                className: 'sr-only',
-                                                                disabled: !canAddSelectedItemMedia || isMediaBusy,
-                                                                tabIndex: -1,
-                                                            })}
-                                                        />
-                                                    </>
-                                                ) : null}
-                                                <p className="text-xs text-muted-foreground">
-                                                    {selectedItemHasGif
-                                                        ? 'GIF attached. X allows only 1 GIF per post.'
-                                                        : selectedItemHasMaxImages
-                                                            ? '4 images attached. X image limit reached.'
-                                                            : 'Images up to 5MB, GIFs up to 15MB.'}
-                                                </p>
-                                            </div>
-
-                                            {mediaUploadErrors.length > 0 ? (
-                                                <div className="space-y-1">
-                                                    {mediaUploadErrors.map((error) => (
-                                                        <p className="text-xs text-destructive" key={error}>
-                                                            {error}
-                                                        </p>
-                                                    ))}
-                                                </div>
-                                            ) : null}
-
                                             {selectedItemHasMedia ? (
                                                 <div className="space-y-3">
                                                     {selectedItemMediaAttachments.map((attachment) => (
@@ -904,6 +892,80 @@ export default function WorkflowRunDetailClient({
                                                     ))}
                                                 </div>
                                             ) : null}
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                {canEditSelectedItemMedia ? (
+                                                    <>
+                                                        <div className="flex flex-wrap items-center gap-2">
+
+                                                            <Button
+                                                                className="gap-2"
+                                                                disabled={!canAddSelectedItemMedia || isMediaBusy}
+                                                                onClick={openMediaFileDialog}
+                                                                size="sm"
+                                                                variant="outline"
+                                                            >
+                                                                {uploadingMediaItemId === selectedItem.id ? (
+                                                                    <Loader2 className="h-4 w-4 animate-spin" />
+                                                                ) : (
+                                                                    <ImagePlus className="h-4 w-4" />
+                                                                )}
+                                                                {selectedItemHasMedia ? 'Add media' : 'Upload media'}
+                                                            </Button>
+                                                            <DropdownMenu>
+                                                                <DropdownMenuTrigger asChild>
+                                                                    <Button className="h-auto px-2 hover:bg-primary/85" variant="default">
+                                                                        <ChevronDownIcon
+                                                                            aria-hidden="true"
+                                                                            className="opacity-60"
+                                                                            size={16}
+                                                                        />
+                                                                    </Button>
+                                                                </DropdownMenuTrigger>
+                                                                <DropdownMenuContent className="min-w-40">
+                                                                    <DropdownMenuGroup>
+                                                                        <DropdownMenuItem onClick={handleOpenImageStudio}>
+                                                                            <MagicWandIcon aria-hidden="true" size={32} weight="duotone" />
+                                                                            <span>Generate with AI</span>
+                                                                        </DropdownMenuItem>
+
+                                                                    </DropdownMenuGroup>
+
+                                                                </DropdownMenuContent>
+                                                            </DropdownMenu>
+                                                        </div>
+
+                                                        <input
+                                                            {...getMediaInputProps({
+                                                                'aria-label': 'Upload image or GIF file',
+                                                                className: 'sr-only',
+                                                                disabled: !canAddSelectedItemMedia || isMediaBusy,
+                                                                tabIndex: -1,
+                                                            })}
+                                                        />
+                                                    </>
+                                                ) : null}
+                                                {canEditSelectedItemMedia || selectedItemHasMedia ? (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {selectedItemHasGif
+                                                            ? 'GIF attached. X allows only 1 GIF per post.'
+                                                            : selectedItemHasMaxImages
+                                                                ? '4 images attached. X image limit reached.'
+                                                                : 'Images up to 5MB, GIFs up to 15MB.'}
+                                                    </p>
+                                                ) : null}
+                                            </div>
+
+                                            {mediaUploadErrors.length > 0 ? (
+                                                <div className="space-y-1">
+                                                    {mediaUploadErrors.map((error) => (
+                                                        <p className="text-xs text-destructive" key={error}>
+                                                            {error}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+
+
                                         </div>
                                     ) : null}
                                     {/* <AspectRatio ratio={16 / 9} className='max-w-xl'>
@@ -1065,6 +1127,28 @@ export default function WorkflowRunDetailClient({
                             </CardContent>
                         </Card>
                     ) : null}
+                    <Dialog onOpenChange={setIsImageStudioOpen} open={isImageStudioOpen}>
+                        <DialogPopup className="max-w-7xl">
+                            <DialogHeader>
+                                <DialogTitle>Generate Workflow Visual</DialogTitle>
+                                <DialogDescription>
+                                    Reuse Image Studio with this post as the source context, then remix colors or export without leaving the workflow.
+                                </DialogDescription>
+                            </DialogHeader>
+                            <DialogPanel className="pt-0">
+                                <ImageTemplateWorkbench
+                                    autoGenerateNonce={imageStudioNonce}
+                                    brandIdentity={imageStudioContext.brandIdentity}
+                                    companyOverview={imageStudioContext.companyOverview}
+                                    embedded
+                                    initialDirection={suggestedPostText}
+                                    initialWebsiteUrl={imageStudioContext.initialWebsiteUrl}
+                                    key={`${selectedItem?.id ?? 'workflow'}-${imageStudioNonce}`}
+                                    sourceTweet={suggestedPostText}
+                                />
+                            </DialogPanel>
+                        </DialogPopup>
+                    </Dialog>
                     <Card>
                         <CardHeader>
                             <CardTitle className="text-base">Run Days</CardTitle>

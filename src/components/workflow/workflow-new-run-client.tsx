@@ -1,4 +1,6 @@
 'use client';
+import { useId } from "react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 import { addDays, differenceInCalendarDays, format } from 'date-fns';
 import { Loader2, Sparkles } from 'lucide-react';
@@ -6,7 +8,13 @@ import { useMemo, useState, useTransition } from 'react';
 import type { DateRange } from 'react-day-picker';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
-
+import { ChevronDownIcon } from "lucide-react";
+import {
+  Collapsible,
+  CollapsiblePanel,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { Frame, FrameHeader, FramePanel } from "@/components/ui/frame";
 import { enqueueWorkflowPlannerRun } from '@/actions/workflow-planner';
 import TwoCalendarRange from '@/components/two-calendar-range';
 import { Button } from '@/components/ui/button';
@@ -14,12 +22,18 @@ import {
   WORKFLOW_PLANNER_MAX_DAYS,
   WORKFLOW_PLANNER_MIN_DAYS,
 } from '@/lib/workflow-planner-limits';
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 
 function toDateInputValue(date: Date) {
   return format(date, 'yyyy-MM-dd');
 }
 
 export default function WorkflowNewRunClient() {
+  const id = useId();
+  const [selectedValue, setSelectedValue] = useState("on");
+  const [campaignBrief, setCampaignBrief] = useState('');
+
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const today = useMemo(() => new Date(), []);
@@ -61,7 +75,9 @@ export default function WorkflowNewRunClient() {
     startTransition(async () => {
       try {
         const { runId } = await enqueueWorkflowPlannerRun({
+          campaignBrief,
           endDateISO,
+          postsPerDay: selectedValue === 'on' ? 2 : 1,
           startDateISO,
         });
 
@@ -98,10 +114,71 @@ export default function WorkflowNewRunClient() {
           Select {WORKFLOW_PLANNER_MIN_DAYS}-{WORKFLOW_PLANNER_MAX_DAYS} days to continue.
         </p>
       ) : null}
+      <Frame className="w-full">
+        <Collapsible>
+          <FrameHeader className="flex-row items-center justify-end px-2 py-2">
+            <CollapsibleTrigger
+              className="data-panel-open:[&_svg]:rotate-180"
+              render={<Button variant="ghost" />}
+            >
+              <ChevronDownIcon className="size-4" />
+              More
+            </CollapsibleTrigger>
+            {/* <Button aria-label="Delete" size="icon" variant="ghost">
+                <TrashIcon />
+              </Button> */}
+          </FrameHeader>
+          <CollapsiblePanel>
+            <FramePanel>
+              {/* <h2 className="font-semibold text-sm">Section title</h2> */}
+              {/* <p className="text-muted-foreground text-sm">Section description</p> */}
+              <Label className="pr-4 mb-8 relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap  transition-colors group-data-[state=on]:text-muted-foreground/70">
+                How many posts per day?
+              </Label>
+              <div className="inline-flex my-2 h-9 rounded-md bg-input/50 p-0.5">
+                <RadioGroup
+                  className="group relative inline-grid grid-cols-[1fr_1fr] items-center gap-0 font-medium text-sm after:absolute after:inset-y-0 after:w-1/2 after:rounded-sm after:bg-background after:shadow-xs after:transition-[translate,box-shadow] after:duration-300 after:ease-[cubic-bezier(0.16,1,0.3,1)] has-focus-visible:after:border-ring has-focus-visible:after:ring-[3px] has-focus-visible:after:ring-ring/50 data-[state=off]:after:translate-x-0 data-[state=on]:after:translate-x-full"
+                  data-state={selectedValue}
+                  onValueChange={setSelectedValue}
+                  value={selectedValue}
+                >
+                  <label className="relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap px-4 transition-colors group-data-[state=on]:text-muted-foreground/70">
+                    1 post/day
+                    <RadioGroupItem className="sr-only" id={`${id}-1`} value="off" />
+                  </label>
+                  <label className="relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap px-4 transition-colors group-data-[state=off]:text-muted-foreground/70">
+                    <span>
+                      2 posts/day
+                      <span className="transition-colors group-data-[state=off]:text-muted-foreground/70 group-data-[state=on]:text-emerald-500">
+                        -20%
+                      </span>
+                    </span>
+                    <RadioGroupItem className="sr-only" id={`${id}-2`} value="on" />
+                  </label>
+                </RadioGroup>
+              </div>
+              <div className="flex flex-col gap-2">
+                <div className="inline-flex w-full items-center justify-between gap-2">
+                  <Label>Tell us about your campaign</Label>
+                  <Label className="font-normal text-muted-foreground text-xs" render={<span />}>
+                    Optional
+                  </Label>
+                </div>
+                <Textarea
+                  onChange={(event) => setCampaignBrief(event.target.value)}
+                  placeholder="What are you launching, who is it for, what angle should the posts push, and any must-mention details?"
+                  rows={5}
+                  value={campaignBrief}
+                />
+              </div>
+            </FramePanel>
+          </CollapsiblePanel>
+        </Collapsible>
+      </Frame>
 
       <div className="flex flex-wrap items-center gap-3">
         <Button
-          className="gap-2"
+          className="gap-2 w-full"
           disabled={isPending || !hasValidSelectedRange}
           onClick={handleQueueRun}
         >
@@ -114,7 +191,8 @@ export default function WorkflowNewRunClient() {
         </Button>
 
         <p className="text-xs text-muted-foreground">
-          Runs process in the background queue. If cron is delayed, you can manually start it from the run page.
+          Runs process in the background
+          {/* queue. If cron is delayed, you can manually start it from the run page. */}
         </p>
       </div>
     </div>

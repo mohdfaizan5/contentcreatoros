@@ -9,6 +9,7 @@ type PlanningRunRow = {
   user_id: string;
   start_date: string;
   end_date: string;
+  generation_prompt_snapshot: Record<string, unknown>;
   status: 'queued' | 'generating' | 'pending_approval' | 'scheduled' | 'failed' | 'cancelled';
   generation_model: string;
 };
@@ -112,9 +113,21 @@ export async function dispatchWorkflowPlanningRuns(
 
   try {
     const brandContext = await getBrandContextForUser(supabase, claimedRun.user_id);
+    const promptSnapshot =
+      claimedRun.generation_prompt_snapshot &&
+      typeof claimedRun.generation_prompt_snapshot === 'object'
+        ? claimedRun.generation_prompt_snapshot
+        : {};
+    const campaignBrief =
+      typeof promptSnapshot.campaignBrief === 'string'
+        ? promptSnapshot.campaignBrief.trim()
+        : '';
+    const postsPerDay = promptSnapshot.postsPerDay === 2 ? 2 : 1;
     const items = await generateSevenDayDraftItems({
       brandContext,
+      campaignBrief,
       endDateISO: claimedRun.end_date,
+      postsPerDay,
       startDateISO: claimedRun.start_date,
     });
 
@@ -162,8 +175,12 @@ export async function dispatchWorkflowPlanningRuns(
         generation_error: null,
         generation_model: claimedRun.generation_model || 'claude-haiku-4-5',
         generation_prompt_snapshot: {
+          ...promptSnapshot,
+          campaignBrief,
           generatedAt: completedAt,
           model: claimedRun.generation_model || 'claude-haiku-4-5',
+          multiPostMode: 'separate_items',
+          postsPerDay,
           source,
         },
         pending_count: rows.length,

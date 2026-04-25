@@ -1,8 +1,8 @@
-import { anthropic } from '@ai-sdk/anthropic';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import { generateText } from 'ai';
 import { differenceInCalendarDays, format, parseISO, startOfDay } from 'date-fns';
 
+import { anthropic } from '@/lib/anthropic';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import {
   WORKFLOW_PLANNER_MAX_DAYS,
@@ -20,6 +20,11 @@ export interface PlannerDraftItem {
   suggestedPost: string;
 }
 
+type WorkflowPlannerGenerationSettings = {
+  campaignBrief?: string;
+  postsPerDay?: 1 | 2;
+};
+
 type OnboardingAnswerRow = {
   question_key: string;
   answer: unknown;
@@ -31,6 +36,15 @@ type RawPlanItem = {
   angle?: string;
   rationale?: string;
   suggestedPost?: string;
+};
+
+type PlannerPostSlot = {
+  id: string;
+  index: number;
+  date: Date;
+  dateISO: string;
+  dayLabel: string;
+  slotLabel: string;
 };
 
 const FALLBACK_PILLARS = [
@@ -90,21 +104,30 @@ function buildRegenerationPrompt(params: {
   targetDateLabel: string;
   existingItem: PlannerDraftItem;
   brandContext: string;
+  campaignBrief?: string;
+  postsPerDay?: 1 | 2;
   note?: string;
   forceDifference: boolean;
 }) {
+  const postsPerDay = params.postsPerDay ?? 1;
+
   return [
-    'Regenerate one X content plan day as JSON object.',
-    `Date: ${params.targetDateLabel}`,
+    'Regenerate one X post-plan item as JSON object.',
+    `Post slot: ${params.targetDateLabel}`,
     `Current pillar: ${params.existingItem.pillar}`,
     `Current angle: ${params.existingItem.angle}`,
     `Current suggestedPost: ${params.existingItem.suggestedPost}`,
     params.note ? `User note: ${params.note}` : 'User note: none',
+    params.campaignBrief ? `Campaign brief: ${params.campaignBrief}` : 'Campaign brief: none',
+    `Posts per day: ${postsPerDay}`,
     'Brand context:',
     params.brandContext,
     'Return only valid JSON object with keys:',
     'pillar, contentType, angle, rationale, suggestedPost',
-    'The suggestedPost must be 280 characters or fewer.',
+    'The suggestedPost must be exactly 1 X post and must be 280 characters or fewer.',
+    params.campaignBrief
+      ? 'The campaign brief is the highest-priority direction. The new post must clearly reflect it in the hook, framing, and detail choices.'
+      : 'Use the brand context to keep the post on-strategy.',
     'The suggestedPost should be cleanly formatted for first-glance readability.',
     params.forceDifference
       ? 'The new suggestedPost must be materially different from the current suggestedPost with a different hook and phrasing while staying on-strategy.'
@@ -117,6 +140,8 @@ async function generateRegeneratedPlanItem(params: {
   targetDateLabel: string;
   existingItem: PlannerDraftItem;
   brandContext: string;
+  campaignBrief?: string;
+  postsPerDay?: 1 | 2;
   note?: string;
   forceDifference: boolean;
 }) {
@@ -138,7 +163,7 @@ function buildNormalizedDraftItem(params: {
   return {
     id: params.existingItem.id,
     dateISO: toIsoDateString(params.targetDate),
-    dayLabel: format(params.targetDate, 'EEE, MMM d'),
+    dayLabel: params.existingItem.dayLabel,
     pillar: normalizeText(params.parsed?.pillar) || params.existingItem.pillar,
     contentType: normalizeText(params.parsed?.contentType) || params.existingItem.contentType,
     angle: normalizeText(params.parsed?.angle) || params.existingItem.angle,
@@ -152,6 +177,28 @@ function buildForcedFallbackSuggestion(existingItem: PlannerDraftItem) {
   const body = normalizeLineBreaks(existingItem.suggestedPost);
 
   return trimToCharacterLimit(`${hook}\n\n${body}`, 280);
+}
+
+function buildPlannerPostSlots(dates: Date[], postsPerDay: 1 | 2): PlannerPostSlot[] {
+  return dates.flatMap((date, dateIndex) =>
+    Array.from({ length: postsPerDay }, (_, slotIndex) => {
+      const dateISO = toIsoDateString(date);
+      const postNumber = slotIndex + 1;
+      const slotLabel =
+        postsPerDay === 2
+          ? `${format(date, 'EEE, MMM d')} - Post ${postNumber}`
+          : format(date, 'EEE, MMM d');
+
+      return {
+        date,
+        dateISO,
+        dayLabel: slotLabel,
+        id: `${dateISO}-${dateIndex + 1}-${postNumber}`,
+        index: dateIndex * postsPerDay + slotIndex,
+        slotLabel: `${dateISO}${postsPerDay === 2 ? ` - Post ${postNumber}` : ''}`,
+      };
+    }),
+  );
 }
 
 function toIsoDateString(date: Date) {
@@ -229,15 +276,23 @@ function extractJsonObject(rawText: string): RawPlanItem | null {
   }
 }
 
-function mapPlanItems(dates: Date[], rawPlanItems: RawPlanItem[] | null): PlannerDraftItem[] {
-  return dates.map((date, index) => {
+function buildFallbackSuggestedPost(fallbackPillar: string) {
+  return `${fallbackPillar}: practical insight with a clear takeaway and one soft CTA.`;
+}
+
+function mapPlanItemsWithSettings(
+  slots: PlannerPostSlot[],
+  rawPlanItems: RawPlanItem[] | null,
+  settings: WorkflowPlannerGenerationSettings,
+): PlannerDraftItem[] {
+  return slots.map((slot, index) => {
     const rawItem = rawPlanItems?.[index];
     const fallbackPillar = FALLBACK_PILLARS[index % FALLBACK_PILLARS.length];
 
     return {
-      id: `${toIsoDateString(date)}-${index + 1}`,
-      dateISO: toIsoDateString(date),
-      dayLabel: format(date, 'EEE, MMM d'),
+      id: slot.id,
+      dateISO: slot.dateISO,
+      dayLabel: slot.dayLabel,
       pillar: normalizeText(rawItem?.pillar) || fallbackPillar,
       contentType: normalizeText(rawItem?.contentType) || 'Single post',
       angle:
@@ -245,10 +300,11 @@ function mapPlanItems(dates: Date[], rawPlanItems: RawPlanItem[] | null): Planne
         `Share one practical insight that supports your ${fallbackPillar.toLowerCase()} pillar.`,
       rationale:
         normalizeText(rawItem?.rationale) ||
-        'Fits your cadence and keeps variety across the selected campaign dates.',
+        (settings.campaignBrief
+          ? 'Fits the selected campaign brief while keeping variety across the planned posting slots.'
+          : 'Fits your cadence and keeps variety across the selected campaign dates.'),
       suggestedPost:
-        normalizeText(rawItem?.suggestedPost) ||
-        `${fallbackPillar}: practical insight with a clear takeaway and one soft CTA.`,
+        normalizeText(rawItem?.suggestedPost) || buildFallbackSuggestedPost(fallbackPillar),
     };
   });
 }
@@ -318,10 +374,14 @@ export async function generateSevenDayDraftItems(params: {
   startDateISO: string;
   endDateISO: string;
   brandContext: string;
+  campaignBrief?: string;
+  postsPerDay?: 1 | 2;
 }): Promise<PlannerDraftItem[]> {
   const dates = buildDateRange(params.startDateISO, params.endDateISO);
-  const dateList = dates.map((date) => format(date, 'yyyy-MM-dd')).join(', ');
-  const dayCount = dates.length;
+  const postsPerDay = params.postsPerDay ?? 1;
+  const campaignBrief = params.campaignBrief?.trim();
+  const slots = buildPlannerPostSlots(dates, postsPerDay);
+  const slotList = slots.map((slot) => `${slot.index + 1}. ${slot.slotLabel}`).join('\n');
 
   try {
     const result = await generateText({
@@ -329,22 +389,36 @@ export async function generateSevenDayDraftItems(params: {
       system: WORKFLOW_PLANNER_SYSTEM_PROMPT,
       temperature: 0.5,
       prompt: [
-        `Create a ${dayCount}-day X content plan.`,
+        `Create an X content plan for ${dates.length} day(s) and ${slots.length} total post slot(s).`,
         'Use this brand context:',
         params.brandContext,
-        `Dates (must match order): ${dateList}`,
-        `Return only a valid JSON array of exactly ${dayCount} objects. Each object must include:`,
+        campaignBrief
+          ? `Campaign brief (highest priority, every post must clearly reflect it):\n${campaignBrief}`
+          : 'Campaign brief:\nNone provided.',
+        `Posts per day: ${postsPerDay}.`,
+        'Post slots (must match this order exactly):',
+        slotList,
+        `Return only a valid JSON array of exactly ${slots.length} objects. Each object must include:`,
         'pillar, contentType, angle, rationale, suggestedPost',
-        'Each suggestedPost must be 280 characters or fewer.',
+        'Each object represents one post slot only.',
+        'Each suggestedPost must be exactly 1 X post and must be 280 characters or fewer.',
+        'Do not combine multiple posts into one object.',
+        'The campaign brief must materially influence the hook, angle, examples, and CTA framing in every object.',
         'Each suggestedPost should be formatted for quick scanning and readability at first glance.',
         'No markdown. No additional text.',
       ].join('\n\n'),
     });
 
     const parsed = extractJsonArray(result.text);
-    return mapPlanItems(dates, parsed);
+    return mapPlanItemsWithSettings(slots, parsed, {
+      campaignBrief,
+      postsPerDay,
+    });
   } catch {
-    return mapPlanItems(dates, null);
+    return mapPlanItemsWithSettings(slots, null, {
+      campaignBrief,
+      postsPerDay,
+    });
   }
 }
 
@@ -353,9 +427,11 @@ export async function regenerateSevenDayDraftItem(params: {
   note?: string;
   existingItem: PlannerDraftItem;
   brandContext: string;
+  campaignBrief?: string;
+  postsPerDay?: 1 | 2;
 }): Promise<PlannerDraftItem> {
   const targetDate = startOfDay(parseISO(params.dateISO));
-  const targetDateLabel = format(targetDate, 'yyyy-MM-dd');
+  const targetDateLabel = params.existingItem.dayLabel;
 
   if (Number.isNaN(targetDate.getTime())) {
     throw new Error('Invalid date for regeneration.');
@@ -366,7 +442,9 @@ export async function regenerateSevenDayDraftItem(params: {
       targetDateLabel,
       existingItem: params.existingItem,
       brandContext: params.brandContext,
+      campaignBrief: params.campaignBrief,
       note: params.note,
+      postsPerDay: params.postsPerDay,
       forceDifference: false,
     });
 
@@ -381,7 +459,9 @@ export async function regenerateSevenDayDraftItem(params: {
         targetDateLabel,
         existingItem: params.existingItem,
         brandContext: params.brandContext,
+        campaignBrief: params.campaignBrief,
         note: params.note,
+        postsPerDay: params.postsPerDay,
         forceDifference: true,
       });
 

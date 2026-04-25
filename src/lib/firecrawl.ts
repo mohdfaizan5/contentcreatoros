@@ -30,6 +30,13 @@ type ParsedScrapePayload = {
   branding: Record<string, unknown>;
 };
 
+type DirectWebsiteFallbackResult = {
+  markdown: string;
+  metadata: Record<string, unknown>;
+  brandIdentity: BrandVisualIdentity;
+  raw: Record<string, unknown>;
+};
+
 function asRecord(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value)
     ? (value as Record<string, unknown>)
@@ -100,6 +107,177 @@ function extractColors(branding: Record<string, unknown>) {
     .map((candidate) => normalizeColorCandidate(candidate))
     .filter((candidate): candidate is string => Boolean(candidate))
     .slice(0, 5);
+}
+
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>');
+}
+
+function stripHtml(value: string) {
+  return decodeHtmlEntities(
+    value
+      .replace(/<script[\s\S]*?<\/script>/gi, ' ')
+      .replace(/<style[\s\S]*?<\/style>/gi, ' ')
+      .replace(/<noscript[\s\S]*?<\/noscript>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim(),
+  );
+}
+
+function firstRegexMatch(html: string, patterns: RegExp[]) {
+  for (const pattern of patterns) {
+    const match = html.match(pattern);
+    const value = match?.[1];
+
+    if (value) {
+      return decodeHtmlEntities(value.trim());
+    }
+  }
+
+  return '';
+}
+
+function toAbsoluteUrl(value: string, baseUrl: string) {
+  if (!value) {
+    return '';
+  }
+
+  try {
+    return new URL(value, baseUrl).toString();
+  } catch {
+    return '';
+  }
+}
+
+function extractDirectMetadata(html: string, url: string) {
+  const title = firstRegexMatch(html, [
+    /<title[^>]*>([\s\S]*?)<\/title>/i,
+    /<meta[^>]+property=["']og:title["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:title["'][^>]*>/i,
+  ]);
+  const description = firstRegexMatch(html, [
+    /<meta[^>]+name=["']description["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+name=["']description["'][^>]*>/i,
+    /<meta[^>]+property=["']og:description["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:description["'][^>]*>/i,
+  ]);
+  const ogImage = firstRegexMatch(html, [
+    /<meta[^>]+property=["']og:image["'][^>]+content=["']([^"']+)["'][^>]*>/i,
+    /<meta[^>]+content=["']([^"']+)["'][^>]+property=["']og:image["'][^>]*>/i,
+  ]);
+  const logo = firstRegexMatch(html, [
+    /<link[^>]+rel=["'][^"']*(?:icon|apple-touch-icon)[^"']*["'][^>]+href=["']([^"']+)["'][^>]*>/i,
+    /<link[^>]+href=["']([^"']+)["'][^>]+rel=["'][^"']*(?:icon|apple-touch-icon)[^"']*["'][^>]*>/i,
+    /<img[^>]+(?:alt|aria-label)=["'][^"']*logo[^"']*["'][^>]+src=["']([^"']+)["'][^>]*>/i,
+    /<img[^>]+src=["']([^"']+)["'][^>]+(?:alt|aria-label)=["'][^"']*logo[^"']*["'][^>]*>/i,
+  ]);
+
+  return {
+    title,
+    description,
+    ogTitle: title,
+    ogDescription: description,
+    ogImage: toAbsoluteUrl(ogImage, url),
+    favicon: toAbsoluteUrl(logo, url),
+    sourceURL: url,
+  };
+}
+
+function extractDirectColors(html: string) {
+  const candidates = new Set<string>();
+
+  const metaThemeColor = html.match(/<meta[^>]+name=["']theme-color["'][^>]+content=["']([^"']+)["'][^>]*>/i);
+  const metaThemeColorReverse = html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+name=["']theme-color["'][^>]*>/i);
+  const themeColor = normalizeColorCandidate(metaThemeColor?.[1] ?? metaThemeColorReverse?.[1]);
+
+  if (themeColor) {
+    candidates.add(themeColor);
+  }
+
+  for (const match of html.matchAll(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g)) {
+    const normalized = normalizeColorCandidate(match[0]);
+
+    if (normalized) {
+      candidates.add(normalized);
+    }
+
+    if (candidates.size >= 5) {
+      break;
+    }
+  }
+
+  return [...candidates].slice(0, 5);
+}
+
+async function fetchHtmlWithTimeout(url: string, timeoutMs = 20000) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(url, {
+      headers: {
+        Accept: 'text/html,application/xhtml+xml',
+        'User-Agent':
+          'Mozilla/5.0 (compatible; ContentOSXOnboarding/1.0; +https://contentosx.com)',
+      },
+      signal: controller.signal,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Direct website fetch returned HTTP ${response.status}.`);
+    }
+
+    const contentType = response.headers.get('content-type') ?? '';
+    if (contentType && !contentType.toLowerCase().includes('text/html')) {
+      throw new Error(`Direct website fetch returned ${contentType}.`);
+    }
+
+    return response.text();
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function scrapeWebsiteDirectly(params: {
+  normalizedUrl: string;
+  domain: string;
+}): Promise<DirectWebsiteFallbackResult> {
+  const html = await fetchHtmlWithTimeout(params.normalizedUrl);
+  const metadata = extractDirectMetadata(html, params.normalizedUrl);
+  const bodyText = stripHtml(html).slice(0, 12000);
+  const markdown = [
+    metadata.title ? `# ${metadata.title}` : '',
+    metadata.description ? String(metadata.description) : '',
+    bodyText,
+  ]
+    .filter(Boolean)
+    .join('\n\n');
+  const colors = extractDirectColors(html);
+
+  return {
+    markdown,
+    metadata,
+    brandIdentity: buildBrandVisualIdentity({
+      companyName: readString(metadata.title),
+      description: readString(metadata.description) || markdownSummary(markdown),
+      logoUrl: readString(metadata.favicon),
+      ogImageUrl: readString(metadata.ogImage),
+      sourceDomain: params.domain,
+      colors,
+    }),
+    raw: {
+      source: 'direct-fetch-fallback',
+      metadata,
+      htmlLength: html.length,
+    },
+  };
 }
 
 function extractBrandingImages(branding: Record<string, unknown>) {
@@ -239,13 +417,12 @@ async function scrapeWithFormats(client: Firecrawl, url: string, formats: string
     scrape: (targetUrl: string, options?: unknown) => Promise<unknown>;
   };
 
-  try {
-    return await scrapeClient.scrape(url, {
-      formats,
-    });
-  } catch {
-    return scrapeClient.scrape(url);
-  }
+  return scrapeClient.scrape(url, {
+    formats,
+    proxy: 'auto',
+    removeBase64Images: true,
+    timeout: 120000,
+  });
 }
 
 export async function scrapeWebsiteForOnboarding(params: {
@@ -267,39 +444,69 @@ export async function scrapeWebsiteForOnboarding(params: {
     normalizedUrl,
   });
 
-  const rawResult = await scrapeWithFormats(firecrawl, normalizedUrl, ['markdown', 'branding']);
-  const parsed = parseScrapePayload(rawResult);
+  try {
+    const rawResult = await scrapeWithFormats(firecrawl, normalizedUrl, ['markdown', 'branding']);
+    const parsed = parseScrapePayload(rawResult);
 
-  const markdown = firstString([parsed.data.markdown, parsed.data.content]);
+    const markdown = firstString([parsed.data.markdown, parsed.data.content]);
 
-  const brandIdentity = buildBrandIdentityFromPayload({
-    data: parsed.data,
-    metadata: parsed.metadata,
-    branding: parsed.branding,
-    domain,
-    markdown,
-  });
+    const brandIdentity = buildBrandIdentityFromPayload({
+      data: parsed.data,
+      metadata: parsed.metadata,
+      branding: parsed.branding,
+      domain,
+      markdown,
+    });
 
-  console.log('[Firecrawl][scrape:done]', {
-    requestId: params.requestId ?? null,
-    domain,
-    markdownLength: markdown.length,
-    detectedColorCount: brandIdentity.colors.length,
-    hasLogo: Boolean(brandIdentity.logoUrl),
-    hasOgImage: Boolean(brandIdentity.ogImageUrl),
-    hasCompanyName: Boolean(brandIdentity.companyName),
-  });
+    console.log('[Firecrawl][scrape:done]', {
+      requestId: params.requestId ?? null,
+      domain,
+      markdownLength: markdown.length,
+      detectedColorCount: brandIdentity.colors.length,
+      hasLogo: Boolean(brandIdentity.logoUrl),
+      hasOgImage: Boolean(brandIdentity.ogImageUrl),
+      hasCompanyName: Boolean(brandIdentity.companyName),
+    });
 
-  const result: FirecrawlScrapeResult = {
-    normalizedUrl,
-    domain,
-    markdown,
-    metadata: parsed.metadata,
-    brandIdentity,
-    raw: parsed.envelope,
-  };
+    return {
+      normalizedUrl,
+      domain,
+      markdown,
+      metadata: parsed.metadata,
+      brandIdentity,
+      raw: parsed.envelope,
+    };
+  } catch (error) {
+    console.warn('[Firecrawl][scrape:fallback]', {
+      requestId: params.requestId ?? null,
+      domain,
+      message: error instanceof Error ? error.message : 'Unknown Firecrawl failure',
+    });
 
-  return result;
+    const fallback = await scrapeWebsiteDirectly({
+      normalizedUrl,
+      domain,
+    });
+
+    console.log('[Firecrawl][scrape:fallback:done]', {
+      requestId: params.requestId ?? null,
+      domain,
+      markdownLength: fallback.markdown.length,
+      detectedColorCount: fallback.brandIdentity.colors.length,
+      hasLogo: Boolean(fallback.brandIdentity.logoUrl),
+      hasOgImage: Boolean(fallback.brandIdentity.ogImageUrl),
+      hasCompanyName: Boolean(fallback.brandIdentity.companyName),
+    });
+
+    return {
+      normalizedUrl,
+      domain,
+      markdown: fallback.markdown,
+      metadata: fallback.metadata,
+      brandIdentity: fallback.brandIdentity,
+      raw: fallback.raw,
+    };
+  }
 }
 
 export async function scrapeWebsiteForBranding(params: {
@@ -321,31 +528,65 @@ export async function scrapeWebsiteForBranding(params: {
     normalizedUrl,
   });
 
-  const rawResult = await scrapeWithFormats(firecrawl, normalizedUrl, ['branding']);
-  const parsed = parseScrapePayload(rawResult);
-  const brandIdentity = buildBrandIdentityFromPayload({
-    data: parsed.data,
-    metadata: parsed.metadata,
-    branding: parsed.branding,
-    domain,
-  });
+  try {
+    const rawResult = await scrapeWithFormats(firecrawl, normalizedUrl, ['markdown', 'branding']);
+    const parsed = parseScrapePayload(rawResult);
+    const markdown = firstString([parsed.data.markdown, parsed.data.content]);
+    const brandIdentity = buildBrandIdentityFromPayload({
+      data: parsed.data,
+      metadata: parsed.metadata,
+      branding: parsed.branding,
+      domain,
+      markdown,
+    });
 
-  console.log('[Firecrawl][branding:done]', {
-    requestId: params.requestId ?? null,
-    domain,
-    detectedColorCount: brandIdentity.colors.length,
-    hasLogo: Boolean(brandIdentity.logoUrl),
-    hasOgImage: Boolean(brandIdentity.ogImageUrl),
-    hasCompanyName: Boolean(brandIdentity.companyName),
-  });
+    console.log('[Firecrawl][branding:done]', {
+      requestId: params.requestId ?? null,
+      domain,
+      markdownLength: markdown.length,
+      detectedColorCount: brandIdentity.colors.length,
+      hasLogo: Boolean(brandIdentity.logoUrl),
+      hasOgImage: Boolean(brandIdentity.ogImageUrl),
+      hasCompanyName: Boolean(brandIdentity.companyName),
+    });
 
-  const result: FirecrawlBrandingResult = {
-    normalizedUrl,
-    domain,
-    metadata: parsed.metadata,
-    brandIdentity,
-    raw: parsed.envelope,
-  };
+    const result: FirecrawlBrandingResult = {
+      normalizedUrl,
+      domain,
+      metadata: parsed.metadata,
+      brandIdentity,
+      raw: parsed.envelope,
+    };
 
-  return result;
+    return result;
+  } catch (error) {
+    console.warn('[Firecrawl][branding:fallback]', {
+      requestId: params.requestId ?? null,
+      domain,
+      message: error instanceof Error ? error.message : 'Unknown Firecrawl failure',
+    });
+
+    const fallback = await scrapeWebsiteDirectly({
+      normalizedUrl,
+      domain,
+    });
+
+    console.log('[Firecrawl][branding:fallback:done]', {
+      requestId: params.requestId ?? null,
+      domain,
+      markdownLength: fallback.markdown.length,
+      detectedColorCount: fallback.brandIdentity.colors.length,
+      hasLogo: Boolean(fallback.brandIdentity.logoUrl),
+      hasOgImage: Boolean(fallback.brandIdentity.ogImageUrl),
+      hasCompanyName: Boolean(fallback.brandIdentity.companyName),
+    });
+
+    return {
+      normalizedUrl,
+      domain,
+      metadata: fallback.metadata,
+      brandIdentity: fallback.brandIdentity,
+      raw: fallback.raw,
+    };
+  }
 }

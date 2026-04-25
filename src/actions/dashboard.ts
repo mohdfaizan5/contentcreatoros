@@ -1,6 +1,5 @@
 'use server';
 
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
 import {
   differenceInCalendarDays,
@@ -10,6 +9,7 @@ import {
   subDays,
 } from 'date-fns';
 
+import { anthropic } from '@/lib/anthropic';
 import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
 import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import { createClient } from '@/lib/server';

@@ -4,13 +4,13 @@
  */
 'use server';
 
-import { anthropic } from '@ai-sdk/anthropic';
 import { generateText } from 'ai';
 
 import {
   getQuestionSteps,
   ONBOARDING_FLOW_KEY,
 } from '@/lib/onboarding';
+import { anthropic } from '@/lib/anthropic';
 import { scrapeWebsiteForOnboarding } from '@/lib/firecrawl';
 import { buildBrandVisualIdentity, type BrandVisualIdentity } from '@/lib/brand-visuals';
 import { createClient } from '@/lib/server';

@@ -1,3 +1,8 @@
+```
+Hey, now I wanted to implement a 21-day trial for all the accounts from today. That should be showing in there, wherever their avatar is, so they can see how many days are left, and that logic goes towards upgrading to a starter or paid account. Now you can keep the logic of it as simple, without implementing anything that is showing "Coming Soon" on upgrade, but just showing 21 days left. 
+```
+
+
 because the failure is likely in the handoff between Supabase’s scheduler and your Next API endpoint.
 
 

@@ -1,5 +1,5 @@
 import { generateText } from 'ai';
-import { anthropic } from '@ai-sdk/anthropic';
+import { anthropic } from '@/lib/anthropic';
 import type { Template } from '@/types/database';
 import {
   getQuestionSteps,

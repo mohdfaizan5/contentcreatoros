@@ -1,13 +1,12 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from 'react';
 import {
   ArrowClockwise,
   DownloadSimple,
   ImageSquare,
   LinkSimple,
   MagicWand,
-  Palette,
   WarningCircle,
 } from '@phosphor-icons/react';
 import { useToImage } from 'react-to-image';
@@ -22,7 +21,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
   Frame,
-  FrameDescription,
   FrameHeader,
   FramePanel,
   FrameTitle,
@@ -33,14 +31,12 @@ import { Textarea } from '@/components/ui/textarea';
 import {
   IMAGE_TEMPLATE_DEFINITIONS,
   IMAGE_TEMPLATE_IDS,
-  IMAGE_TWEET_CHARACTER_LIMIT,
   type ImageTemplateCopy,
   type ImageTemplateFieldKey,
   type ImageTemplateId,
   getSeedImageTemplateCopy,
   isImageTemplateId,
   limitImageCopyFieldValue,
-  trimTweetToLimit,
 } from '@/lib/image-templates';
 import { toBrandPreviewTheme, remixBrandColors, type BrandVisualIdentity } from '@/lib/brand-visuals';
 import { cn } from '@/lib/utils';
@@ -50,6 +46,10 @@ type ImageTemplateWorkbenchProps = {
   brandIdentity: BrandVisualIdentity;
   companyOverview: string;
   initialWebsiteUrl: string;
+  sourceTweet?: string;
+  initialDirection?: string;
+  autoGenerateNonce?: number;
+  embedded?: boolean;
 };
 
 function toSlug(value: string) {
@@ -60,20 +60,6 @@ function toSlug(value: string) {
     .slice(0, 40);
 }
 
-function parseDomain(url: string) {
-  const nextUrl = url.trim();
-
-  if (!nextUrl) {
-    return '';
-  }
-
-  try {
-    return new URL(nextUrl).hostname.toLowerCase();
-  } catch {
-    return '';
-  }
-}
-
 function renderFieldDescription(maxChars: number, optional?: boolean) {
   return `${optional ? 'Optional' : 'Required'} - max ${maxChars} chars`;
 }
@@ -82,25 +68,25 @@ export function ImageTemplateWorkbench({
   brandIdentity,
   companyOverview,
   initialWebsiteUrl,
+  sourceTweet = '',
+  initialDirection = '',
+  autoGenerateNonce,
+  embedded = false,
 }: ImageTemplateWorkbenchProps) {
   const [templateId, setTemplateId] = useState<ImageTemplateId>('template-1');
   const [copyByTemplate, setCopyByTemplate] = useState<Record<ImageTemplateId, ImageTemplateCopy>>(
     () => getSeedImageTemplateCopy(brandIdentity, companyOverview),
   );
-  const [tweet, setTweet] = useState('');
-  const [direction, setDirection] = useState('');
   const [feedback, setFeedback] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isGenerating, startGenerationTransition] = useTransition();
   const [remixVariant, setRemixVariant] = useState<number | null>(null);
   const [isRemixing, startRemixTransition] = useTransition();
+  const lastAutoGenerateNonceRef = useRef<number | undefined>(undefined);
+  const direction = initialDirection || sourceTweet;
 
   const companyName =
     brandIdentity.companyName || brandIdentity.sourceDomain || 'Your Brand';
-  const sourceDomain = useMemo(
-    () => parseDomain(initialWebsiteUrl) || brandIdentity.sourceDomain || '',
-    [brandIdentity.sourceDomain, initialWebsiteUrl],
-  );
   const previewTheme = useMemo(() => {
     if (remixVariant === null) {
       return toBrandPreviewTheme(brandIdentity);
@@ -145,7 +131,7 @@ export function ImageTemplateWorkbench({
     }));
   };
 
-  const handleGenerate = () => {
+  const runGenerate = useCallback(() => {
     setError(null);
     setFeedback(null);
 
@@ -153,6 +139,7 @@ export function ImageTemplateWorkbench({
       const result = await generateImageTemplateCopy({
         templateId,
         direction,
+        sourceTweet,
         existingCopy: activeCopy,
       });
 
@@ -161,14 +148,32 @@ export function ImageTemplateWorkbench({
         return;
       }
 
-      setTweet(result.data.tweet);
       setCopyByTemplate((current) => ({
         ...current,
         [result.data!.templateId]: result.data!.copy,
       }));
       setFeedback('Generated fresh tweet and image copy from your current brand context.');
     });
+  }, [activeCopy, direction, sourceTweet, startGenerationTransition, templateId]);
+
+  const handleGenerate = () => {
+    runGenerate();
   };
+
+  useEffect(() => {
+    if (autoGenerateNonce === undefined || autoGenerateNonce === lastAutoGenerateNonceRef.current) {
+      return;
+    }
+
+    lastAutoGenerateNonceRef.current = autoGenerateNonce;
+    const timeout = window.setTimeout(() => {
+      runGenerate();
+    }, 0);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [autoGenerateNonce, runGenerate]);
 
   const handleExport = async () => {
     setError(null);
@@ -193,7 +198,12 @@ export function ImageTemplateWorkbench({
   };
 
   return (
-    <div className="mx-auto max-w-355 space-y-6 px-4 pb-10 pt-4 sm:px-6 lg:px-8">
+    <div
+      className={cn(
+        'mx-auto space-y-6',
+        embedded ? 'max-w-none px-0 pb-0 pt-0' : 'max-w-355 px-4 pb-10 pt-4 sm:px-6 lg:px-8',
+      )}
+    >
       <header className="space-y-3">
         <h1
           className="max-w-4xl text-4xl font-semibold tracking-tight sm:text-4xl"
@@ -204,12 +214,15 @@ export function ImageTemplateWorkbench({
         </h1>
         <p className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
           Generate post-ready visuals with your brand voice and palette
-          {/* Image Studio */}
         </p>
-        {/* <p className="max-w-4xl text-sm leading-6 text-muted-foreground sm:text-base">
-          Choose a template, refine optional text blocks with character guidance, generate AI copy
-          from website context, and export a 16:9 PNG in one flow.
-        </p> */}
+        {sourceTweet ? (
+          <div className="rounded-2xl border border-border/60 bg-muted/30 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">
+              Source Post
+            </p>
+            <p className="mt-2 whitespace-pre-line text-sm text-foreground">{sourceTweet}</p>
+          </div>
+        ) : null}
       </header>
 
       <Frame>

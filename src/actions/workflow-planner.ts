@@ -7,6 +7,7 @@ import { revalidateAppPaths } from '@/lib/revalidate-app-paths';
 import { createAdminClient } from '@/lib/server-admin';
 import { createClient } from '@/lib/server';
 import { buildTweetContentForScheduling } from '@/lib/x/tweet-text';
+import { splitWorkflowSuggestedPosts } from '@/lib/x/tweet-text';
 import { getAuthenticatedXUser } from '@/lib/x/x';
 import {
   getPostMediaExtension,
@@ -146,9 +147,20 @@ function buildDefaultWorkflowScheduledDate(itemDateISO: string, approvedIndex: n
     throw new Error(`Invalid date in workflow item: ${itemDateISO}`);
   }
 
-  baseDate.setUTCHours(14, approvedIndex * 3, 0, 0);
+  baseDate.setUTCHours(14 + approvedIndex * 3, 0, 0, 0);
 
   return baseDate;
+}
+
+function getWorkflowItemSlotIndex(dayLabel: string) {
+  const match = dayLabel.match(/post\s+(\d+)$/i);
+
+  if (!match) {
+    return 0;
+  }
+
+  const parsedIndex = Number.parseInt(match[1] ?? '1', 10);
+  return Number.isFinite(parsedIndex) && parsedIndex > 0 ? parsedIndex - 1 : 0;
 }
 
 function getWorkflowMediaStoragePath(params: {
@@ -227,15 +239,26 @@ async function addSignedUrlsToPlanningItems(items: SevenDayPlanningItem[]) {
   );
 }
 
+function stripScheduledWorkflowInsertMetadata<T extends Record<string, unknown>>(row: T) {
+  const { itemId, itemIndex, ...insertRow } = row;
+  void itemId;
+  void itemIndex;
+  return insertRow;
+}
+
 export async function enqueueWorkflowPlannerRun(params: {
+  campaignBrief?: string;
   startDateISO: string;
   endDateISO: string;
+  postsPerDay?: 1 | 2;
 }): Promise<{ runId: string }> {
   const { supabase, user } = await getAuthenticatedUserAndClient();
 
   const dates = buildDateRange(params.startDateISO, params.endDateISO);
   const startDateISO = params.startDateISO;
   const endDateISO = params.endDateISO;
+  const campaignBrief = params.campaignBrief?.trim() ?? '';
+  const postsPerDay = params.postsPerDay === 2 ? 2 : 1;
 
   if (!dates.length) {
     throw new Error('Unable to create this workflow run.');
@@ -246,6 +269,11 @@ export async function enqueueWorkflowPlannerRun(params: {
     .insert({
       approved_count: 0,
       end_date: endDateISO,
+      generation_prompt_snapshot: {
+        campaignBrief,
+        multiPostMode: 'separate_items',
+        postsPerDay,
+      },
       pending_count: 0,
       rejected_count: 0,
       scheduled_count: 0,
@@ -837,12 +865,22 @@ export async function regenerateWorkflowPlannerItem(params: {
   }
 
   const brandContext = await getBrandContextForUser(supabase, user.id);
+  const promptSnapshot =
+    run.generation_prompt_snapshot &&
+    typeof run.generation_prompt_snapshot === 'object'
+      ? (run.generation_prompt_snapshot as Record<string, unknown>)
+      : {};
   const existingDraft = toPlannerDraftItem(item as SevenDayPlanningItem);
   const regenerated = await regenerateSevenDayDraftItem({
+    campaignBrief:
+      typeof promptSnapshot.campaignBrief === 'string'
+        ? promptSnapshot.campaignBrief.trim()
+        : undefined,
     brandContext,
     dateISO: item.item_date,
     existingItem: existingDraft,
     note: normalizeDecisionNote(params.note) ?? undefined,
+    postsPerDay: promptSnapshot.postsPerDay === 2 ? 2 : 1,
   });
 
   const history = Array.isArray(item.regeneration_history)
@@ -977,11 +1015,11 @@ export async function scheduleWorkflowPlannerRun(params: {
   const scheduleByItemId = params.scheduleByItemId ?? {};
   const nowTimestamp = Date.now();
 
-  const approvedItemsWithSchedule = approvedItems.map((item, index) => {
+  const approvedItemsWithSchedule = approvedItems.map((item) => {
     const overrideISO = scheduleByItemId[item.id];
     const scheduledDate = overrideISO
       ? new Date(overrideISO)
-      : buildDefaultWorkflowScheduledDate(item.item_date, index);
+      : buildDefaultWorkflowScheduledDate(item.item_date, getWorkflowItemSlotIndex(item.day_label));
 
     if (Number.isNaN(scheduledDate.getTime())) {
       throw new Error(`Invalid date and time selected for ${item.day_label}.`);
@@ -997,43 +1035,106 @@ export async function scheduleWorkflowPlannerRun(params: {
     };
   });
 
-  const rows = approvedItemsWithSchedule.map(({ item, scheduledDate }) => {
-    const content = buildTweetContentForScheduling(
-      item.suggested_post,
-      item.pillar,
-      item.angle,
-    );
+  const postsPerDay =
+    run.generation_prompt_snapshot &&
+    typeof run.generation_prompt_snapshot === 'object' &&
+    (run.generation_prompt_snapshot as Record<string, unknown>).postsPerDay === 2
+      ? 2
+      : 1;
+  const multiPostMode =
+    run.generation_prompt_snapshot &&
+    typeof run.generation_prompt_snapshot === 'object' &&
+    (run.generation_prompt_snapshot as Record<string, unknown>).multiPostMode === 'separate_items'
+      ? 'separate_items'
+      : 'combined_text';
+
+  const scheduledRows = approvedItemsWithSchedule.flatMap(({ item, scheduledDate }) => {
+    const splitPosts =
+      postsPerDay === 2 && multiPostMode !== 'separate_items'
+        ? splitWorkflowSuggestedPosts(item.suggested_post).slice(0, 2)
+        : [];
     const mediaAttachments = stripPostMediaSignedUrls(
       normalizePostMediaAttachments(item.media_attachments),
     );
 
     validatePostMediaAttachmentSet(mediaAttachments);
 
-    return {
-      character_count: content.length,
-      content,
-      media_attachments: mediaAttachments,
-      model: run.generation_model ?? 'claude-haiku-4-5',
-      prompt_snapshot: {
-        angle: item.angle,
-        contentType: item.content_type,
+    if (splitPosts.length === 2) {
+      return splitPosts.map((content, contentIndex) => {
+        const scheduledFor = new Date(scheduledDate);
+        scheduledFor.setTime(scheduledFor.getTime() + contentIndex * 3 * 60 * 60 * 1000);
+
+        return {
+          itemId: item.id,
+          itemIndex: contentIndex,
+          character_count: content.length,
+          content,
+          media_attachments: mediaAttachments,
+          model: run.generation_model ?? 'claude-haiku-4-5',
+          prompt_snapshot: {
+            angle: item.angle,
+            contentType: item.content_type,
+            itemId: item.id,
+            mediaAttachmentIds: mediaAttachments.map((attachment) => attachment.id),
+            pillar: item.pillar,
+            postIndex: contentIndex + 1,
+            postsPerDay,
+            runId: params.runId,
+            source: 'workflow_planner',
+          },
+          scheduled_for: scheduledFor.toISOString(),
+          status: 'scheduled' as const,
+          template_id: template.id,
+          user_id: user.id,
+          x_account_id: xAccount.id,
+        };
+      });
+    }
+
+    const slotIndex = getWorkflowItemSlotIndex(item.day_label);
+    const scheduledFor = new Date(scheduledDate);
+    scheduledFor.setUTCHours(14 + slotIndex * 3, 0, 0, 0);
+    if (params.scheduleByItemId?.[item.id]) {
+      scheduledFor.setTime(scheduledDate.getTime());
+    }
+
+    const content = buildTweetContentForScheduling(
+      item.suggested_post,
+      item.pillar,
+      item.angle,
+    );
+
+    return [
+      {
         itemId: item.id,
-        mediaAttachmentIds: mediaAttachments.map((attachment) => attachment.id),
-        pillar: item.pillar,
-        runId: params.runId,
-        source: 'workflow_planner',
+        itemIndex: 0,
+        character_count: content.length,
+        content,
+        media_attachments: mediaAttachments,
+        model: run.generation_model ?? 'claude-haiku-4-5',
+        prompt_snapshot: {
+          angle: item.angle,
+          contentType: item.content_type,
+          itemId: item.id,
+          mediaAttachmentIds: mediaAttachments.map((attachment) => attachment.id),
+          pillar: item.pillar,
+          postIndex: slotIndex + 1,
+          postsPerDay,
+          runId: params.runId,
+          source: 'workflow_planner',
+        },
+        scheduled_for: scheduledFor.toISOString(),
+        status: 'scheduled' as const,
+        template_id: template.id,
+        user_id: user.id,
+        x_account_id: xAccount.id,
       },
-      scheduled_for: scheduledDate.toISOString(),
-      status: 'scheduled' as const,
-      template_id: template.id,
-      user_id: user.id,
-      x_account_id: xAccount.id,
-    };
+    ];
   });
 
   const { data: insertedTweets, error: insertError } = await supabase
     .from('generated_tweets')
-    .insert(rows)
+    .insert(scheduledRows.map(stripScheduledWorkflowInsertMetadata))
     .select('id');
 
   if (insertError || !insertedTweets?.length) {
@@ -1041,14 +1142,21 @@ export async function scheduleWorkflowPlannerRun(params: {
   }
 
   const tweetIds = insertedTweets.map((tweet) => tweet.id);
+  const firstTweetIdByItemId = new Map<string, string>();
+
+  scheduledRows.forEach((row, index) => {
+    if (!firstTweetIdByItemId.has(row.itemId) && tweetIds[index]) {
+      firstTweetIdByItemId.set(row.itemId, tweetIds[index]);
+    }
+  });
 
   const itemUpdateResults = await Promise.all(
-    approvedItemsWithSchedule.map(({ item }, index) =>
+    approvedItemsWithSchedule.map(({ item }) =>
       supabase
         .from('seven_day_planning_items')
         .update({
           approval_status: 'scheduled',
-          generated_tweet_id: tweetIds[index] ?? null,
+          generated_tweet_id: firstTweetIdByItemId.get(item.id) ?? null,
         })
         .eq('id', item.id)
         .eq('run_id', params.runId)

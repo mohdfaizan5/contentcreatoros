@@ -711,10 +711,6 @@ async function refreshStoredXAccount(account: StoredXAccount) {
   );
 }
 
-function getTweetMediaCategory(attachment: PostMediaAttachment) {
-  return attachment.media_type === 'gif' ? 'tweet_gif' : 'tweet_image';
-}
-
 function toTweetMediaIds(mediaIds: string[]) {
   switch (mediaIds.length) {
     case 0:
@@ -760,9 +756,9 @@ async function uploadPostMediaAttachmentsToX(
     }
 
     const buffer = Buffer.from(await data.arrayBuffer());
-    const mediaId = await client.v2.uploadMedia(buffer, {
-      media_category: getTweetMediaCategory(attachment),
-      media_type: attachment.mime_type as 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp',
+    const mediaId = await client.v1.uploadMedia(buffer, {
+      mimeType: attachment.mime_type,
+      target: 'tweet',
     });
 
     mediaIds.push(mediaId);
@@ -789,11 +785,16 @@ async function createTweetWithMedia(
     return client.v2.tweet(text);
   }
 
+  const payload = {
+    media: { media_ids: tweetMediaIds },
+    text,
+  };
+
   if (delegateHeaders) {
-    return client.v2.tweet(text, { media: { media_ids: tweetMediaIds } } as never);
+    return client.v2.tweet(payload as never);
   }
 
-  return client.v2.tweet(text, { media: { media_ids: tweetMediaIds } });
+  return client.v2.tweet(payload);
 }
 
 export async function publishTweetWithStoredConnection(
