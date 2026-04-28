@@ -1,8 +1,8 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { createClient } from '@/lib/server'
-import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding'
-import { X_OAUTH_SCOPE_STRING } from '@/lib/x/x-oauth'
-import { persistXConnectionForCurrentUser, persistXTokens } from '@/lib/x/x'
+import { createClient } from '@/shared/lib/supabase/server'
+import { ONBOARDING_FLOW_KEY } from '@/features/onboarding/lib/onboarding'
+import { connectUnlabelledXAccountForCurrentUser } from '@/features/x/lib/x-auth'
+import { X_OAUTH_SCOPE_STRING } from '@/features/x/lib/x-oauth'
 
 function getSafeNextPath(rawNext: string | null) {
   if (!rawNext || !rawNext.startsWith('/')) {
@@ -49,9 +49,6 @@ export async function GET(request: NextRequest) {
   if (error) {
     return redirectWithError(request, error.message)
   }
-
-  // Some environments return provider metadata as "twitter" while newer docs use "x".
-  // Also fallback to the persisted session in case exchange response omits provider token fields.
   const session = data.session ?? (await supabase.auth.getSession()).data.session
   const provider = session?.user?.app_metadata?.provider
   const providerList = session?.user?.app_metadata?.providers as string[] | undefined
@@ -65,17 +62,14 @@ export async function GET(request: NextRequest) {
 
   if (isXProvider && providerToken) {
     try {
-      const tokenResponse = {
+      await connectUnlabelledXAccountForCurrentUser({
         access_token: providerToken,
         refresh_token: providerRefreshToken ?? undefined,
         scope: X_OAUTH_SCOPE_STRING,
-        token_type: 'bearer' as const,
-      }
-
-      await persistXTokens(tokenResponse)
-      await persistXConnectionForCurrentUser(tokenResponse)
+        token_type: 'bearer',
+      })
     } catch {
-      // The user is still signed in even if persisting X tokens fails.
+      // App sign-in should still succeed even if the optional publishing connection cannot be saved.
     }
   }
 

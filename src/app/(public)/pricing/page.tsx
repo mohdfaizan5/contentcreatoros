@@ -1,4 +1,4 @@
-import { PricingBento, type PricingPlan } from "@/components/public/bento-pricing";
+import { PricingBento, PricingPlan } from "@/features/(public)/pricing/components/bento-pricing";
 
 const pricingPlans: PricingPlan[] = [
   {

@@ -1,6 +1,7 @@
-import OnboardingFlow from '@/components/onboarding/onboarding-flow';
-import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
-import { createClient } from '@/lib/server';
+import OnboardingFlow from '@/features/onboarding/components/onboarding-flow';
+import { ONBOARDING_FLOW_KEY } from '@/features/onboarding/lib/onboarding';
+import { getCurrentUserLinkedXHandle } from '@/features/x/lib/x-auth';
+import { createClient } from '@/shared/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
@@ -52,15 +53,10 @@ export default async function OnboardingPage() {
     redirect('/app');
   }
 
-  const { data: storedXAccount } = await supabase
-    .from('x_accounts')
-    .select('username')
-    .eq('user_id', user.id)
-    .maybeSingle();
-
   const metadata = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const linkedHandle = await getCurrentUserLinkedXHandle();
   const initialXHandle =
-    normalizeXHandle(storedXAccount?.username) ??
+    normalizeXHandle(linkedHandle) ??
     normalizeXHandle(metadata.user_name) ??
     normalizeXHandle(metadata.preferred_username) ??
     normalizeXHandle(metadata.username) ??

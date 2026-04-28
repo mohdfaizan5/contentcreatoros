@@ -1,5 +1,5 @@
-import { SignUpForm } from '@/components/sign-up-form'
-import Synthesis from '@/components/synthesis'
+import { SignUpForm } from '@/shared/components/sign-up-form'
+import Synthesis from '@/shared/components/synthesis'
 
 /**
  * Sign Up Page

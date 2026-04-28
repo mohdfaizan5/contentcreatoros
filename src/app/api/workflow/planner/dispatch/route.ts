@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 
-import { dispatchWorkflowPlanningRuns } from '@/lib/workflow-planner-dispatch';
+import { dispatchWorkflowPlanningRuns } from '@/features/workflow/lib/workflow-planner-dispatch';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

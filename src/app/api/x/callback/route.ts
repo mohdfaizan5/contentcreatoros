@@ -1,11 +1,8 @@
 import {
-  clearXSession,
-  exchangeXCodeForToken,
-  persistXConnectionForCurrentUser,
-  persistXTokens,
-  validateXOAuthState,
-} from '@/lib/x/x';
-import { getRequestOrigin } from '@/lib/request-origin';
+  clearPendingXAuthorizationAttempts,
+  completeXAuthorizationCallback,
+} from '@/features/x/lib/x-auth';
+import { getRequestOrigin } from '@/features/inspiration/lib/request-origin';
 import { NextResponse, type NextRequest } from 'next/server';
 
 export async function GET(request: NextRequest) {
@@ -16,48 +13,44 @@ export async function GET(request: NextRequest) {
   const xErrorDescription = searchParams.get('error_description');
 
   if (xError) {
-    await clearXSession();
+    await clearPendingXAuthorizationAttempts();
     return NextResponse.redirect(
       new URL(
-        `/app/analytics?error=${encodeURIComponent(xErrorDescription || xError)}`,
+        `/app/settings?error=${encodeURIComponent(xErrorDescription || xError)}`,
         request.url,
       ),
     );
   }
 
   if (!code) {
-    await clearXSession();
+    await clearPendingXAuthorizationAttempts();
     return NextResponse.redirect(
-      new URL('/app/analytics?error=Missing%20authorization%20code', request.url),
-    );
-  }
-
-  const isValidState = await validateXOAuthState(state);
-
-  if (!isValidState) {
-    await clearXSession();
-    return NextResponse.redirect(
-      new URL('/app/analytics?error=Invalid%20X%20OAuth%20state', request.url),
+      new URL('/app/settings?error=Missing%20authorization%20code', request.url),
     );
   }
 
   try {
-    const tokenResponse = await exchangeXCodeForToken(
+    const { role } = await completeXAuthorizationCallback({
       code,
-      getRequestOrigin(request, { preferConfiguredOrigin: false }),
-    );
-    await persistXTokens(tokenResponse);
-    await persistXConnectionForCurrentUser(tokenResponse);
+      origin: getRequestOrigin(request),
+      state,
+    });
 
-    return NextResponse.redirect(new URL('/app/analytics?connected=1', request.url));
+    const redirectPath = role
+      ? `/app/settings?connected=1&role=${role}`
+      : '/app/settings?connected=1';
+
+    return NextResponse.redirect(
+      new URL(redirectPath, request.url),
+    );
   } catch (error) {
-    await clearXSession();
+    await clearPendingXAuthorizationAttempts();
 
     const message =
       error instanceof Error ? error.message : 'Unable to complete the X connection.';
 
     return NextResponse.redirect(
-      new URL(`/app/analytics?error=${encodeURIComponent(message)}`, request.url),
+      new URL(`/app/settings?error=${encodeURIComponent(message)}`, request.url),
     );
   }
 }

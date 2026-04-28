@@ -1,6 +1,6 @@
-import { getTemplates } from '@/actions/templates';
-import { TemplatesClient } from '@/components/templates/templates-client';
-import { createClient } from '@/lib/server';
+import { getTemplates } from '@/features/templates/actions/templates';
+import { TemplatesClient } from '@/features/templates/components/templates-client';
+import { createClient } from '@/shared/lib/supabase/server';
 
 export default async function TemplatesPage() {
     const supabase = await createClient();
@@ -11,3 +11,4 @@ export default async function TemplatesPage() {
 
     return <TemplatesClient templates={templates} currentUserId={user?.id ?? null} />;
 }
+

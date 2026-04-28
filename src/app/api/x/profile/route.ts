@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { extractXHandle } from '@/lib/x/x-handle';
-import { lookupPublicXUserByHandle } from '@/lib/x/x-public';
+import { extractXHandle } from '@/features/x/lib/x-handle';
+import { lookupPublicXUserByHandle } from '@/features/x/lib/x-public';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -60,3 +60,4 @@ export async function GET(request: Request) {
     },
   );
 }
+

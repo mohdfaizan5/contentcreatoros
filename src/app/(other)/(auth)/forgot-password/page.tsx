@@ -1,4 +1,4 @@
-import { ForgotPasswordForm } from '@/components/forgot-password-form'
+import { ForgotPasswordForm } from '@/shared/components/forgot-password-form'
 
 /**
  * Forgot Password Page

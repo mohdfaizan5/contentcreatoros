@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
-import { ImageTemplateWorkbench } from '@/components/images/image-template-workbench';
-import { getImagesPageData } from '@/lib/images-page-data';
+import { getImagesPageData } from '@/features/image-studio/lib/images-page-data';
+import { ImageTemplateWorkbench } from '@/features/image-studio/components/image-template-workbench';
 
 export const metadata: Metadata = {
     title: 'Image Templates | ContentOSX',

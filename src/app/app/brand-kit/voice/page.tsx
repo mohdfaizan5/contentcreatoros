@@ -1,6 +1,6 @@
-import BrandSettingsForm from '@/components/settings/brand-settings-form';
-import BrandKitShell from '@/components/settings/brand-kit-shell';
-import { getBrandKitPageData } from '@/lib/brand-kit-page-data';
+import BrandSettingsForm from '@/features/brand-kit/components/brand-settings-form';
+import BrandKitShell from '@/features/brand-kit/components/brand-kit-shell';
+import { getBrandKitPageData } from '@/features/brand-kit/lib/brand-kit-page-data';
 
 export const metadata = {
   title: 'Brand Voice | ContentOSX',
@@ -16,3 +16,4 @@ export default async function BrandVoicePage() {
     </BrandKitShell>
   );
 }
+

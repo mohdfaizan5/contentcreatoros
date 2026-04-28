@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
 
-import { getWorkflowPlannerRun } from '@/actions/workflow-planner';
-import WorkflowRunDetailClient from '@/components/workflow/workflow-run-detail-client';
-import { getImagesPageData } from '@/lib/images-page-data';
+import { getWorkflowPlannerRun } from '@/features/workflow/actions/workflow-planner';
+import WorkflowRunDetailClient from '@/features/workflow/components/workflow-run-detail-client';
+import { getImagesPageData } from '@/features/image-studio/lib/images-page-data';
 
 type WorkflowRunPageProps = {
   params: Promise<{ runId: string }>;
@@ -28,3 +28,4 @@ export default async function WorkflowRunPage({ params }: WorkflowRunPageProps) 
     />
   );
 }
+

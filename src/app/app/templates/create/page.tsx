@@ -15,15 +15,15 @@ import {
     type Icon as PhosphorIcon,
 } from '@phosphor-icons/react';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
-import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
-import { createTemplate } from '@/actions/templates';
-import { PlaceholderList } from '@/components/templates/placeholder-renderer';
-import { PlatformPreview } from '@/components/templates/platform-preview';
-import { generateId } from '@/lib/template-utils';
-import type { PlatformType, TemplateExample } from '@/types/database';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/shared/components/ui/button';
+import { AutoResizeTextarea } from '@/shared/components/ui/auto-resize-textarea';
+import { createTemplate } from '@/features/templates/actions/templates';
+import { PlaceholderList } from '@/features/templates/components/placeholder-renderer';
+import { PlatformPreview } from '@/features/templates/components/platform-preview';
+import { generateId } from '@/features/templates/lib/template-utils';
+import type { PlatformType, TemplateExample } from '@/shared/types/database';
+import { Label } from '@/shared/components/ui/label';
+import { Textarea } from '@/shared/components/ui/textarea';
 
 const platforms: { value: PlatformType; icon: PhosphorIcon; label: string; color: string }[] = [
     { value: 'x', icon: TwitterLogo, label: 'X', color: 'hover:bg-sky-500/10 hover:text-sky-500 data-[active=true]:bg-sky-500/10 data-[active=true]:text-sky-500 data-[active=true]:border-sky-500/30' },
@@ -296,4 +296,5 @@ export default function CreateTemplatePage() {
         </div>
     );
 }
+
 

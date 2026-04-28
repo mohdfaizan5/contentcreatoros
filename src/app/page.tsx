@@ -4,9 +4,9 @@ import {
     LandingCryptoEntry,
     LandingExpansion,
     LandingFooter
-} from '@/components/landing';
-import BentoGrid from '@/components/landing/bento-grids';
-import FAQSection from '@/components/landing/faq-section';
+} from '@/features/(public)/landing';
+import BentoGrid from '@/features/(public)/landing/bento-grids';
+import FAQSection from '@/features/(public)/landing/faq-section';
 
 export default function Home() {
     return (

@@ -7,8 +7,8 @@ import {
   Source_Serif_4
 } from "next/font/google";
 import "./globals.css";
-import { cn } from "@/lib/utils";
-import { ThemeProvider } from "@/lib/theme-provider";
+import { cn } from "@/shared/lib/utils";
+import { ThemeProvider } from "@/shared/lib/theme-provider";
 
 const interHeading = Inter_Tight({ subsets: ['latin'], variable: '--font-heading' });
 

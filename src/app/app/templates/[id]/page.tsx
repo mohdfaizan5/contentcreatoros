@@ -1,7 +1,8 @@
-import { getCanAutoScheduleTweets, getGeneratedTweetsForTemplate } from '@/actions/generated-tweets';
-import { getTemplate } from '@/actions/templates';
-import { TemplateDetail } from '@/components/templates/template-detail';
-import { createClient } from '@/lib/server';
+import { getCanAutoScheduleTweets, getGeneratedTweetsForTemplate } from '@/features/(legacy)/templates/generated-tweets';
+import { getTemplate } from '@/features/templates/actions/templates';
+import { TemplateDetail } from '@/features/templates/components/template-detail';
+import { listPublishingXAccountsForCurrentUser } from '@/features/x/lib/x-auth';
+import { createClient } from '@/shared/lib/supabase/server';
 import { notFound } from 'next/navigation';
 
 interface TemplateDetailPageProps {
@@ -20,9 +21,10 @@ export default async function TemplateDetailPage({ params }: TemplateDetailPageP
         notFound();
     }
 
-    const [generatedTweets, canAutoSchedule] = await Promise.all([
+    const [generatedTweets, canAutoSchedule, xAccounts] = await Promise.all([
         getGeneratedTweetsForTemplate(id),
         getCanAutoScheduleTweets(),
+        listPublishingXAccountsForCurrentUser(),
     ]);
 
     return (
@@ -31,6 +33,11 @@ export default async function TemplateDetailPage({ params }: TemplateDetailPageP
             currentUserId={user?.id ?? null}
             generatedTweets={generatedTweets}
             canAutoSchedule={canAutoSchedule}
+            xAccounts={xAccounts.map((account: { id: string; account_role: 'founder' | 'company'; username: string }) => ({
+                id: account.id,
+                role: account.account_role,
+                username: account.username,
+            }))}
         />
     );
 }

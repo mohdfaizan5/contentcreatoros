@@ -1,12 +1,12 @@
 import { redirect } from 'next/navigation';
-import { TooltipProvider } from '@/components/ui/tooltip';
-import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/components/ui/sidebar';
-import { AppSidebar } from '@/components/dashboard/app-sidebar';
-import { UserDropdown } from '@/components/user-dropdown';
-import { ONBOARDING_FLOW_KEY } from '@/lib/onboarding';
-import { createClient } from '@/lib/server';
-import AppNotifications from '@/components/app-notifications';
-import { AnchoredToastProvider, ToastProvider } from "@/components/ui/toast"
+import { TooltipProvider } from '@/shared/components/ui/tooltip';
+import { SidebarProvider, SidebarInset, SidebarTrigger } from '@/shared/components/ui/sidebar';
+import { AppSidebar } from '@/features/dashboard/components/app-sidebar';
+import { UserDropdown } from '@/shared/components/user-dropdown';
+import { ONBOARDING_FLOW_KEY } from '@/features/onboarding/lib/onboarding';
+import { createClient } from '@/shared/lib/supabase/server';
+import AppNotifications from '@/shared/components/app-notifications';
+import { AnchoredToastProvider, ToastProvider } from "@/shared/components/ui/toast"
 
 export default async function DashboardLayout({
     children,

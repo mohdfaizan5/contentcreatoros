@@ -2,10 +2,25 @@ import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import { ArrowRight, Sparkles } from 'lucide-react';
 
-import { listWorkflowPlannerRuns } from '@/actions/workflow-planner';
-import { WorkflowRunStatusBadge } from '@/components/workflow/workflow-run-status-badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { listWorkflowPlannerRuns } from '@/features/workflow/actions/workflow-planner';
+import { WorkflowRunStatusBadge } from '@/features/workflow/components/workflow-run-status-badge';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuGroup,
+    DropdownMenuItem,
+    DropdownMenuLabel,
+    DropdownMenuPortal,
+    DropdownMenuSeparator,
+    DropdownMenuShortcut,
+    DropdownMenuSub,
+    DropdownMenuSubContent,
+    DropdownMenuSubTrigger,
+    DropdownMenuTrigger,
+} from "@/shared/components/ui/dropdown-menu";
 
 import {
     BoltIcon,
@@ -21,16 +36,8 @@ import {
     Avatar,
     AvatarFallback,
     AvatarImage,
-} from "@/components/ui/avatar";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuGroup,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+} from "@/shared/components/ui/avatar";
+
 import { PlusIcon } from '@phosphor-icons/react/dist/ssr';
 function formatDateRange(startDate: string, endDate: string) {
     return `${format(parseISO(startDate), 'MMM d')} — ${format(parseISO(endDate), 'MMM d, yyyy')}`;
@@ -54,8 +61,8 @@ export default async function WorkflowPage() {
                         <Link href="/app/workflow/new">
                             {/* <Sparkles className="h-4 w-4" />
                             New 7-Day Run */}
-                            New Campain 
-                            <PlusIcon size={28}/>
+                            New Campain
+                            <PlusIcon size={28} />
                         </Link>
                     </Button>
                     <DropdownMenu>
@@ -128,7 +135,7 @@ export default async function WorkflowPage() {
                             <Link href="/app/workflow/new">Create your first run</Link>
                         </Button>
                     </CardContent>
-                </Card> 
+                </Card>
             ) : (
                 <div className="grid gap-4">
                     {runs.map((run) => (
@@ -146,12 +153,68 @@ export default async function WorkflowPage() {
                                             <WorkflowRunStatusBadge status={run.status} />
                                         </CardDescription>
                                     </div>
-                                    <Button asChild variant="outline" className="gap-2">
-                                        <Link href={`/app/workflow/${run.id}`}>
-                                            Open Campain
-                                            <ArrowRight className="h-4 w-4" />
-                                        </Link>
-                                    </Button>
+                                    <div>
+                                        <Button asChild variant="outline" className="gap-2">
+                                            <Link href={`/app/workflow/${run.id}`}>
+                                                Open Campain
+                                                <ArrowRight className="h-4 w-4" />
+                                            </Link>
+                                        </Button>
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="outline">
+                                                    {/* Rich menu */}
+                                                    <ChevronDownIcon
+                                                        aria-hidden="true"
+                                                        className="-me-1 opacity-60"
+                                                        size={16}
+                                                    />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent>
+                                                <DropdownMenuGroup>
+                                                    <DropdownMenuItem>
+                                                        <span>Edit</span>
+                                                        <DropdownMenuShortcut>⌘E</DropdownMenuShortcut>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuItem>
+                                                        <span>Duplicate</span>
+                                                        <DropdownMenuShortcut>⌘D</DropdownMenuShortcut>
+                                                    </DropdownMenuItem>
+                                                </DropdownMenuGroup>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuGroup>
+                                                    <DropdownMenuItem>
+                                                        <span>Archive</span>
+                                                        <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
+                                                    </DropdownMenuItem>
+                                                    <DropdownMenuSub>
+                                                        <DropdownMenuSubTrigger>More</DropdownMenuSubTrigger>
+                                                        <DropdownMenuPortal>
+                                                            <DropdownMenuSubContent>
+                                                                <DropdownMenuItem>Move to project</DropdownMenuItem>
+                                                                <DropdownMenuItem>Move to folder</DropdownMenuItem>
+                                                                <DropdownMenuSeparator />
+                                                                <DropdownMenuItem>Advanced options</DropdownMenuItem>
+                                                            </DropdownMenuSubContent>
+                                                        </DropdownMenuPortal>
+                                                    </DropdownMenuSub>
+                                                </DropdownMenuGroup>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuGroup>
+                                                    <DropdownMenuItem>Share</DropdownMenuItem>
+                                                    <DropdownMenuItem>Add to favorites</DropdownMenuItem>
+                                                </DropdownMenuGroup>
+                                                <DropdownMenuSeparator />
+                                                <DropdownMenuItem variant="destructive">
+                                                    <span>Delete</span>
+                                                    <DropdownMenuShortcut>⌘⌫</DropdownMenuShortcut>
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+
+                                    </div>
+
                                 </div>
 
                                 <div className="grid gap-2 sm:grid-cols-4">
@@ -173,7 +236,7 @@ export default async function WorkflowPage() {
                                     </div>
                                 </div>
 
-                               
+
                             </CardHeader>
                         </Card>
                     ))}
@@ -182,3 +245,4 @@ export default async function WorkflowPage() {
         </div>
     );
 }
+

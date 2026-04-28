@@ -4,8 +4,11 @@
 - use comments to explain the code, not everywhere atleast in complex functions and in start of the file to tell what this file does.
 - make sure you write code understanding the bigger picture and how it fits into the whole application.
 - always check what version of the package is already installed and use that version docs and api.
-- **Database Migrations**: Always create NEW numbered migration files (00001, 00002, etc.) in migrations/ folder. Never edit existing migrations unless they failed. Format: `00XXX_description.sql`
+- **Database Migrations**: Always create NEW numbered migration files (00001, 00002, etc.) in supabase/migrations/ folder. Never edit existing migrations unless they failed. 
+Format: `YYMMDD_NUMBER_description.sql`
+    - NUMBER is basically for differnialting files names if they're created the same day.
     - make sure you give a proper quick summary of what the migration will do for the db and if there is something for the user to be aware of.
+eg: 20260402_01_simplify_onboarding_questions
 - **Changelog**: After making user-facing changes, update `src/data/changelog.ts` by adding a NEW entry at the TOP of the array. Categorize changes into `improvements`, `fixes`, and `patches`. Include version, date, title, and description. This powers the public `/changelog` route.
 
 
@@ -20,3 +23,6 @@
 3. don't make too big files and adding a lot of content
 
 4. make sure you're doing fetching only from the backend almost all times, unless required to do from frontend
+
+
+## NEXTJS Good folder structure:

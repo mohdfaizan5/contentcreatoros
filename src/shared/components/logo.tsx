@@ -1,0 +1,55 @@
+import { cn } from "@/shared/lib/utils";
+import { XLogoIcon } from "@phosphor-icons/react/dist/ssr";
+import Image from "next/image";
+import Link from "next/link";
+
+const Logo = ({
+  full = false,
+  width = 36,
+  height = 36,
+  link = true,
+  className,
+  textClassName,
+  href,
+}: {
+  full?: boolean;
+  link?: boolean;
+  width?: number;
+  height?: number;
+  className?: string;
+  textClassName?: string;
+  href?: string;
+}) => {
+  const content = (
+    <>
+      <Image
+        src={"/contentosx logo1.svg"}
+        width={width}
+        height={height}
+        alt="ContentOS logo"
+      />
+      {full && <span className={cn("-ml-0.5", textClassName)}>ContentOS𝕏
+        {/* <XLogoIcon className="inline -ml-1" size={22} /> */}
+      </span>}
+    </>
+  );
+
+  if (link) {
+    return (
+      <Link
+        href={href || "/"}
+        className={cn("flex items-start text-xl font-light font-bbh", className)}
+      >
+        {content}
+      </Link>
+    );
+  }
+
+  return (
+    <div className={cn("flex items-center text-xl font-light font-bbh", className)}>
+      {content}
+    </div>
+  );
+};
+
+export default Logo;

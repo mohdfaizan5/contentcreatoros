@@ -1,5 +1,5 @@
-import { ChangelogEntry } from '@/components/public/changelog/changelog-entry';
-import { changelog } from '@/data/changelog';
+import { ChangelogEntry } from '@/features/(public)/changelog/components/changelog-entry';
+import { changelog } from '@/features/(public)/changelog/data/changelog';
 import { Sparkle } from '@phosphor-icons/react/dist/ssr';
 
 export const metadata = {
@@ -34,3 +34,4 @@ export default function ChangelogPage() {
         </div>
     );
 }
+

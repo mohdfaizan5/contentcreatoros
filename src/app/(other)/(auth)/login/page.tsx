@@ -1,6 +1,6 @@
 "use client"
-import { LoginForm } from '@/components/login-form'
-import Synthesis from '@/components/synthesis'
+import { LoginForm } from '@/shared/components/login-form'
+import Synthesis from '@/shared/components/synthesis'
 
 /**
  * Login Page

@@ -1,5 +1,5 @@
-import MainCalendar from "@/components/main-calendar";
-import { getGeneratedTweetCalendarEvents } from "@/actions/generated-tweets";
+import MainCalendar from "@/shared/components/main-calendar";
+import { getGeneratedTweetCalendarEvents } from "@/features/(legacy)/templates/generated-tweets";
 
 export default async function XCalendarPage() {
   const calendarEvents = await getGeneratedTweetCalendarEvents();

@@ -11,13 +11,13 @@ import {
     Users,
     type LucideIcon,
 } from 'lucide-react';
-import { getDashboardSnapshot } from '@/actions/dashboard';
-import WelcomeContentOsxModal from '@/components/dashboard/welcome-content-osx-modal';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Progress } from '@/components/ui/progress';
-import { AnimatedCircularProgressBar } from '@/components/ui/animated-circular-progress-bar';
+import { getDashboardSnapshot } from '@/features/dashboard/actions/dashboard';
+import WelcomeContentOsxModal from '@/features/dashboard/components/welcome-content-osx-modal';
+import { Badge } from '@/shared/components/ui/badge';
+import { Button } from '@/shared/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/components/ui/card';
+import { Progress } from '@/shared/components/ui/progress';
+import { AnimatedCircularProgressBar } from '@/shared/components/ui/animated-circular-progress-bar';
 
 // const quickActions = [
 //     {
@@ -153,15 +153,15 @@ import {
     FrameHeader,
     FramePanel,
     FrameTitle,
-} from "@/components/ui/frame"
-import { Label } from "@/components/ui/label";
+} from "@/shared/components/ui/frame"
+import { Label } from "@/shared/components/ui/label";
 import {
     Select,
     SelectContent,
     SelectItem,
     SelectTrigger,
     SelectValue,
-} from "@/components/ui/select";
+} from "@/shared/components/ui/select";
 import { CalendarIcon } from '@phosphor-icons/react/dist/ssr';
 
 type PageProps = {
@@ -374,4 +374,5 @@ export default async function DashboardPage({ searchParams }: PageProps) {
         </div>
     );
 }
+
 

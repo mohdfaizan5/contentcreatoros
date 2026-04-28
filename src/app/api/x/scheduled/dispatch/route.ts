@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import {
   dispatchScheduledTweets,
   recordScheduledDispatchRun,
-} from '@/lib/generated-tweets-dispatch';
+} from '@/features/workflow/lib/generated-tweets-dispatch';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';

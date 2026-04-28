@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 
-import { scrapeWebsiteForOnboarding } from '@/lib/firecrawl';
+import { scrapeWebsiteForOnboarding } from '@/features/onboarding/lib/firecrawl';
 
 function createRequestId() {
   return `scrape_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;

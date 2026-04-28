@@ -1,6 +1,6 @@
 import { notFound } from 'next/navigation';
-import { getPublicMagnet } from '@/actions/lead-magnets';
-import { LeadMagnetForm } from '@/components/lead-magnets/lead-magnet-form';
+import { LeadMagnetForm } from '@/features/(legacy)/lead-magnets/components/lead-magnet-form';
+import { getPublicMagnet } from '@/features/(legacy)/lead-magnets/actions/lead-magnets';
 
 interface MagnetPageProps {
     params: Promise<{ slug: string }>;

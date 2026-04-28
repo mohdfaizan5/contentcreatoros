@@ -1,8 +1,8 @@
 import { notFound } from 'next/navigation';
-import { getPublicProfile } from '@/actions/links';
-import { getTemplate, getCardBorderRadius } from '@/lib/profile-templates';
-import { PublicLinksList } from '@/components/links/public-links';
-import { trackProfileView } from '@/actions/analytics';
+import { getPublicProfile } from '@/features/(legacy)/links/actions/links';
+import { getTemplate, getCardBorderRadius } from '@/features/inspiration/lib/profile-templates';
+import { PublicLinksList } from '@/features/(legacy)/links/components/public-links';
+import { trackProfileView } from '@/features/analytics/actions/analytics';
 import type { Metadata } from 'next';
 
 interface PublicProfilePageProps {
@@ -114,3 +114,4 @@ export default async function PublicProfilePage({ params }: PublicProfilePagePro
         </div>
     );
 }
+
