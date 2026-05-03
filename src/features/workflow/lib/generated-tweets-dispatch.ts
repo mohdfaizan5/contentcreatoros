@@ -5,7 +5,9 @@ import type { PostMediaAttachment, ScheduledDispatchRunStatus } from '@/shared/t
 type ScheduledTweetRow = {
   id: string;
   content: string;
+  created_at: string;
   media_attachments: PostMediaAttachment[];
+  reply_to_generated_tweet_id: string | null;
   user_id: string;
   x_account_id: string | null;
 };
@@ -152,10 +154,11 @@ export async function dispatchScheduledTweets(
   try {
     let dueTweetsQuery = supabase
       .from('generated_tweets')
-      .select('id, content, media_attachments, user_id, x_account_id')
+      .select('id, content, created_at, media_attachments, reply_to_generated_tweet_id, user_id, x_account_id')
       .eq('status', 'scheduled')
       .lte('scheduled_for', now)
       .order('scheduled_for', { ascending: true })
+      .order('created_at', { ascending: true })
       .limit(limit);
 
     if (normalizedTweetIds.length > 0) {
@@ -198,6 +201,7 @@ export async function dispatchScheduledTweets(
     }
 
     const results: ScheduledTweetDispatchResult[] = [];
+    const publishedTweetIdByGeneratedTweetId = new Map<string, string>();
 
     for (const row of (dueTweets ?? []) as ScheduledTweetRow[]) {
       const accountId = row.x_account_id;
@@ -222,6 +226,39 @@ export async function dispatchScheduledTweets(
           status: 'failed',
         });
         continue;
+      }
+
+      let replyToTweetId: string | undefined;
+
+      if (row.reply_to_generated_tweet_id) {
+        replyToTweetId = publishedTweetIdByGeneratedTweetId.get(row.reply_to_generated_tweet_id);
+
+        if (!replyToTweetId) {
+          const { data: parentTweet, error: parentTweetError } = await supabase
+            .from('generated_tweets')
+            .select('status, x_tweet_id')
+            .eq('id', row.reply_to_generated_tweet_id)
+            .maybeSingle();
+
+          if (parentTweetError) {
+            results.push({
+              error: 'Unable to load the parent tweet for this reply.',
+              id: row.id,
+              status: 'failed',
+            });
+            continue;
+          }
+
+          if (parentTweet?.status !== 'published' || !parentTweet.x_tweet_id) {
+            results.push({
+              id: row.id,
+              status: 'skipped',
+            });
+            continue;
+          }
+
+          replyToTweetId = parentTweet.x_tweet_id;
+        }
       }
 
       const { data: claimedTweet, error: claimError } = await supabase
@@ -259,6 +296,8 @@ export async function dispatchScheduledTweets(
           accountId,
           row.content,
           row.media_attachments,
+          undefined,
+          replyToTweetId,
         );
 
         const { error: publishUpdateError } = await supabase
@@ -284,6 +323,7 @@ export async function dispatchScheduledTweets(
           status: 'published',
           tweetId: publishedTweet.id,
         });
+        publishedTweetIdByGeneratedTweetId.set(row.id, publishedTweet.id);
       } catch (publishError) {
         const message =
           publishError instanceof Error

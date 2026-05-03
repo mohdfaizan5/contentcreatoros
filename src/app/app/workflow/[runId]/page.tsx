@@ -19,13 +19,15 @@ export default async function WorkflowRunPage({ params }: WorkflowRunPageProps) 
     notFound();
   }
 
-  return (
-    <WorkflowRunDetailClient
-      imageStudioContext={imageStudioContext}
-      items={details.items}
-      run={details.run}
-      xProfile={details.xProfile}
-    />
+    return (
+        <WorkflowRunDetailClient
+            campaignMetrics={details.campaignMetrics}
+            generatedTweetStatusById={details.generatedTweetStatusById}
+            imageStudioContext={imageStudioContext}
+            itemDeliveryStatusByItemId={details.itemDeliveryStatusByItemId}
+            items={details.items}
+            run={details.run}
+            xProfile={details.xProfile}
+        />
   );
 }
-

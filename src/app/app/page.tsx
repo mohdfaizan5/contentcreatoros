@@ -163,6 +163,7 @@ import {
     SelectValue,
 } from "@/shared/components/ui/select";
 import { CalendarIcon } from '@phosphor-icons/react/dist/ssr';
+import { GrowthChart } from '@/features/dashboard/components/growth-chart';
 
 type PageProps = {
     searchParams: Promise<Record<string, string | string[] | undefined>>;
@@ -221,11 +222,13 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                                     gaugePrimaryColor={gaugePalette.primary}
                                     gaugeSecondaryColor={gaugePalette.secondary}
                                 />
-                                <p className="mt-2 text-sm text-muted-foreground">{snapshot.scoreLabel}</p>
-                                <p className="text-xs text-muted-foreground/80">{gaugePalette.label}</p>
-                                <Badge variant={snapshot.score >= 60 ? 'default' : 'destructive'}>
-                                    {snapshot.score >= 60 ? 'On track' : 'Needs attention'}
-                                </Badge>
+                                <div className='flex items-center gap-2 '>
+                                    <Badge variant={snapshot.score >= 60 ? 'default' : 'destructive'}>
+                                        {snapshot.score >= 60 ? 'On track' : 'Needs attention'}
+                                    </Badge>
+                                    <p className="mt-2 text-sm text-muted-foreground">{snapshot.scoreLabel}</p>
+                                    <p className="text-xs text-muted-foreground/80">{gaugePalette.label}</p>
+                                </div>
                             </div>
 
                             {xProfile ? (
@@ -275,7 +278,7 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                         </div>
 
 
-                        <Progress value={snapshot.score} className="h-2" />
+                        {/* <Progress value={snapshot.score} className="h-2" /> */}
                         <Frame className="grid gap-3 sm:grid-cols-3">
                             {/* <FrameHeader>
                                 <FrameTitle>Section header</FrameTitle>
@@ -338,6 +341,10 @@ export default async function DashboardPage({ searchParams }: PageProps) {
                         <Button asChild className="w-full">
                             <Link href="/app/workflow/new">Plan Content (7 Days)</Link>
                         </Button>
+                        <div className='relative '>
+                            <p className='z-10 absolute  top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-muted-foreground'>coming soon...</p>
+                            <GrowthChart />
+                        </div>
                     </CardContent>
                 </Card>
             </section>

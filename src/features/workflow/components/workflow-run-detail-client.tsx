@@ -4,17 +4,22 @@ import Link from 'next/link';
 import { format, parseISO } from 'date-fns';
 import {
     AlertCircle,
+    CalendarDays,
     CheckCircle2,
     ChevronDownIcon,
     ChevronLeft,
     ChevronRight,
+    Heart,
     ImagePlus,
     Loader2,
+    MessageCircle,
     RefreshCcw,
+    Repeat2,
     Timer,
+    TrendingUp,
     XCircle,
 } from 'lucide-react';
-import { useEffect, useMemo, useRef, useState, useTransition } from 'react';
+import { useEffect, useMemo, useRef, useState, useTransition, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
 import { toast } from 'sonner';
 import {
@@ -44,10 +49,12 @@ import { useFileUpload, type FileWithPreview } from '@/features/workflow/hooks/u
 import { cn } from '@/shared/lib/utils';
 import { POST_GIF_MAX_BYTES, POST_MEDIA_ACCEPT } from '@/features/x/lib/post-media';
 import type {
+    GeneratedTweetStatus,
     PostMediaAttachment,
     SevenDayPlanningItem,
     SevenDayPlanningItemApprovalStatus,
     SevenDayPlanningRun,
+    WorkflowThreadReply,
 } from '@/shared/types/database';
 import type { BrandVisualIdentity } from '@/features/inspiration/lib/brand-visuals';
 import { WorkflowRunStatusBadge } from './workflow-run-status-badge';
@@ -69,7 +76,20 @@ import {
     DialogTitle,
 } from '@/shared/components/ui/dialog';
 import { ImageTemplateWorkbench } from '@/features/image-studio/components/image-template-workbench';
+import { CampaignGrowthChart } from './campaign-growth-chart';
+import { Skeleton } from '@/shared/components/ui/skeleton';
+import { TextShimmerWave } from '@/shared/components/text-shimmer-wave';
 
+
+import {
+    Timeline,
+    TimelineContent,
+    TimelineHeader,
+    TimelineIndicator,
+    TimelineItem,
+    TimelineSeparator,
+    TimelineTitle,
+} from "@/shared/components/ui/timeline";
 type WorkflowPostingAccountProfile = {
     name: string;
     title: string | null;
@@ -82,6 +102,36 @@ type WorkflowImageStudioContext = {
     companyOverview: string;
     initialWebsiteUrl: string;
 };
+
+type WorkflowCampaignMetrics = {
+    totals: {
+        totalPosts: number;
+        publishedPosts: number;
+        scheduledPosts: number;
+        failedPosts: number;
+        totalLikes: number;
+        totalReplies: number;
+        totalReposts: number;
+        totalQuotes: number;
+        totalEngagement: number;
+    };
+    trend: Array<{
+        date: string;
+        label: string;
+        posts: number;
+        likes: number;
+        replies: number;
+        reposts: number;
+        quotes: number;
+        engagement: number;
+    }>;
+    hasLiveMetrics: boolean;
+};
+
+type WorkflowItemDisplayStatus =
+    | SevenDayPlanningItemApprovalStatus
+    | GeneratedTweetStatus
+    | 'publishing';
 
 function formatUsername(username: string) {
     return username.startsWith('@') ? username : `@${username}`;
@@ -108,24 +158,36 @@ function getInitials(value: string) {
     return initials.join('') || 'X';
 }
 
-function ItemStatusBadge({ status }: { status: SevenDayPlanningItemApprovalStatus }) {
+function ItemStatusBadge({ status }: { status: WorkflowItemDisplayStatus }) {
     const className =
-        status === 'approved'
-            ? 'bg-emerald-50 text-emerald-700'
-            : status === 'rejected'
-                ? 'bg-rose-50 text-rose-400'
-                : status === 'scheduled'
-                    ? 'bg-sky-50 text-sky-700'
-                    : '';
+        status === 'published'
+            ? 'bg-violet-50 text-violet-700'
+            : status === 'publishing'
+                ? 'bg-amber-50 text-amber-700'
+                : status === 'failed'
+                    ? 'bg-rose-50 text-rose-500'
+                    : status === 'approved'
+                        ? 'bg-emerald-50 text-emerald-700'
+                        : status === 'rejected'
+                            ? 'bg-rose-50 text-rose-400'
+                            : status === 'scheduled'
+                                ? 'bg-sky-50 text-sky-700'
+                                : '';
 
     const label =
-        status === 'approved'
-            ? 'Approved'
-            : status === 'rejected'
-                ? 'Rejected'
-                : status === 'scheduled'
-                    ? 'Scheduled'
-                    : 'Pending';
+        status === 'published'
+            ? 'Published'
+            : status === 'publishing'
+                ? 'Publishing'
+                : status === 'failed'
+                    ? 'Failed'
+                    : status === 'approved'
+                        ? 'Approved'
+                        : status === 'rejected'
+                            ? 'Rejected'
+                            : status === 'scheduled'
+                                ? 'Scheduled'
+                                : 'Pending';
 
     return (
         <Badge className={cn('border', className)} variant="outline">
@@ -136,6 +198,73 @@ function ItemStatusBadge({ status }: { status: SevenDayPlanningItemApprovalStatu
 
 function canModerateRun(status: SevenDayPlanningRun['status']) {
     return status === 'pending_approval';
+}
+
+function formatCompactNumber(value: number) {
+    return new Intl.NumberFormat('en-US', {
+        maximumFractionDigits: value >= 1000 ? 1 : 0,
+        notation: value >= 1000 ? 'compact' : 'standard',
+    }).format(value);
+}
+
+function MetricCard({
+    label,
+    value,
+    accent,
+    icon,
+    helper,
+}: {
+    label: string;
+    value: string;
+    accent: string;
+    icon: ReactNode;
+    helper: string;
+}) {
+    return (
+        <div className="relative flex h-28 flex-col justify-between rounded-2xl border bg-card px-4 py-3 shadow-sm">
+            <div className="flex items-start justify-between gap-1">
+                <div className='flex flex-col'>
+                    <p className="mt-3 text-3xl font-semibold tracking-tight">{value}</p>
+                    <div className=''>
+                        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">{label}</p>  <Tooltip>
+                            <TooltipTrigger
+                                className={"inline-flex"}
+                                render={<Button className="rounded-full inline-flex" size="icon-xs" variant="outline" />}
+                            >
+                                <QuestionMarkIcon size={16} />
+                            </TooltipTrigger>
+                            <TooltipPopup>{helper}</TooltipPopup>
+                        </Tooltip>
+                    </div>
+                </div>
+                <div className={cn('absolute top-0 right-0 p-2.5', accent)}>
+                    {icon}
+                </div>
+            </div>
+            {/* <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <span className="truncate">{helper}</span>
+              
+            </div> */}
+        </div>
+    );
+}
+
+function CampaignPerformanceChart({ metrics }: { metrics: WorkflowCampaignMetrics }) {
+    if (!metrics.trend.length) {
+        return (
+            <div className="rounded-2xl border bg-gradient-to-br from-muted/50 via-background to-muted/20 p-5">
+                <div className="flex items-center gap-2 text-sm font-medium">
+                    <TrendingUp className="h-4 w-4 text-primary" />
+                    Campaign performance
+                </div>
+                <p className="mt-3 max-w-xl text-sm text-muted-foreground">
+                    Live campaign metrics will show up here after the first scheduled post publishes and returns an X post id.
+                </p>
+            </div>
+        );
+    }
+
+    return <CampaignGrowthChart data={metrics.trend} />;
 }
 
 function hasScheduleableItems(items: SevenDayPlanningItem[]) {
@@ -177,22 +306,53 @@ function getAttachmentLabel(attachment: PostMediaAttachment) {
     return attachment.media_type === 'gif' ? 'GIF' : 'Image';
 }
 
+function normalizeThreadReplies(replies: WorkflowThreadReply[] | null | undefined) {
+    return (replies ?? []).map((reply) => ({
+        content: reply.content ?? '',
+        created_at: reply.created_at ?? new Date().toISOString(),
+        generated_tweet_id: reply.generated_tweet_id ?? null,
+        id: reply.id,
+        updated_at: reply.updated_at ?? new Date().toISOString(),
+    }));
+}
+
+function serializeReplyDrafts(replies: WorkflowThreadReply[]) {
+    return JSON.stringify(
+        normalizeThreadReplies(replies).map((reply) => ({
+            content: reply.content.trim(),
+            generated_tweet_id: reply.generated_tweet_id ?? null,
+            id: reply.id,
+        })),
+    );
+}
+
 export default function WorkflowRunDetailClient({
     run,
     items,
+    itemDeliveryStatusByItemId,
+    generatedTweetStatusById,
     xProfile,
+    campaignMetrics,
     imageStudioContext,
 }: {
     run: SevenDayPlanningRun;
     items: SevenDayPlanningItem[];
+    itemDeliveryStatusByItemId: Record<string, WorkflowItemDisplayStatus>;
+    generatedTweetStatusById: Record<string, GeneratedTweetStatus | 'publishing'>;
     xProfile: WorkflowPostingAccountProfile | null;
+    campaignMetrics: WorkflowCampaignMetrics;
     imageStudioContext: WorkflowImageStudioContext;
 }) {
     const router = useRouter();
     const [isPending, startTransition] = useTransition();
+    const [scheduleFeedback, setScheduleFeedback] = useState<{
+        kind: 'error' | 'success';
+        message: string;
+    } | null>(null);
     const [selectedIndex, setSelectedIndex] = useState(0);
     const [noteByItemId, setNoteByItemId] = useState<Record<string, string>>({});
     const [suggestedPostByItemId, setSuggestedPostByItemId] = useState<Record<string, string>>({});
+    const [threadRepliesByItemId, setThreadRepliesByItemId] = useState<Record<string, WorkflowThreadReply[]>>({});
     const [scheduledAtByItemId, setScheduledAtByItemId] = useState<Record<string, string>>({});
     const [mediaAttachmentsByItemId, setMediaAttachmentsByItemId] = useState<Record<string, PostMediaAttachment[]>>({});
     const [uploadingMediaItemId, setUploadingMediaItemId] = useState<string | null>(null);
@@ -201,11 +361,15 @@ export default function WorkflowRunDetailClient({
     const [isImageStudioOpen, setIsImageStudioOpen] = useState(false);
     const [imageStudioNonce, setImageStudioNonce] = useState(0);
     const mediaUploadActionsRef = useRef<{ clearFiles: () => void } | null>(null);
+    const autoStartedRunIdRef = useRef<string | null>(null);
 
     const boundedSelectedIndex = items.length > 0
         ? Math.min(selectedIndex, items.length - 1)
         : 0;
     const selectedItem = items[boundedSelectedIndex] ?? null;
+    const selectedItemDisplayStatus = selectedItem
+        ? (itemDeliveryStatusByItemId[selectedItem.id] ?? selectedItem.approval_status)
+        : 'pending';
     const CHARACTER_LIMIT = 280;
     const suggestedPostText = selectedItem
         ? (suggestedPostByItemId[selectedItem.id] ?? selectedItem.suggested_post ?? '')
@@ -213,8 +377,12 @@ export default function WorkflowRunDetailClient({
     const suggestedPostCharacterCount = suggestedPostText.length;
     const suggestedPostRemainingCharacters = CHARACTER_LIMIT - suggestedPostCharacterCount;
     const hasExceededSuggestedPostLimit = suggestedPostRemainingCharacters < 0;
+    const selectedItemThreadReplies = selectedItem
+        ? (threadRepliesByItemId[selectedItem.id] ?? normalizeThreadReplies(selectedItem.thread_replies))
+        : [];
     const hasSuggestedPostUnsavedChanges = selectedItem
-        ? suggestedPostText !== (selectedItem.suggested_post ?? '')
+        ? suggestedPostText !== (selectedItem.suggested_post ?? '') ||
+        serializeReplyDrafts(selectedItemThreadReplies) !== serializeReplyDrafts(selectedItem.thread_replies)
         : false;
     const canEditSuggestedPost = canModerateRun(run.status);
     const canEditSelectedItemMedia = Boolean(
@@ -275,13 +443,21 @@ export default function WorkflowRunDetailClient({
     }, [items]);
 
     useEffect(() => {
+        setThreadRepliesByItemId(
+            Object.fromEntries(
+                items.map((item) => [item.id, normalizeThreadReplies(item.thread_replies)]),
+            ),
+        );
+    }, [items]);
+
+    useEffect(() => {
         if (!shouldPollRun) {
             return;
         }
 
         const interval = window.setInterval(() => {
             router.refresh();
-        }, 5000);
+        }, 3000);
 
         return () => {
             window.clearInterval(interval);
@@ -336,6 +512,8 @@ export default function WorkflowRunDetailClient({
     };
 
     const handleSchedule = () => {
+        setScheduleFeedback(null);
+
         startTransition(async () => {
             try {
                 const scopedScheduleOverrides = Object.fromEntries(
@@ -351,10 +529,31 @@ export default function WorkflowRunDetailClient({
                             ? scopedScheduleOverrides
                             : undefined,
                 });
+
+                if (!result.ok) {
+                    setScheduleFeedback({
+                        kind: 'error',
+                        message: result.error,
+                    });
+                    toast.error(result.error);
+                    return;
+                }
+
+                const successMessage = `Scheduled ${result.scheduledCount} approved post(s). Open Calendar to review publish times.`;
+                setScheduleFeedback({
+                    kind: 'success',
+                    message: successMessage,
+                });
                 toast.success(`Scheduled ${result.scheduledCount} approved post(s).`);
                 router.refresh();
             } catch (error) {
-                toast.error(error instanceof Error ? error.message : 'Unable to schedule this run.');
+                const message =
+                    error instanceof Error ? error.message : 'Unable to schedule this run.';
+                setScheduleFeedback({
+                    kind: 'error',
+                    message,
+                });
+                toast.error(message);
             }
         });
     };
@@ -366,6 +565,46 @@ export default function WorkflowRunDetailClient({
         }));
         setIsSchedulePickerOpen(false);
         toast.success('Date and time updated for this post.');
+    };
+
+    const handleAddReply = (itemId: string) => {
+        const now = new Date().toISOString();
+
+        setThreadRepliesByItemId((current) => ({
+            ...current,
+            [itemId]: [
+                ...(current[itemId] ?? []),
+                {
+                    content: '',
+                    created_at: now,
+                    generated_tweet_id: null,
+                    id: crypto.randomUUID(),
+                    updated_at: now,
+                },
+            ],
+        }));
+    };
+
+    const handleReplyChange = (itemId: string, replyId: string, content: string) => {
+        setThreadRepliesByItemId((current) => ({
+            ...current,
+            [itemId]: (current[itemId] ?? []).map((reply) =>
+                reply.id === replyId
+                    ? {
+                        ...reply,
+                        content,
+                        updated_at: new Date().toISOString(),
+                    }
+                    : reply,
+            ),
+        }));
+    };
+
+    const handleRemoveReply = (itemId: string, replyId: string) => {
+        setThreadRepliesByItemId((current) => ({
+            ...current,
+            [itemId]: (current[itemId] ?? []).filter((reply) => reply.id !== replyId),
+        }));
     };
 
     const handleMediaUpload = async (itemId: string, files: FileList | File[] | null) => {
@@ -500,20 +739,56 @@ export default function WorkflowRunDetailClient({
         });
     };
 
+    useEffect(() => {
+        if (run.status !== 'queued') {
+            return;
+        }
+
+        if (autoStartedRunIdRef.current === run.id) {
+            return;
+        }
+
+        autoStartedRunIdRef.current = run.id;
+
+        startTransition(async () => {
+            try {
+                const result = await triggerWorkflowPlannerRun(run.id);
+
+                if (result.code === 'no-queued-runs') {
+                    toast.message('Run is no longer queued. Refreshing status.');
+                } else if (result.code === 'failed') {
+                    toast.error(result.error ?? 'Run failed during generation.');
+                } else {
+                    toast.success('Run processed. Loading generated items.');
+                }
+
+                router.refresh();
+            } catch (error) {
+                toast.error(error instanceof Error ? error.message : 'Unable to start this run now.');
+            }
+        });
+    }, [router, run.id, run.status, startTransition]);
+
     const handleSaveSuggestedPost = (itemId: string) => {
         startTransition(async () => {
             try {
                 const suggestedPost = suggestedPostByItemId[itemId] ?? '';
+                const threadReplies = threadRepliesByItemId[itemId] ?? [];
 
                 const result = await updateWorkflowPlannerItemSuggestedPost({
                     itemId,
                     runId: run.id,
                     suggestedPost,
+                    threadReplies,
                 });
 
                 setSuggestedPostByItemId((current) => ({
                     ...current,
                     [itemId]: result.suggestedPost,
+                }));
+                setThreadRepliesByItemId((current) => ({
+                    ...current,
+                    [itemId]: result.threadReplies,
                 }));
 
                 toast.success('Suggested post updated.');
@@ -526,6 +801,7 @@ export default function WorkflowRunDetailClient({
         });
     };
 
+   
     const handleFormatSuggestedPost = (itemId: string) => {
         startTransition(async () => {
             try {
@@ -555,6 +831,16 @@ export default function WorkflowRunDetailClient({
             }
         });
     };
+
+    const campaignTotals = campaignMetrics.totals;
+    const hasCampaignOutput =
+        campaignTotals.totalPosts > 0 || campaignTotals.publishedPosts > 0 || campaignTotals.scheduledPosts > 0;
+    const deliveryRate = campaignTotals.totalPosts > 0
+        ? Math.round((campaignTotals.publishedPosts / campaignTotals.totalPosts) * 100)
+        : 0;
+    const engagementPerPost = campaignTotals.publishedPosts > 0
+        ? (campaignTotals.totalEngagement / campaignTotals.publishedPosts).toFixed(1)
+        : '0.0';
 
     return (
         <div className="space-y-4 max-w-5xl mx-auto">
@@ -615,24 +901,157 @@ export default function WorkflowRunDetailClient({
 
                     </div>
 
-                    <div className="grid gap-2 sm:grid-cols-4">
-                        <div className="rounded-md border bg-muted/20 p-2">
-                            <p className="text-xs text-muted-foreground">Pending</p>
-                            <p className="text-lg font-semibold">{run.pending_count}</p>
+                    {scheduleFeedback ? (
+                        <div
+                            className={cn(
+                                "rounded-md border p-3 text-sm",
+                                scheduleFeedback.kind === 'error'
+                                    ? "border-rose-300 bg-rose-50 text-rose-700"
+                                    : "border-emerald-300 bg-emerald-50 text-emerald-700",
+                            )}
+                        >
+                            {scheduleFeedback.message}
                         </div>
-                        <div className="rounded-md border bg-muted/20 p-2">
-                            <p className="text-xs text-muted-foreground">Approved</p>
-                            <p className="text-lg font-semibold">{run.approved_count}</p>
+                    ) : null}
+
+                    {hasCampaignOutput ? (
+                        <div className="space-y-4">
+                            <div className='flex gap-2 h-56'>
+
+                                <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+                                    <MetricCard
+                                        accent=" text-rose-400"
+                                        helper={`${campaignTotals.publishedPosts} published across this campaign`}
+                                        icon={<Heart className="h-4 w-4" />}
+                                        label="Likes"
+                                        value={formatCompactNumber(campaignTotals.totalLikes)}
+                                    />
+                                    <MetricCard
+                                        accent=" text-sky-400"
+                                        helper={`${engagementPerPost} interactions per published post`}
+                                        icon={<TrendingUp className="h-4 w-4" />}
+                                        label="Engagement"
+                                        value={formatCompactNumber(campaignTotals.totalEngagement)}
+                                    />
+                                    <MetricCard
+                                        accent=" text-emerald-400"
+                                        helper={`${deliveryRate}% of campaign output is already live`}
+                                        icon={<CalendarDays className="h-4 w-4" />}
+                                        label="Published"
+                                        value={formatCompactNumber(campaignTotals.publishedPosts)}
+                                    />
+                                    <MetricCard
+                                        accent=" text-amber-400"
+                                        helper={`${campaignTotals.totalQuotes} quotes and ${campaignTotals.failedPosts} failed`}
+                                        icon={<Repeat2 className="h-4 w-4" />}
+                                        label="Reposts"
+                                        value={formatCompactNumber(campaignTotals.totalReposts)}
+                                    />
+                                    <div className="rounded-2xl border bg-muted/20 px-3 py-2 h-28">
+                                        <p className="mt-3 text-2xl font-semibold">
+                                            {formatCompactNumber(campaignTotals.totalReplies)}
+                                        </p>
+                                        <div className="flex items-center gap-2 text-sm font-medium">
+                                            <MessageCircle className="h-4 w-4 text-primary" />
+                                            Conversation
+                                        </div>
+                                        {/* <p className="mt-1 text-sm text-muted-foreground">
+                                            Replies collected across campaign posts.
+                                        </p> */}
+                                    </div>
+                                    {/* <div className="rounded-2xl border bg-muted/20 p-4">
+                                        <div className="flex items-center gap-2 text-sm font-medium">
+                                            <Repeat2 className="h-4 w-4 text-primary" />
+                                            Scheduled queue
+                                        </div>
+                                        <p className="mt-3 text-2xl font-semibold">
+                                            {formatCompactNumber(campaignTotals.scheduledPosts)}
+                                        </p>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            Posts still waiting for their publish time.
+                                        </p>
+                                    </div> */}
+                                    {/* <div className="rounded-2xl border bg-muted/20 p-4">
+                                        <div className="flex items-center gap-2 text-sm font-medium">
+                                            <TrendingUp className="h-4 w-4 text-primary" />
+                                            Data source
+                                        </div>
+                                        <p className="mt-3 text-2xl font-semibold">
+                                            {campaignMetrics.hasLiveMetrics ? 'Live' : 'Ready'}
+                                        </p>
+                                        <p className="mt-1 text-sm text-muted-foreground">
+                                            {campaignMetrics.hasLiveMetrics
+                                                ? 'Metrics are coming from published X posts.'
+                                                : 'The campaign is wired. Metrics will appear after publishing starts.'}
+                                        </p>
+                                    </div> */}
+                                </div>
+
+                                <CampaignPerformanceChart metrics={campaignMetrics} />
+
+                            </div>
+                            {/* 
+                            <div className="grid gap-3 md:grid-cols-3">
+                                <div className="rounded-2xl border bg-muted/20 p-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <MessageCircle className="h-4 w-4 text-primary" />
+                                        Conversation
+                                    </div>
+                                    <p className="mt-3 text-2xl font-semibold">
+                                        {formatCompactNumber(campaignTotals.totalReplies)}
+                                    </p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        Replies collected across campaign posts.
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border bg-muted/20 p-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <Repeat2 className="h-4 w-4 text-primary" />
+                                        Scheduled queue
+                                    </div>
+                                    <p className="mt-3 text-2xl font-semibold">
+                                        {formatCompactNumber(campaignTotals.scheduledPosts)}
+                                    </p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        Posts still waiting for their publish time.
+                                    </p>
+                                </div>
+                                <div className="rounded-2xl border bg-muted/20 p-4">
+                                    <div className="flex items-center gap-2 text-sm font-medium">
+                                        <TrendingUp className="h-4 w-4 text-primary" />
+                                        Data source
+                                    </div>
+                                    <p className="mt-3 text-2xl font-semibold">
+                                        {campaignMetrics.hasLiveMetrics ? 'Live' : 'Ready'}
+                                    </p>
+                                    <p className="mt-1 text-sm text-muted-foreground">
+                                        {campaignMetrics.hasLiveMetrics
+                                            ? 'Metrics are coming from published X posts.'
+                                            : 'The campaign is wired. Metrics will appear after publishing starts.'}
+                                    </p>
+                                </div>
+                            </div> */}
                         </div>
-                        <div className="rounded-md border bg-muted/20 p-2">
-                            <p className="text-xs text-muted-foreground">Rejected</p>
-                            <p className="text-lg font-semibold">{run.rejected_count}</p>
+                    ) : (
+                        <div className="grid gap-2 sm:grid-cols-4">
+                            <div className="rounded-md border bg-muted/20 p-2">
+                                <p className="text-xs text-muted-foreground">Pending</p>
+                                <p className="text-lg font-semibold">{run.pending_count}</p>
+                            </div>
+                            <div className="rounded-md border bg-muted/20 p-2">
+                                <p className="text-xs text-muted-foreground">Approved</p>
+                                <p className="text-lg font-semibold">{run.approved_count}</p>
+                            </div>
+                            <div className="rounded-md border bg-muted/20 p-2">
+                                <p className="text-xs text-muted-foreground">Rejected</p>
+                                <p className="text-lg font-semibold">{run.rejected_count}</p>
+                            </div>
+                            <div className="rounded-md border bg-muted/20 p-2">
+                                <p className="text-xs text-muted-foreground">Scheduled</p>
+                                <p className="text-lg font-semibold">{run.scheduled_count}</p>
+                            </div>
                         </div>
-                        <div className="rounded-md border bg-muted/20 p-2">
-                            <p className="text-xs text-muted-foreground">Scheduled</p>
-                            <p className="text-lg font-semibold">{run.scheduled_count}</p>
-                        </div>
-                    </div>
+                    )}
 
 
                     {run.generation_error ? (
@@ -650,16 +1069,42 @@ export default function WorkflowRunDetailClient({
             {run.status === 'queued' || run.status === 'generating' ? (
                 <Card>
                     <CardContent className="pt-6">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        {/* <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Loader2 className="h-4 w-4 animate-spin" />
                             {run.status === 'queued'
                                 ? 'This run is queued. It will be picked by the background dispatcher.'
                                 : 'Generation is in progress. The page auto-refreshes every 5 seconds.'}
+                        </div> */}
+                        <div className="flex w-full max-w-2xl flex-col gap-2">
+                            <div className=' flex '>
+                                {/* <Loader2 className="h-4 w-4 animate-spin" /> */}
+                                <TextShimmerWave className='font-mono text-sm' duration={1}>
+                                    Generating...
+                                </TextShimmerWave>
+                            </div>
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
                         </div>
                     </CardContent>
+
                 </Card>
             ) : null}
 
+            {/* <div className="flex w-full max-w-92 items-center gap-4">
+                <Skeleton className="size-10 rounded-full" />
+                <TextShimmerWave className='font-mono text-sm' duration={1}>
+                    Generating...
+                </TextShimmerWave>
+                <div className="flex flex-1 flex-col">
+                    <Skeleton className="my-0.5 h-4 max-w-54" />
+                    <div className="flex max-w-54 items-center gap-1">
+                        <Skeleton className="my-0.5 h-4 w-1/2" />
+                        <Skeleton className="my-0.5 h-4 w-1/2" />
+                    </div>
+                </div>
+                <Skeleton className="h-6 w-17" />
+            </div> */}
             {items.length > 0 ? (
                 <div className="grid gap-4 lg:grid-cols-[4fr_2fr]">
                     {selectedItem ? (
@@ -689,7 +1134,7 @@ export default function WorkflowRunDetailClient({
                                     <div className="flex items-center gap-2">
                                         <div className="flex flex-wrap gap-2 text-sm">
                                             <div className=' flex gap-2 items-center'>
-                                                <ItemStatusBadge status={selectedItem.approval_status} />
+                                                <ItemStatusBadge status={selectedItemDisplayStatus} />
                                             </div>
                                             <Badge variant="outline">{selectedItem.pillar}</Badge>
                                             <Badge variant="secondary">{selectedItem.content_type}</Badge>
@@ -732,34 +1177,48 @@ export default function WorkflowRunDetailClient({
                                         <p className='text-muted-foreground text-sm'>{postingAccountUsername}</p>
                                     </div>
                                 </div> */}
-                                <div className="max-w space-y-2 pb-10 pt-2">
-                                    <div className='flex gap-2 items-start'>
-                                        {/* <Avatar className={"size-10"}>
-                                            <AvatarImage alt="Kelly King" src="" />
-                                            <AvatarFallback>KK</AvatarFallback>
-                                        </Avatar> */}
-                                        <Textarea
-                                            textareaClassName='text-base'
-                                            aria-describedby="twitter-post-input-description"
-                                            className="max-w-xl text-base  "
-                                            id="twitter-post-input"
-                                            onChange={(event) => {
-                                                if (!selectedItem) {
-                                                    return;
-                                                }
+                                <Timeline className="max-w-xl space-y-0 pb-10 pt-2">
+                                    <TimelineItem
+                                        className="group-data-[orientation=vertical]/timeline:ms-10 group-data-[orientation=vertical]/timeline:not-last:pb-6"
+                                        step={1}
+                                    >
+                                        <TimelineHeader>
+                                            <TimelineSeparator className="group-data-[orientation=vertical]/timeline:-left-7 group-data-[orientation=vertical]/timeline:h-[calc(100%-1.5rem-0.25rem)] group-data-[orientation=vertical]/timeline:translate-y-6.5" />
+                                            <TimelineTitle className="mt-0.5 flex items-center gap-2">
+                                                <span>Post</span>
+                                                <ItemStatusBadge status={selectedItemDisplayStatus} />
+                                            </TimelineTitle>
+                                            <TimelineIndicator className="group-data-[orientation=vertical]/timeline:-left-7 flex size-10 items-center justify-center border-none bg-primary/10">
+                                                <Avatar className="size-10">
+                                                    <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
+                                                    <AvatarFallback>{postingAccountInitials}</AvatarFallback>
+                                                </Avatar>
+                                            </TimelineIndicator>
+                                        </TimelineHeader>
+                                        <TimelineContent className="mt-2 rounded-lg border px-4 py-3 text-foreground">
+                                            <div className="space-y-2">
+                                                <Textarea
+                                                    textareaClassName='text-base'
+                                                    aria-describedby="twitter-post-input-description"
+                                                    className="max-w-xl text-base"
+                                                    id="twitter-post-input"
+                                                    onChange={(event) => {
+                                                        if (!selectedItem) {
+                                                            return;
+                                                        }
 
-                                                const nextValue = event.target.value;
+                                                        const nextValue = event.target.value;
 
-                                                setSuggestedPostByItemId((current) => ({
-                                                    ...current,
-                                                    [selectedItem.id]: nextValue,
-                                                }));
-                                            }}
-                                            readOnly={!canEditSuggestedPost}
-                                            rows={6}
-                                            value={suggestedPostText}
-                                        />
-                                    </div>
+                                                        setSuggestedPostByItemId((current) => ({
+                                                            ...current,
+                                                            [selectedItem.id]: nextValue,
+                                                        }));
+                                                    }}
+                                                    readOnly={!canEditSuggestedPost}
+                                                    rows={6}
+                                                    value={suggestedPostText}
+                                                />
+                                            </div>
 
                                     <div className="flex items-center justify-between gap-3 max-w-xl">
                                         <div>
@@ -838,6 +1297,18 @@ export default function WorkflowRunDetailClient({
                                                         <Loader2 className="h-4 w-4 animate-spin" />
                                                     ) : null}
                                                     Save text
+                                                </Button>
+                                            ) : null}
+                                            {canEditSuggestedPost && selectedItem ? (
+                                                <Button
+                                                    className="gap-2"
+                                                    disabled={isPending}
+                                                    onClick={() => handleAddReply(selectedItem.id)}
+                                                    size="sm"
+                                                    variant="outline"
+                                                >
+                                                    <MessageCircle className="h-4 w-4" />
+                                                    Reply
                                                 </Button>
                                             ) : null}
 
@@ -965,14 +1436,101 @@ export default function WorkflowRunDetailClient({
                                                 </div>
                                             ) : null}
 
-
                                         </div>
                                     ) : null}
-                                    {/* <AspectRatio ratio={16 / 9} className='max-w-xl'>
-                                        <Image fill src={"/contentosx-template-1-16x9.png"}
-                                            alt="Image" className="rounded-md object-cover" />
-                                    </AspectRatio> */}
-                                </div>
+                                        </TimelineContent>
+                                    </TimelineItem>
+                                    {selectedItemThreadReplies.length > 0 ? (
+                                        <>
+                                            <div className="flex items-center justify-between pb-3 pl-12">
+                                                <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">
+                                                    Thread Replies
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    Replies publish in order beneath the main post.
+                                                </p>
+                                            </div>
+                                            {selectedItemThreadReplies.map((reply, replyIndex) => {
+                                                const replyStatus = reply.generated_tweet_id
+                                                    ? (generatedTweetStatusById[reply.generated_tweet_id] ?? 'scheduled')
+                                                    : 'pending';
+                                                const replyRemainingCharacters = CHARACTER_LIMIT - reply.content.length;
+
+                                                return (
+                                                    <TimelineItem
+                                                        className="group-data-[orientation=vertical]/timeline:ms-10 group-data-[orientation=vertical]/timeline:not-last:pb-6"
+                                                        key={reply.id}
+                                                        step={replyIndex + 2}
+                                                    >
+                                                        <TimelineHeader>
+                                                            <TimelineSeparator className="group-data-[orientation=vertical]/timeline:-left-7 group-data-[orientation=vertical]/timeline:h-[calc(100%-1.5rem-0.25rem)] group-data-[orientation=vertical]/timeline:translate-y-6.5" />
+                                                            <TimelineTitle className="mt-0.5 flex items-center gap-2">
+                                                                <span>Reply</span>
+                                                                <ItemStatusBadge status={replyStatus} />
+                                                            </TimelineTitle>
+                                                            <TimelineIndicator className="group-data-[orientation=vertical]/timeline:-left-7 flex size-10 items-center justify-center border-none bg-primary/10">
+                                                                <Avatar className="size-10">
+                                                                    <AvatarImage
+                                                                        alt={postingAccountName}
+                                                                        src={xProfile?.avatarUrl ?? undefined}
+                                                                    />
+                                                                    <AvatarFallback>{postingAccountInitials}</AvatarFallback>
+                                                                </Avatar>
+                                                            </TimelineIndicator>
+                                                        </TimelineHeader>
+                                                        <TimelineContent className="mt-2 rounded-lg border px-4 py-3 text-foreground">
+                                                            <Textarea
+                                                                aria-label={`Reply ${replyIndex + 1}`}
+                                                                className="max-w-xl text-base"
+                                                                onChange={(event) =>
+                                                                    selectedItem
+                                                                        ? handleReplyChange(selectedItem.id, reply.id, event.target.value)
+                                                                        : undefined
+                                                                }
+                                                                readOnly={!canEditSuggestedPost}
+                                                                rows={4}
+                                                                value={reply.content}
+                                                            />
+                                                            <div className="mt-3 flex items-center justify-between gap-3">
+                                                                <p
+                                                                    className={cn(
+                                                                        'text-xs',
+                                                                        replyRemainingCharacters < 0
+                                                                            ? 'text-destructive'
+                                                                            : 'text-muted-foreground',
+                                                                    )}
+                                                                >
+                                                                    {replyRemainingCharacters < 0
+                                                                        ? `${Math.abs(replyRemainingCharacters)} characters exceeded`
+                                                                        : `${replyRemainingCharacters} characters left`}
+                                                                </p>
+                                                                {canEditSuggestedPost ? (
+                                                                    <Button
+                                                                        disabled={isPending}
+                                                                        onClick={() =>
+                                                                            selectedItem
+                                                                                ? handleRemoveReply(selectedItem.id, reply.id)
+                                                                                : undefined
+                                                                        }
+                                                                        size="sm"
+                                                                        type="button"
+                                                                        variant="ghost"
+                                                                    >
+                                                                        Remove
+                                                                    </Button>
+                                                                ) : null}
+                                                            </div>
+                                                        </TimelineContent>
+                                                    </TimelineItem>
+                                                );
+                                            })}
+                                        </>
+                                    ) : null}
+                                </Timeline>
+                                {/* <AspectRatio ratio={16 / 9} className='max-w-xl'>
+                                    <Image fill src={"/contentosx-template-1-16x9.png"}
+                                        alt="Image" className="rounded-md object-cover" />
+                                </AspectRatio> */}
                                 {/* <Image
                                     alt="Selected item"
                                     className="h-full w-full object-cover"
@@ -1168,7 +1726,9 @@ export default function WorkflowRunDetailClient({
                                 >
                                     <div className="flex items-center justify-between gap-2">
                                         <p className="font-medium text-sm">{item.day_label}</p> -
-                                        <ItemStatusBadge status={item.approval_status} />
+                                        <ItemStatusBadge
+                                            status={itemDeliveryStatusByItemId[item.id] ?? item.approval_status}
+                                        />
                                     </div>
                                     {/* <p className="mt-1 truncate text-xs text-muted-foreground">
                                         {scheduledAtByItemId[item.id] ? 'Custom' : 'Default'}:{' '}
@@ -1194,4 +1754,3 @@ export default function WorkflowRunDetailClient({
         </div>
     );
 }
-

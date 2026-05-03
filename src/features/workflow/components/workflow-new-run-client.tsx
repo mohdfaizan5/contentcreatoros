@@ -25,24 +25,34 @@ import {
 import type { XAccountRole } from '@/shared/types/database';
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
 
 function toDateInputValue(date: Date) {
   return format(date, 'yyyy-MM-dd');
+}
+
+function getInitials(value: string) {
+  const parts = value.split(/\s+/).filter(Boolean);
+  const initials = parts.slice(0, 2).map((part) => part[0]?.toUpperCase() ?? '');
+
+  return initials.join('') || 'X';
 }
 
 export default function WorkflowNewRunClient({
   xAccounts,
 }: {
   xAccounts: Array<{
+    avatarUrl: string | null;
     id: string;
+    name: string;
     role: XAccountRole;
     username: string;
   }>;
 }) {
   const id = useId();
-  const [selectedValue, setSelectedValue] = useState("on");
+  const [selectedValue, setSelectedValue] = useState("off");
   const [campaignBrief, setCampaignBrief] = useState('');
-  const [selectedXAccountId, setSelectedXAccountId] = useState<string | null>(null);
+  const [selectedXAccountId, setSelectedXAccountId] = useState<string | null>(xAccounts[0]?.id ?? null);
 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -165,9 +175,9 @@ export default function WorkflowNewRunClient({
                   <label className="relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap px-4 transition-colors group-data-[state=off]:text-muted-foreground/70">
                     <span>
                       2 posts/day
-                      <span className="transition-colors group-data-[state=off]:text-muted-foreground/70 group-data-[state=on]:text-emerald-500">
+                      {/* <span className="transition-colors group-data-[state=off]:text-muted-foreground/70 group-data-[state=on]:text-emerald-500">
                         -20%
-                      </span>
+                      </span> */}
                     </span>
                     <RadioGroupItem className="sr-only" id={`${id}-2`} value="on" />
                   </label>
@@ -188,13 +198,24 @@ export default function WorkflowNewRunClient({
                           key={account.id}
                           type="button"
                           onClick={() => setSelectedXAccountId(account.id)}
-                          className={`rounded-full border px-3 py-2 text-sm transition-colors ${
+                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors ${
                             selectedXAccountId === account.id
                               ? 'border-slate-900 bg-slate-900 text-white'
                               : 'border-border/50 bg-background text-foreground hover:bg-muted/50'
                           }`}
                         >
-                          {account.role === 'company' ? 'Company' : 'Founder'} @{account.username}
+                          <Avatar className="size-5">
+                            <AvatarImage
+                              alt={account.name || account.username}
+                              src={account.avatarUrl ?? undefined}
+                            />
+                            <AvatarFallback className="text-[10px]">
+                              {getInitials(account.name || account.username)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>
+                            {account.role === 'company' ? 'Company' : 'Founder'} @{account.username}
+                          </span>
                         </button>
                       ))
                     ) : (
@@ -244,4 +265,3 @@ export default function WorkflowNewRunClient({
     </div>
   );
 }
-

@@ -154,6 +154,7 @@ async function createTweetWithMedia(
   text: string,
   mediaAttachments: PostMediaAttachment[],
   delegateUserId?: string,
+  replyToTweetId?: string,
 ) {
   const client = createXUserClient(accessToken);
   const mediaIds = await uploadPostMediaAttachmentsToX(client, mediaAttachments);
@@ -162,6 +163,11 @@ async function createTweetWithMedia(
   const delegateHeaders = delegateUserId
     ? { 'x-as-user-id': delegateUserId }
     : undefined;
+  void delegateHeaders;
+
+  if (!tweetMediaIds && replyToTweetId) {
+    return client.v2.reply(text, replyToTweetId);
+  }
 
   if (!tweetMediaIds) {
     return client.v2.tweet(text);
@@ -172,8 +178,10 @@ async function createTweetWithMedia(
     text,
   };
 
-  if (delegateHeaders) {
-    return client.v2.tweet(payload as never);
+  if (replyToTweetId) {
+    return client.v2.reply(text, replyToTweetId, {
+      media: { media_ids: tweetMediaIds },
+    } as never);
   }
 
   return client.v2.tweet(payload);
@@ -216,11 +224,40 @@ export async function getAuthenticatedUserTweets(accessToken: string, userId: st
   }
 }
 
+export async function getTweetsByIds(accessToken: string, tweetIds: string[]) {
+  const uniqueTweetIds = [...new Set(tweetIds.map((tweetId) => tweetId.trim()).filter(Boolean))];
+
+  if (!uniqueTweetIds.length) {
+    return [] as XTweet[];
+  }
+
+  try {
+    const client = createXUserClient(accessToken);
+    const tweets: XTweet[] = [];
+
+    for (let index = 0; index < uniqueTweetIds.length; index += 100) {
+      const batch = uniqueTweetIds.slice(index, index + 100);
+      const response = await client.v2.tweets(batch, {
+        'tweet.fields': ['created_at', 'public_metrics'],
+      });
+
+      tweets.push(...((response.data ?? []) as XTweet[]));
+    }
+
+    return tweets;
+  } catch (error) {
+    throw new Error(
+      normalizeTwitterApiError(error, 'Unable to load tweet metrics for this campaign.'),
+    );
+  }
+}
+
 export async function publishTweetWithStoredConnection(
   accountId: string,
   text: string,
   mediaAttachments: PostMediaAttachment[] = [],
   delegateUserId?: string,
+  replyToTweetId?: string,
 ) {
   const account = await loadStoredXAccountById(accountId);
 
@@ -238,6 +275,7 @@ export async function publishTweetWithStoredConnection(
       text,
       mediaAttachments,
       delegateUserId,
+      replyToTweetId,
     );
     return response.data;
   } catch (error) {
@@ -251,6 +289,7 @@ export async function publishTweetWithStoredConnection(
       text,
       mediaAttachments,
       delegateUserId,
+      replyToTweetId,
     );
     return response.data;
   }

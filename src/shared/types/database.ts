@@ -271,6 +271,7 @@ export interface GeneratedTweet {
     user_id: string;
     template_id: string;
     x_account_id: string | null;
+    reply_to_generated_tweet_id: string | null;
     content: string;
     character_count: number;
     status: GeneratedTweetStatus;
@@ -281,6 +282,14 @@ export interface GeneratedTweet {
     media_attachments: PostMediaAttachment[];
     model: string | null;
     prompt_snapshot: Record<string, unknown>;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface WorkflowThreadReply {
+    id: string;
+    content: string;
+    generated_tweet_id: string | null;
     created_at: string;
     updated_at: string;
 }
@@ -326,6 +335,7 @@ export interface SevenDayPlanningItem {
     regeneration_count: number;
     regeneration_history: Array<Record<string, unknown>>;
     media_attachments: PostMediaAttachment[];
+    thread_replies: WorkflowThreadReply[];
     generated_tweet_id: string | null;
     created_at: string;
     updated_at: string;

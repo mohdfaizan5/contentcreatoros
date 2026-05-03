@@ -72,9 +72,6 @@ import {
   CollapsibleTrigger,
 } from '@/shared/components/ui/collapsible';
 import { Frame, FrameHeader, FramePanel } from '@/shared/components/ui/frame';
-import { Input } from '@/shared/components/ui/input';
-import { Label } from '@/shared/components/ui/label';
-import { createClient } from '@/shared/lib/supabase/client';
 
 function getRoleLabel(role: XAccountRole) {
   return role === 'company' ? 'Company account' : 'Founder account';
@@ -176,8 +173,10 @@ function AccountConnectionCard({ snapshot }: { snapshot: AccountSnapshot }) {
 
 export async function XConnectionsSettingsSection({
   searchParams,
+  userEmail,
 }: {
   searchParams: SettingsSearchParams;
+  userEmail: string | null;
 }) {
   const headersList = await headers();
   const host = headersList.get('host') ?? 'localhost:3000';
@@ -220,6 +219,9 @@ export async function XConnectionsSettingsSection({
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     {/* <h2 className="text-2xl font-semibold tracking-tight">X connections</h2> */}
+                    {/* {userEmail ? (
+                      <p className="text-sm font-medium text-foreground">{userEmail}</p>
+                    ) : null} */}
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                       Founder and company publishing accounts live here. Connect, relabel, or reconnect them in one place.
                     </p>
