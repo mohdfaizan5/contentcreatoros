@@ -338,6 +338,20 @@ function getDetailedErrorMessage(error: unknown, fallbackMessage: string) {
     return fallbackMessage;
 }
 
+function getMediaUploadToastDescription(message: string) {
+    const normalized = message.toLowerCase();
+
+    if (
+        normalized.includes('413') ||
+        normalized.includes('request body exceeded') ||
+        normalized.includes('unexpected end of form')
+    ) {
+        return 'This upload is being rejected before it fully reaches the app. The deployed server or proxy is still enforcing a request-size limit, so try a smaller GIF or redeploy with the larger upload limit active.';
+    }
+
+    return message;
+}
+
 export default function WorkflowRunDetailClient({
     run,
     items,
@@ -682,14 +696,18 @@ export default function WorkflowRunDetailClient({
                 ...current,
                 [result.itemId]: result.mediaAttachments,
             }));
+
+            const uploadedLabels = result.mediaAttachments.map(
+                (attachment) => `${attachment.file_name} (${getAttachmentLabel(attachment)})`,
+            );
             toast.success(
-                result.mediaAttachments.length === 1
-                    ? 'Media attached to this post.'
-                    : `${result.mediaAttachments.length} media files attached to this post.`,
+                isGifUpload
+                    ? 'GIF uploaded successfully.'
+                    : result.mediaAttachments.length === 1
+                        ? 'Media uploaded successfully.'
+                        : `${result.mediaAttachments.length} media files uploaded successfully.`,
                 {
-                    description: result.mediaAttachments
-                        .map((attachment) => `${attachment.file_name} (${getAttachmentLabel(attachment)})`)
-                        .join(', '),
+                    description: `${uploadedLabels.join(', ')}. Preview is ready below.`,
                     id: loadingToastId,
                 },
             );
@@ -699,7 +717,7 @@ export default function WorkflowRunDetailClient({
                 'Unable to upload media.',
             );
             toast.error('Media upload failed.', {
-                description: detailedMessage,
+                description: getMediaUploadToastDescription(detailedMessage),
                 id: loadingToastId,
             });
         } finally {
