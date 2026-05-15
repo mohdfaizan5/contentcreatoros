@@ -8,6 +8,7 @@ import {
     FilesIcon,
     GearIcon,
     House,
+    ToolboxIcon,
     XLogoIcon,
 } from '@phosphor-icons/react';
 import { VscCommentDiscussionSparkle } from "react-icons/vsc";
@@ -97,6 +98,11 @@ const contentNavItems: SidebarNavItem[] = [
         // color: 'text-blue-500',
         // hoverBg: 'hover:bg-blue-500/10',
         // badge: 'updated',
+    },
+    {
+        title: 'Tools',
+        url: '/app/tools',
+        icon: ToolboxIcon,
     },
     
     {

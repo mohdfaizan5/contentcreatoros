@@ -26,6 +26,7 @@ import type { XAccountRole } from '@/shared/types/database';
 import { Label } from "@/shared/components/ui/label";
 import { Textarea } from "@/shared/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/components/ui/avatar';
+import type { WorkflowPlannerVoiceMode } from '@/features/workflow/lib/workflow-planner-ai';
 
 function toDateInputValue(date: Date) {
   return format(date, 'yyyy-MM-dd');
@@ -53,6 +54,7 @@ export default function WorkflowNewRunClient({
   const [selectedValue, setSelectedValue] = useState("off");
   const [campaignBrief, setCampaignBrief] = useState('');
   const [selectedXAccountId, setSelectedXAccountId] = useState<string | null>(xAccounts[0]?.id ?? null);
+  const [voiceMode, setVoiceMode] = useState<WorkflowPlannerVoiceMode>('human');
 
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
@@ -105,6 +107,7 @@ export default function WorkflowNewRunClient({
           postsPerDay: selectedValue === 'on' ? 2 : 1,
           startDateISO,
           targetXAccountId: selectedXAccountId,
+          voiceMode,
         });
 
         toast.success('Workflow run queued. Opening detail view.');
@@ -140,6 +143,47 @@ export default function WorkflowNewRunClient({
           Select {WORKFLOW_PLANNER_MIN_DAYS}-{WORKFLOW_PLANNER_MAX_DAYS} days to continue.
         </p>
       ) : null}
+      <div className="flex flex-col gap-2">
+        <div className="inline-flex w-full items-center justify-between gap-2">
+          <Label>Publish from</Label>
+          <Label className="font-normal text-muted-foreground text-xs" render={<span />}>
+            Required
+          </Label>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {xAccounts.length > 0 ? (
+            xAccounts.map((account) => (
+              <button
+                key={account.id}
+                type="button"
+                onClick={() => setSelectedXAccountId(account.id)}
+                className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors ${
+                  selectedXAccountId === account.id
+                    ? 'border-slate-900 bg-slate-900 text-white'
+                    : 'border-border/50 bg-background text-foreground hover:bg-muted/50'
+                }`}
+              >
+                <Avatar className="size-5">
+                  <AvatarImage
+                    alt={account.name || account.username}
+                    src={account.avatarUrl ?? undefined}
+                  />
+                  <AvatarFallback className="text-[10px]">
+                    {getInitials(account.name || account.username)}
+                  </AvatarFallback>
+                </Avatar>
+                <span>
+                  {account.role === 'company' ? 'Company' : 'Founder'} @{account.username}
+                </span>
+              </button>
+            ))
+          ) : (
+            <p className="text-sm text-muted-foreground">
+              Connect a founder or company X account in Analytics first.
+            </p>
+          )}
+        </div>
+      </div>
       <Frame className="w-full">
         <Collapsible>
           <FrameHeader className="flex-row items-center justify-end px-2 py-2">
@@ -185,45 +229,29 @@ export default function WorkflowNewRunClient({
               </div>
               <div className="flex flex-col gap-2">
                 <div className="flex flex-col gap-2">
-                  <div className="inline-flex w-full items-center justify-between gap-2">
-                    <Label>Publish from</Label>
-                    <Label className="font-normal text-muted-foreground text-xs" render={<span />}>
-                      Required
-                    </Label>
+                  <Label className="pr-4 mb-2 relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap transition-colors">
+                    How do you want to sound?
+                  </Label>
+                  <div className="inline-flex my-2 h-9 rounded-md bg-input/50 p-0.5">
+                    <RadioGroup
+                      className="group relative inline-grid grid-cols-[1fr_1fr] items-center gap-0 font-medium text-sm after:absolute after:inset-y-0 after:w-1/2 after:rounded-sm after:bg-background after:shadow-xs after:transition-[translate,box-shadow] after:duration-300 after:ease-[cubic-bezier(0.16,1,0.3,1)] has-focus-visible:after:border-ring has-focus-visible:after:ring-[3px] has-focus-visible:after:ring-ring/50 data-[state=human]:after:translate-x-0 data-[state=corporate]:after:translate-x-full"
+                      data-state={voiceMode}
+                      onValueChange={(value) => setVoiceMode(value === 'corporate' ? 'corporate' : 'human')}
+                      value={voiceMode}
+                    >
+                      <label className="relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap px-4 transition-colors group-data-[state=corporate]:text-muted-foreground/70">
+                        Sound human
+                        <RadioGroupItem className="sr-only" id={`${id}-voice-human`} value="human" />
+                      </label>
+                      <label className="relative z-10 inline-flex h-full min-w-8 cursor-pointer select-none items-center justify-center whitespace-nowrap px-4 transition-colors group-data-[state=human]:text-muted-foreground/70">
+                        Sound corporate
+                        <RadioGroupItem className="sr-only" id={`${id}-voice-corporate`} value="corporate" />
+                      </label>
+                    </RadioGroup>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    {xAccounts.length > 0 ? (
-                      xAccounts.map((account) => (
-                        <button
-                          key={account.id}
-                          type="button"
-                          onClick={() => setSelectedXAccountId(account.id)}
-                          className={`inline-flex items-center gap-2 rounded-full border px-3 py-2 text-sm transition-colors ${
-                            selectedXAccountId === account.id
-                              ? 'border-slate-900 bg-slate-900 text-white'
-                              : 'border-border/50 bg-background text-foreground hover:bg-muted/50'
-                          }`}
-                        >
-                          <Avatar className="size-5">
-                            <AvatarImage
-                              alt={account.name || account.username}
-                              src={account.avatarUrl ?? undefined}
-                            />
-                            <AvatarFallback className="text-[10px]">
-                              {getInitials(account.name || account.username)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <span>
-                            {account.role === 'company' ? 'Company' : 'Founder'} @{account.username}
-                          </span>
-                        </button>
-                      ))
-                    ) : (
-                      <p className="text-sm text-muted-foreground">
-                        Connect a founder or company X account in Analytics first.
-                      </p>
-                    )}
-                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    This becomes a generation instruction and is reused when you regenerate workflow posts later.
+                  </p>
                 </div>
                 <div className="inline-flex w-full items-center justify-between gap-2">
                   <Label>Tell us about your campaign</Label>

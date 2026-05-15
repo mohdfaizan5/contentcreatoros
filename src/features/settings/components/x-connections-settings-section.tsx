@@ -10,8 +10,8 @@ import {
   ensureStoredXAccessToken,
   getCurrentUserXAccount,
   getXConfigStatus,
-  getXRedirectUri,
   listCurrentUserXAccounts,
+  resolveXRedirectUri,
 } from '@/features/x/lib/x-auth';
 import { getAuthenticatedXUser } from '@/features/x/lib/x';
 import { X_OAUTH_SCOPE_STRING } from '@/features/x/lib/x-oauth';
@@ -41,14 +41,16 @@ type AccountSnapshot = {
   user: Awaited<ReturnType<typeof getAuthenticatedXUser>> | null;
 };
 
+const connectionDateFormatter = new Intl.DateTimeFormat('en', {
+  dateStyle: 'medium',
+});
+
 function formatDate(value?: string | null) {
   if (!value) {
     return 'Not connected';
   }
 
-  return new Intl.DateTimeFormat('en', {
-    dateStyle: 'medium',
-  }).format(new Date(value));
+  return connectionDateFormatter.format(new Date(value));
 }
 
 function getFriendlyError(error?: string) {
@@ -56,6 +58,10 @@ function getFriendlyError(error?: string) {
 
   if (error.includes('Missing X_CLIENT_ID')) {
     return 'Add X_CLIENT_ID to your environment first. The older API key and bearer token are not enough for user login.';
+  }
+
+  if (error.includes('Missing X_CALLBACK_URL')) {
+    return error;
   }
 
   if (error.includes('access_denied')) {
@@ -182,9 +188,11 @@ export async function XConnectionsSettingsSection({
   const host = headersList.get('host') ?? 'localhost:3000';
   const protocol = headersList.get('x-forwarded-proto') ?? 'http';
   const origin = getConfiguredPublicOrigin() ?? `${protocol}://${host}`;
-  const callbackUrl = getXRedirectUri(origin);
+  const callbackResolution = resolveXRedirectUri(origin);
+  const callbackUrl = callbackResolution.redirectUri;
   const xConfig = getXConfigStatus();
   const isLocalhostCallback = callbackUrl.includes('://localhost');
+  const hasCallbackWarnings = callbackResolution.warnings.length > 0;
 
   const [companySnapshot, founderSnapshot, allAccounts] = await Promise.all([
     loadAccountSnapshot('company'),
@@ -219,9 +227,9 @@ export async function XConnectionsSettingsSection({
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
                     {/* <h2 className="text-2xl font-semibold tracking-tight">X connections</h2> */}
-                    {/* {userEmail ? (
+                    {userEmail ? (
                       <p className="text-sm font-medium text-foreground">{userEmail}</p>
-                    ) : null} */}
+                    ) : null}
                     <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
                       Founder and company publishing accounts live here. Connect, relabel, or reconnect them in one place.
                     </p>
@@ -272,25 +280,29 @@ export async function XConnectionsSettingsSection({
                 </Card>
               )}
 
-              {!xConfig.configured && (
-                <Card className="border-amber-200 bg-amber-50/80">
+              <Card className={hasCallbackWarnings || !xConfig.configured ? 'border-amber-200 bg-amber-50/80' : 'border-border/80'}>
                   <CardHeader>
                     <CardTitle>
                       <LabelTooltip
-                        label="Setup still needed"
-                        description="The X login flow needs an OAuth client ID. The current environment has the old API credentials, but not the OAuth client ID required by the latest docs."
+                        label="X OAuth callback"
+                        description="The X login flow needs an OAuth client ID and an exact callback URL registered in the X developer portal."
                       />
                     </CardTitle>
                   </CardHeader>
                   <CardContent className="space-y-2 text-sm text-amber-950/80">
-                    <p>Add <code>X_CLIENT_ID</code> to <code>.env.local</code>.</p>
-                    <p>
-                      Optional: add <code>X_CLIENT_SECRET</code> too if your X app requires it for token exchange.
-                    </p>
+                    {!xConfig.configured ? (
+                      <p>Add <code>X_CLIENT_ID</code> to your environment.</p>
+                    ) : null}
                     <p>
                       Callback URL to register in the X developer portal:
                       <code className="ml-1 rounded bg-amber-100 px-1.5 py-0.5">{callbackUrl}</code>
                     </p>
+                    <p>
+                      Source: <code>{callbackResolution.source}</code>
+                    </p>
+                    {callbackResolution.warnings.map((warning) => (
+                      <p key={warning}>{warning}</p>
+                    ))}
                     {isLocalhostCallback ? (
                       <p>
                         For local development, X recommends <code>http://127.0.0.1</code> instead of
@@ -301,7 +313,6 @@ export async function XConnectionsSettingsSection({
                     ) : null}
                   </CardContent>
                 </Card>
-              )}
 
               {legacyAccounts.length > 0 ? (
                 <Card className="border-amber-200 bg-amber-50/70">

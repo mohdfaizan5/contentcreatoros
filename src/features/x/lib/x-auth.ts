@@ -9,7 +9,7 @@ import {
 } from '@/features/x/lib/x-oauth';
 import { createClient } from '@/shared/lib/supabase/server';
 import { createAdminClient } from '@/shared/lib/supabase/server-admin';
-import type { XAccountRole } from '@/shared/types/database';
+import type { XAccountMetricSnapshotType, XAccountRole } from '@/shared/types/database';
 import { PendingXOAuthAttempt, StoredXAccount, XApiError, XTokenResponse } from '../types/x.types';
 
 const X_OAUTH_ATTEMPTS_COOKIE = 'x_oauth_attempts';
@@ -21,6 +21,33 @@ const X_ACCOUNT_ROLE_ORDER: Record<'company' | 'founder' | 'legacy', number> = {
   company: 0,
   founder: 1,
   legacy: 2,
+};
+
+type XRedirectUriSource =
+  | 'X_CALLBACK_URL'
+  | 'X_REDIRECT_URI'
+  | 'request-origin';
+
+export type XRedirectUriResolution = {
+  redirectUri: string;
+  source: XRedirectUriSource;
+  warnings: string[];
+};
+
+type AuthenticatedXUser = {
+  created_at?: string;
+  description?: string;
+  id: string;
+  name?: string;
+  profile_image_url?: string;
+  public_metrics?: {
+    followers_count?: number;
+    following_count?: number;
+    listed_count?: number;
+    tweet_count?: number;
+  };
+  username: string;
+  verified?: boolean;
 };
 
 /**
@@ -93,6 +120,58 @@ function normalizeLocalXOrigin(origin: string) {
   } catch {
     return normalizeOrigin(origin);
   }
+}
+
+function isLocalCallbackUrl(url: URL) {
+  return url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+}
+
+function normalizeConfiguredCallbackUrl(rawCallbackUrl: string) {
+  let callbackUrl: URL;
+
+  try {
+    callbackUrl = new URL(rawCallbackUrl);
+  } catch {
+    throw new Error(
+      `Invalid X callback URL "${rawCallbackUrl}". Use a full URL like https://contentos.redefai.app/api/x/callback.`,
+    );
+  }
+
+  if (callbackUrl.protocol !== 'https:' && callbackUrl.protocol !== 'http:') {
+    throw new Error('Invalid X callback URL. Only http and https callback URLs are supported.');
+  }
+
+  if (process.env.NODE_ENV === 'production' && callbackUrl.protocol !== 'https:') {
+    throw new Error('Invalid X callback URL. Production X OAuth callbacks must use https.');
+  }
+
+  if (callbackUrl.search || callbackUrl.hash) {
+    throw new Error('Invalid X callback URL. Remove query strings and hash fragments from X_CALLBACK_URL.');
+  }
+
+  return `${callbackUrl.origin}${callbackUrl.pathname}`;
+}
+
+function getConfiguredXCallback() {
+  const callbackUrl = process.env.X_CALLBACK_URL?.trim();
+
+  if (callbackUrl) {
+    return {
+      source: 'X_CALLBACK_URL' as const,
+      value: callbackUrl,
+    };
+  }
+
+  const redirectUri = process.env.X_REDIRECT_URI?.trim();
+
+  if (redirectUri) {
+    return {
+      source: 'X_REDIRECT_URI' as const,
+      value: redirectUri,
+    };
+  }
+
+  return null;
 }
 
 function createCookieOptions(maxAge?: number) {
@@ -281,14 +360,97 @@ async function loadAuthenticatedXUser(accessToken: string) {
       ],
     });
 
-    return response.data as {
-      id: string;
-      username: string;
-    };
+    return response.data as AuthenticatedXUser;
   } catch (error) {
     throw new Error(
       normalizeTwitterApiError(error, 'Unable to load the authenticated X user.'),
     );
+  }
+}
+
+async function recordXAccountMetricSnapshot(params: {
+  account: StoredXAccount;
+  snapshotType: XAccountMetricSnapshotType;
+  userId: string;
+  xUser: AuthenticatedXUser;
+}) {
+  const { account, snapshotType, userId, xUser } = params;
+  const metrics = xUser.public_metrics;
+
+  try {
+    const supabase = createAdminClient();
+    const { data: existingOnboardingSnapshot, error: existingSnapshotError } =
+      snapshotType === 'onboarding'
+        ? await supabase
+          .from('x_account_metric_snapshots')
+          .select('id')
+          .eq('x_account_id', account.id)
+          .eq('snapshot_type', 'onboarding')
+          .maybeSingle()
+        : { data: null, error: null };
+
+    if (existingSnapshotError) {
+      throw existingSnapshotError;
+    }
+
+    if (existingOnboardingSnapshot) {
+      logXOAuth('metric_snapshot_skipped', {
+        accountId: account.id,
+        snapshotType,
+        userId,
+        username: xUser.username,
+        xUserId: xUser.id,
+      });
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from('x_account_metric_snapshots')
+      .insert({
+        account_role: account.account_role,
+        captured_at: new Date().toISOString(),
+        followers_count: metrics?.followers_count ?? null,
+        following_count: metrics?.following_count ?? null,
+        listed_count: metrics?.listed_count ?? null,
+        profile_image_url: xUser.profile_image_url ?? null,
+        raw_profile: xUser as unknown as Record<string, unknown>,
+        snapshot_type: snapshotType,
+        tweet_count: metrics?.tweet_count ?? null,
+        user_id: userId,
+        username: xUser.username,
+        verified: xUser.verified ?? null,
+        x_account_id: account.id,
+        x_user_id: xUser.id,
+      })
+      .select('id')
+      .single();
+
+    if (error || !data) {
+      throw error;
+    }
+
+    logXOAuth('metric_snapshot_completed', {
+      accountId: account.id,
+      followersCount: metrics?.followers_count ?? null,
+      snapshotId: data.id,
+      snapshotType,
+      tweetCount: metrics?.tweet_count ?? null,
+      userId,
+      username: xUser.username,
+      xUserId: xUser.id,
+    });
+  } catch (error) {
+    logXOAuth('metric_snapshot_failed', {
+      accountId: account.id,
+      error: normalizeTwitterApiError(
+        error,
+        'Unable to store the X account metric snapshot.',
+      ),
+      snapshotType,
+      userId,
+      username: xUser.username,
+      xUserId: xUser.id,
+    });
   }
 }
 
@@ -463,15 +625,61 @@ export function parseXAccountRole(rawRole: string | null | undefined) {
  * first, then falls back to `/api/x/callback` on the provided origin.
  */
 export function getXRedirectUri(origin: string) {
-  const configuredCallback =
-    process.env.X_CALLBACK_URL?.trim() ||
-    process.env.X_REDIRECT_URI?.trim();
+  return resolveXRedirectUri(origin).redirectUri;
+}
+
+export function resolveXRedirectUri(origin: string): XRedirectUriResolution {
+  const configuredCallback = getConfiguredXCallback();
+  const warnings: string[] = [];
 
   if (configuredCallback) {
-    return configuredCallback;
+    const redirectUri = normalizeConfiguredCallbackUrl(configuredCallback.value);
+    const callbackUrl = new URL(redirectUri);
+
+    if (process.env.NODE_ENV === 'production' && isLocalCallbackUrl(callbackUrl)) {
+      warnings.push('Production is using a localhost X callback URL.');
+    }
+
+    return {
+      redirectUri,
+      source: configuredCallback.source,
+      warnings,
+    };
   }
 
-  return `${normalizeLocalXOrigin(origin)}/api/x/callback`;
+  const redirectUri = `${normalizeLocalXOrigin(origin)}/api/x/callback`;
+
+  if (process.env.NODE_ENV === 'production') {
+    warnings.push(
+      `Set X_CALLBACK_URL=${redirectUri} in production and register that exact URL in the X developer portal.`,
+    );
+  }
+
+  return {
+    redirectUri,
+    source: 'request-origin',
+    warnings,
+  };
+}
+
+function assertXRedirectUriIsReadyForLogin(origin: string) {
+  const resolution = resolveXRedirectUri(origin);
+
+  if (process.env.NODE_ENV === 'production' && resolution.source === 'request-origin') {
+    throw new Error(
+      `Missing X_CALLBACK_URL in production. Set X_CALLBACK_URL=${resolution.redirectUri} and add the exact same URL to the X developer portal callback URLs.`,
+    );
+  }
+
+  const redirectUrl = new URL(resolution.redirectUri);
+
+  if (process.env.NODE_ENV === 'production' && isLocalCallbackUrl(redirectUrl)) {
+    throw new Error(
+      'X_CALLBACK_URL is pointing to localhost in production. Set it to your hosted callback URL, for example https://contentos.redefai.app/api/x/callback.',
+    );
+  }
+
+  return resolution;
 }
 
 /**
@@ -502,7 +710,8 @@ export async function createXAuthorizationUrl(
   role: XAccountRole | null = null,
 ) {
   const client = createXOAuthClient();
-  const authLink = client.generateOAuth2AuthLink(getXRedirectUri(origin), {
+  const redirectResolution = assertXRedirectUriIsReadyForLogin(origin);
+  const authLink = client.generateOAuth2AuthLink(redirectResolution.redirectUri, {
     scope: getRequestedXScopes(),
   });
 
@@ -513,7 +722,9 @@ export async function createXAuthorizationUrl(
   });
 
   logXOAuth('start', {
-    redirectUri: getXRedirectUri(origin),
+    redirectUri: redirectResolution.redirectUri,
+    redirectUriSource: redirectResolution.source,
+    redirectUriWarnings: redirectResolution.warnings,
     role,
     scope: getRequestedXScopes(),
     state: authLink.state,
@@ -610,8 +821,8 @@ export async function connectCurrentUserXAccount(
     refresh_token: tokenResponse.refresh_token ?? null,
     scope,
     updated_at: now,
-      username: xUser.username,
-      x_user_id: xUser.id,
+    username: xUser.username,
+    x_user_id: xUser.id,
   } satisfies Partial<StoredXAccount>;
 
   try {
@@ -659,6 +870,12 @@ export async function connectCurrentUserXAccount(
       account = await updateStoredXAccountRecord(account.id, {
         account_role: role,
       });
+      await recordXAccountMetricSnapshot({
+        account,
+        snapshotType: existingAccount ? 'reconnect' : 'onboarding',
+        userId,
+        xUser,
+      });
       logXOAuth('store_completed', {
         accountId: account.id,
         accountRole: account.account_role,
@@ -670,6 +887,13 @@ export async function connectCurrentUserXAccount(
 
       return account;
     }
+
+    await recordXAccountMetricSnapshot({
+      account,
+      snapshotType: existingAccount ? 'reconnect' : 'onboarding',
+      userId,
+      xUser,
+    });
 
     logXOAuth('role_conflict', {
       connectedAccountId: account.id,
@@ -748,6 +972,12 @@ export async function connectUnlabelledXAccountForCurrentUser(
 
   if (existingAccount?.id) {
     const account = await updateStoredXAccountRecord(existingAccount.id, payload);
+    await recordXAccountMetricSnapshot({
+      account,
+      snapshotType: 'reconnect',
+      userId,
+      xUser,
+    });
     logXOAuth('store_completed', {
       accountId: account.id,
       accountRole: account.account_role,
@@ -780,6 +1010,12 @@ export async function connectUnlabelledXAccountForCurrentUser(
   }
 
   const account = data as StoredXAccount;
+  await recordXAccountMetricSnapshot({
+    account,
+    snapshotType: 'onboarding',
+    userId,
+    xUser,
+  });
   logXOAuth('store_completed', {
     accountId: account.id,
     accountRole: account.account_role,

@@ -24,6 +24,7 @@ import {
   getBrandContextForUser,
   regenerateSevenDayDraftItem,
   type PlannerDraftItem,
+  type WorkflowPlannerVoiceMode,
 } from '@/features/workflow/lib/workflow-planner-ai';
 import {
   dispatchWorkflowPlanningRuns,
@@ -554,6 +555,7 @@ export async function enqueueWorkflowPlannerRun(params: {
   endDateISO: string;
   postsPerDay?: 1 | 2;
   targetXAccountId: string;
+  voiceMode?: WorkflowPlannerVoiceMode;
 }): Promise<{ runId: string }> {
   const { supabase, user } = await getAuthenticatedUserAndClient();
 
@@ -562,6 +564,8 @@ export async function enqueueWorkflowPlannerRun(params: {
   const endDateISO = params.endDateISO;
   const campaignBrief = params.campaignBrief?.trim() ?? '';
   const postsPerDay = params.postsPerDay === 2 ? 2 : 1;
+  const voiceMode: WorkflowPlannerVoiceMode =
+    params.voiceMode === 'corporate' ? 'corporate' : 'human';
 
   if (!dates.length) {
     throw new Error('Unable to create this workflow run.');
@@ -587,6 +591,7 @@ export async function enqueueWorkflowPlannerRun(params: {
         campaignBrief,
         multiPostMode: 'separate_items',
         postsPerDay,
+        voiceMode,
       },
       pending_count: 0,
       rejected_count: 0,
@@ -1326,6 +1331,7 @@ export async function regenerateWorkflowPlannerItem(params: {
     existingItem: existingDraft,
     note: normalizeDecisionNote(params.note) ?? undefined,
     postsPerDay: promptSnapshot.postsPerDay === 2 ? 2 : 1,
+    voiceMode: promptSnapshot.voiceMode === 'corporate' ? 'corporate' : 'human',
   });
 
   const history = Array.isArray(item.regeneration_history)

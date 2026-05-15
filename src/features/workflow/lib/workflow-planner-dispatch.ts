@@ -2,6 +2,7 @@ import { createAdminClient } from '@/shared/lib/supabase/server-admin';
 import {
   generateSevenDayDraftItems,
   getBrandContextForUser,
+  type WorkflowPlannerVoiceMode,
 } from '@/features/workflow/lib/workflow-planner-ai';
 
 type PlanningRunRow = {
@@ -123,12 +124,15 @@ export async function dispatchWorkflowPlanningRuns(
         ? promptSnapshot.campaignBrief.trim()
         : '';
     const postsPerDay = promptSnapshot.postsPerDay === 2 ? 2 : 1;
+    const voiceMode: WorkflowPlannerVoiceMode =
+      promptSnapshot.voiceMode === 'corporate' ? 'corporate' : 'human';
     const items = await generateSevenDayDraftItems({
       brandContext,
       campaignBrief,
       endDateISO: claimedRun.end_date,
       postsPerDay,
       startDateISO: claimedRun.start_date,
+      voiceMode,
     });
 
     const rows = items.map((item, index) => ({
@@ -182,6 +186,7 @@ export async function dispatchWorkflowPlanningRuns(
           multiPostMode: 'separate_items',
           postsPerDay,
           source,
+          voiceMode,
         },
         pending_count: rows.length,
         rejected_count: 0,
@@ -227,4 +232,3 @@ export async function dispatchWorkflowPlanningRuns(
     };
   }
 }
-

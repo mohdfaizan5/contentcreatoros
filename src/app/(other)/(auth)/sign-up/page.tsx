@@ -1,5 +1,6 @@
 import { SignUpForm } from '@/shared/components/sign-up-form'
 import Synthesis from '@/shared/components/synthesis'
+import { redirectAuthenticatedUserToApp } from '@/shared/lib/auth-page-redirect'
 
 /**
  * Sign Up Page
@@ -7,7 +8,9 @@ import Synthesis from '@/shared/components/synthesis'
  * Full-page sign up experience with floating decorative elements
  * matching the landing page's visual design language.
  */
-export default function Page() {
+export default async function Page() {
+  await redirectAuthenticatedUserToApp()
+
   return (
     <div className="relative w-full min-h-screen overflow-hidden md:h-screen md:max-h-screen">
       <div className="relative h-full md:grid md:grid-cols-3">

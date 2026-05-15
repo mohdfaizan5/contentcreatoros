@@ -303,7 +303,7 @@ function formatAttachmentSize(bytes: number) {
 }
 
 function getAttachmentLabel(attachment: PostMediaAttachment) {
-    return attachment.media_type === 'gif' ? 'GIF' : 'Image';
+    return attachment.media_type === 'gif' ? 'Animated GIF' : 'Image';
 }
 
 function normalizeThreadReplies(replies: WorkflowThreadReply[] | null | undefined) {
@@ -380,6 +380,7 @@ export default function WorkflowRunDetailClient({
     const selectedItemThreadReplies = selectedItem
         ? (threadRepliesByItemId[selectedItem.id] ?? normalizeThreadReplies(selectedItem.thread_replies))
         : [];
+    const hasThreadReplies = selectedItemThreadReplies.length > 0;
     const hasSuggestedPostUnsavedChanges = selectedItem
         ? suggestedPostText !== (selectedItem.suggested_post ?? '') ||
         serializeReplyDrafts(selectedItemThreadReplies) !== serializeReplyDrafts(selectedItem.thread_replies)
@@ -677,7 +678,7 @@ export default function WorkflowRunDetailClient({
     };
 
     const [
-        { errors: mediaUploadErrors },
+        { errors: mediaUploadErrors, files: pendingMediaUploadFiles },
         {
             clearFiles: clearMediaUploadFiles,
             getInputProps: getMediaInputProps,
@@ -1179,23 +1180,40 @@ export default function WorkflowRunDetailClient({
                                 </div> */}
                                 <Timeline className="max-w-xl space-y-0 pb-10 pt-2">
                                     <TimelineItem
-                                        className="group-data-[orientation=vertical]/timeline:ms-10 group-data-[orientation=vertical]/timeline:not-last:pb-6"
+                                        className={cn(
+                                            hasThreadReplies &&
+                                            'group-data-[orientation=vertical]/timeline:ms-10 group-data-[orientation=vertical]/timeline:not-last:pb-6',
+                                        )}
                                         step={1}
                                     >
-                                        <TimelineHeader>
-                                            <TimelineSeparator className="group-data-[orientation=vertical]/timeline:-left-7 group-data-[orientation=vertical]/timeline:h-[calc(100%-1.5rem-0.25rem)] group-data-[orientation=vertical]/timeline:translate-y-6.5" />
-                                            <TimelineTitle className="mt-0.5 flex items-center gap-2">
-                                                <span>Post</span>
-                                                <ItemStatusBadge status={selectedItemDisplayStatus} />
-                                            </TimelineTitle>
-                                            <TimelineIndicator className="group-data-[orientation=vertical]/timeline:-left-7 flex size-10 items-center justify-center border-none bg-primary/10">
-                                                <Avatar className="size-10">
-                                                    <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
-                                                    <AvatarFallback>{postingAccountInitials}</AvatarFallback>
-                                                </Avatar>
-                                            </TimelineIndicator>
-                                        </TimelineHeader>
-                                        <TimelineContent className="mt-2 rounded-lg border px-4 py-3 text-foreground">
+                                        {hasThreadReplies ? (
+                                            <TimelineHeader>
+                                                <TimelineSeparator className="group-data-[orientation=vertical]/timeline:-left-7 group-data-[orientation=vertical]/timeline:h-[calc(100%-1.5rem-0.25rem)] group-data-[orientation=vertical]/timeline:translate-y-6.5" />
+                                                <TimelineTitle className="mt-0.5 flex items-center gap-2">
+                                                    <span>Post</span>
+                                                    <ItemStatusBadge status={selectedItemDisplayStatus} />
+                                                </TimelineTitle>
+                                                <TimelineIndicator className="group-data-[orientation=vertical]/timeline:-left-7 flex size-10 items-center justify-center border-none bg-primary/10">
+                                                    <Avatar className="size-10">
+                                                        <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
+                                                        <AvatarFallback>{postingAccountInitials}</AvatarFallback>
+                                                    </Avatar>
+                                                </TimelineIndicator>
+                                            </TimelineHeader>
+                                        ) : null}
+                                        <TimelineContent className={cn("rounded-lg border px-4 py-3 text-foreground", hasThreadReplies && "mt-2")}>
+                                            {!hasThreadReplies ? (
+                                                <div className="mb-3 flex items-center gap-3">
+                                                    <Avatar className="size-10">
+                                                        <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
+                                                        <AvatarFallback>{postingAccountInitials}</AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="min-w-0">
+                                                        <p className="truncate text-sm font-semibold">{postingAccountName}</p>
+                                                        <p className="truncate text-sm text-muted-foreground">{postingAccountUsername}</p>
+                                                    </div>
+                                                </div>
+                                            ) : null}
                                             <div className="space-y-2">
                                                 <Textarea
                                                     textareaClassName='text-base'
@@ -1316,6 +1334,47 @@ export default function WorkflowRunDetailClient({
                                     </div>
                                     {selectedItem ? (
                                         <div className="max-w-xl space-y-2">
+                                            {pendingMediaUploadFiles.length > 0 ? (
+                                                <div className="space-y-3">
+                                                    {pendingMediaUploadFiles.map((pendingFile) => {
+                                                        const pendingPreview =
+                                                            typeof pendingFile.preview === 'string' ? pendingFile.preview : null;
+                                                        const pendingMedia =
+                                                            pendingFile.file instanceof File ? pendingFile.file : null;
+
+                                                        return (
+                                                            <div
+                                                                className="overflow-hidden rounded-lg border border-dashed bg-background/60"
+                                                                key={pendingFile.id}
+                                                            >
+                                                                <div
+                                                                    aria-label="Pending upload preview"
+                                                                    className="relative flex aspect-video w-full items-center justify-center overflow-hidden bg-muted"
+                                                                >
+                                                                    {pendingPreview ? (
+                                                                        // eslint-disable-next-line @next/next/no-img-element
+                                                                        <img
+                                                                            alt={pendingMedia?.name ?? 'Pending upload'}
+                                                                            className="size-full object-contain"
+                                                                            src={pendingPreview}
+                                                                        />
+                                                                    ) : (
+                                                                        <ImagePlus className="h-4 w-4 opacity-60" />
+                                                                    )}
+                                                                </div>
+                                                                <div className="flex min-w-0 items-center justify-between gap-3 p-2 text-xs">
+                                                                    <p className="truncate text-muted-foreground">
+                                                                        {pendingMedia?.name ?? 'Uploading media'}
+                                                                    </p>
+                                                                    <span className="text-muted-foreground">
+                                                                        Uploading preview...
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : null}
                                             {selectedItemHasMedia ? (
                                                 <div className="space-y-3">
                                                     {selectedItemMediaAttachments.map((attachment) => (
@@ -1440,7 +1499,7 @@ export default function WorkflowRunDetailClient({
                                     ) : null}
                                         </TimelineContent>
                                     </TimelineItem>
-                                    {selectedItemThreadReplies.length > 0 ? (
+                                    {hasThreadReplies ? (
                                         <>
                                             <div className="flex items-center justify-between pb-3 pl-12">
                                                 <p className="text-xs font-medium uppercase tracking-[0.18em] text-muted-foreground">

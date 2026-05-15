@@ -20,9 +20,12 @@ export interface PlannerDraftItem {
   suggestedPost: string;
 }
 
+export type WorkflowPlannerVoiceMode = 'human' | 'corporate';
+
 type WorkflowPlannerGenerationSettings = {
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
+  voiceMode?: WorkflowPlannerVoiceMode;
 };
 
 type OnboardingAnswerRow = {
@@ -65,6 +68,18 @@ function normalizeLineBreaks(value: string) {
   return value.replace(/\r\n?/g, '\n').trim();
 }
 
+function getVoiceModeInstruction(voiceMode: WorkflowPlannerVoiceMode | undefined) {
+  if (voiceMode === 'corporate') {
+    return 'Use a more corporate brand voice: polished, credible, composed, and professional. Keep it readable and human, but avoid casual slang and overly personal phrasing.';
+  }
+
+  return 'Use a human voice: natural, conversational, specific, and warm. Avoid robotic phrasing, generic marketing jargon, and stiff corporate language.';
+}
+
+function buildWorkflowPlannerSystemPrompt(voiceMode: WorkflowPlannerVoiceMode | undefined) {
+  return `${WORKFLOW_PLANNER_SYSTEM_PROMPT} ${getVoiceModeInstruction(voiceMode)}`;
+}
+
 function normalizeWordSequence(value: string) {
   return normalizeLineBreaks(value)
     .toLowerCase()
@@ -91,6 +106,7 @@ function buildRegenerationPrompt(params: {
   brandContext: string;
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
+  voiceMode?: WorkflowPlannerVoiceMode;
   note?: string;
   forceDifference: boolean;
 }) {
@@ -105,6 +121,7 @@ function buildRegenerationPrompt(params: {
     params.note ? `User note: ${params.note}` : 'User note: none',
     params.campaignBrief ? `Campaign brief: ${params.campaignBrief}` : 'Campaign brief: none',
     `Posts per day: ${postsPerDay}`,
+    `Voice mode: ${params.voiceMode === 'corporate' ? 'Corporate' : 'Human'}`,
     'Brand context:',
     params.brandContext,
     'Return only valid JSON object with keys:',
@@ -127,12 +144,13 @@ async function generateRegeneratedPlanItem(params: {
   brandContext: string;
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
+  voiceMode?: WorkflowPlannerVoiceMode;
   note?: string;
   forceDifference: boolean;
 }) {
   const result = await generateText({
     model: anthropic('claude-haiku-4-5'),
-    system: WORKFLOW_PLANNER_SYSTEM_PROMPT,
+    system: buildWorkflowPlannerSystemPrompt(params.voiceMode),
     temperature: params.forceDifference ? 0.75 : 0.6,
     prompt: buildRegenerationPrompt(params),
   });
@@ -361,6 +379,7 @@ export async function generateSevenDayDraftItems(params: {
   brandContext: string;
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
+  voiceMode?: WorkflowPlannerVoiceMode;
 }): Promise<PlannerDraftItem[]> {
   const dates = buildDateRange(params.startDateISO, params.endDateISO);
   const postsPerDay = params.postsPerDay ?? 1;
@@ -371,7 +390,7 @@ export async function generateSevenDayDraftItems(params: {
   try {
     const result = await generateText({
       model: anthropic('claude-haiku-4-5'),
-      system: WORKFLOW_PLANNER_SYSTEM_PROMPT,
+      system: buildWorkflowPlannerSystemPrompt(params.voiceMode),
       temperature: 0.5,
       prompt: [
         `Create an X content plan for ${dates.length} day(s) and ${slots.length} total post slot(s).`,
@@ -381,6 +400,7 @@ export async function generateSevenDayDraftItems(params: {
           ? `Campaign brief (highest priority, every post must clearly reflect it):\n${campaignBrief}`
           : 'Campaign brief:\nNone provided.',
         `Posts per day: ${postsPerDay}.`,
+        `Voice mode: ${params.voiceMode === 'corporate' ? 'Corporate' : 'Human'}.`,
         'Post slots (must match this order exactly):',
         slotList,
         `Return only a valid JSON array of exactly ${slots.length} objects. Each object must include:`,
@@ -398,11 +418,13 @@ export async function generateSevenDayDraftItems(params: {
     return mapPlanItemsWithSettings(slots, parsed, {
       campaignBrief,
       postsPerDay,
+      voiceMode: params.voiceMode,
     });
   } catch {
     return mapPlanItemsWithSettings(slots, null, {
       campaignBrief,
       postsPerDay,
+      voiceMode: params.voiceMode,
     });
   }
 }
@@ -414,6 +436,7 @@ export async function regenerateSevenDayDraftItem(params: {
   brandContext: string;
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
+  voiceMode?: WorkflowPlannerVoiceMode;
 }): Promise<PlannerDraftItem> {
   const targetDate = startOfDay(parseISO(params.dateISO));
   const targetDateLabel = params.existingItem.dayLabel;
@@ -430,6 +453,7 @@ export async function regenerateSevenDayDraftItem(params: {
       campaignBrief: params.campaignBrief,
       note: params.note,
       postsPerDay: params.postsPerDay,
+      voiceMode: params.voiceMode,
       forceDifference: false,
     });
 
@@ -447,6 +471,7 @@ export async function regenerateSevenDayDraftItem(params: {
         campaignBrief: params.campaignBrief,
         note: params.note,
         postsPerDay: params.postsPerDay,
+        voiceMode: params.voiceMode,
         forceDifference: true,
       });
 
@@ -528,4 +553,3 @@ export async function formatWorkflowSuggestedPost(params: {
     };
   }
 }
-

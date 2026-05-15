@@ -39,6 +39,11 @@ export type SevenDayPlanningItemApprovalStatus =
     | 'rejected'
     | 'scheduled';
 export type PostMediaAttachmentType = 'image' | 'gif';
+export type XAccountMetricSnapshotType =
+    | 'onboarding'
+    | 'reconnect'
+    | 'manual'
+    | 'backfill';
 
 // ============================================
 // EDITOR.JS TYPES
@@ -233,6 +238,26 @@ export interface XAccount {
     expires_at: string | null;
     scope: string[] | null;
     connected_at: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface XAccountMetricSnapshot {
+    id: string;
+    user_id: string;
+    x_account_id: string;
+    x_user_id: string;
+    username: string;
+    account_role: XAccountRole | null;
+    snapshot_type: XAccountMetricSnapshotType;
+    captured_at: string;
+    followers_count: number | null;
+    following_count: number | null;
+    tweet_count: number | null;
+    listed_count: number | null;
+    verified: boolean | null;
+    profile_image_url: string | null;
+    raw_profile: Record<string, unknown>;
     created_at: string;
     updated_at: string;
 }

@@ -1,4 +1,5 @@
 import { ForgotPasswordForm } from '@/shared/components/forgot-password-form'
+import { redirectAuthenticatedUserToApp } from '@/shared/lib/auth-page-redirect'
 
 /**
  * Forgot Password Page
@@ -6,7 +7,9 @@ import { ForgotPasswordForm } from '@/shared/components/forgot-password-form'
  * Full-page password reset experience with floating decorative elements
  * matching the landing page's visual design language.
  */
-export default function Page() {
+export default async function Page() {
+  await redirectAuthenticatedUserToApp()
+
   return (
     <div className="relative min-h-screen w-full bg-white overflow-hidden">
       {/* Decorative floating elements - matching landing page style */}
