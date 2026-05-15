@@ -326,6 +326,18 @@ function serializeReplyDrafts(replies: WorkflowThreadReply[]) {
     );
 }
 
+function getDetailedErrorMessage(error: unknown, fallbackMessage: string) {
+    if (error instanceof Error) {
+        return error.message || fallbackMessage;
+    }
+
+    if (typeof error === 'string' && error.trim()) {
+        return error;
+    }
+
+    return fallbackMessage;
+}
+
 export default function WorkflowRunDetailClient({
     run,
     items,
@@ -478,6 +490,34 @@ export default function WorkflowRunDetailClient({
     ) => {
         startTransition(async () => {
             try {
+                const item = items.find((entry) => entry.id === itemId);
+                const draftSuggestedPost =
+                    suggestedPostByItemId[itemId] ?? item?.suggested_post ?? '';
+                const draftThreadReplies =
+                    threadRepliesByItemId[itemId] ?? normalizeThreadReplies(item?.thread_replies);
+                const hasUnsavedDraftChanges = item
+                    ? draftSuggestedPost !== (item.suggested_post ?? '') ||
+                    serializeReplyDrafts(draftThreadReplies) !== serializeReplyDrafts(item.thread_replies)
+                    : false;
+
+                if (item && hasUnsavedDraftChanges) {
+                    const savedDraft = await updateWorkflowPlannerItemSuggestedPost({
+                        itemId,
+                        runId: run.id,
+                        suggestedPost: draftSuggestedPost,
+                        threadReplies: draftThreadReplies,
+                    });
+
+                    setSuggestedPostByItemId((current) => ({
+                        ...current,
+                        [itemId]: savedDraft.suggestedPost,
+                    }));
+                    setThreadRepliesByItemId((current) => ({
+                        ...current,
+                        [itemId]: savedDraft.threadReplies,
+                    }));
+                }
+
                 await setWorkflowPlannerItemDecision({
                     itemId,
                     note: noteByItemId[itemId],
@@ -615,6 +655,16 @@ export default function WorkflowRunDetailClient({
             return;
         }
 
+        const isGifUpload = selectedFiles.some((file) => file.type === 'image/gif');
+        const loadingToastId = toast.loading(
+            isGifUpload ? 'Uploading GIF...' : 'Uploading media...',
+            {
+                description: isGifUpload
+                    ? 'Large GIFs may take a bit. We will keep you posted if encoding or request-size issues happen.'
+                    : 'Your media is being uploaded and attached to this workflow post.',
+            },
+        );
+
         setUploadingMediaItemId(itemId);
 
         try {
@@ -636,10 +686,22 @@ export default function WorkflowRunDetailClient({
                 result.mediaAttachments.length === 1
                     ? 'Media attached to this post.'
                     : `${result.mediaAttachments.length} media files attached to this post.`,
+                {
+                    description: result.mediaAttachments
+                        .map((attachment) => `${attachment.file_name} (${getAttachmentLabel(attachment)})`)
+                        .join(', '),
+                    id: loadingToastId,
+                },
             );
-            router.refresh();
         } catch (error) {
-            toast.error(error instanceof Error ? error.message : 'Unable to upload media.');
+            const detailedMessage = getDetailedErrorMessage(
+                error,
+                'Unable to upload media.',
+            );
+            toast.error('Media upload failed.', {
+                description: detailedMessage,
+                id: loadingToastId,
+            });
         } finally {
             setUploadingMediaItemId(null);
         }
@@ -660,7 +722,6 @@ export default function WorkflowRunDetailClient({
                 [result.itemId]: result.mediaAttachments,
             }));
             toast.success('Media removed from this post.');
-            router.refresh();
         } catch (error) {
             toast.error(error instanceof Error ? error.message : 'Unable to remove media.');
         } finally {
@@ -689,6 +750,9 @@ export default function WorkflowRunDetailClient({
         maxFiles: remainingMediaSlots,
         maxSize: POST_GIF_MAX_BYTES,
         multiple: true,
+        onFilesChange: () => {
+            // no-op keeps the hook stable while we surface validation errors via effect below
+        },
         onFilesAdded: (addedFiles: FileWithPreview[]) => {
             if (!selectedItem) {
                 return;
@@ -707,6 +771,16 @@ export default function WorkflowRunDetailClient({
     mediaUploadActionsRef.current = {
         clearFiles: clearMediaUploadFiles,
     };
+
+    useEffect(() => {
+        if (!mediaUploadErrors.length) {
+            return;
+        }
+
+        toast.error('Media upload blocked.', {
+            description: mediaUploadErrors.join(' '),
+        });
+    }, [mediaUploadErrors]);
 
     const handleRetry = () => {
         startTransition(async () => {

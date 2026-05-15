@@ -2,6 +2,7 @@ export const X_OAUTH_SCOPES = [
   'users.read',
   'tweet.read',
   'tweet.write',
+  'media.write',
   'offline.access',
 ] as const;
 

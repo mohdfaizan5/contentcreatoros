@@ -1,3 +1,5 @@
+import type { PostMediaAttachment } from "@/shared/types/database";
+
 export type CalendarView = "month" | "week" | "day" | "agenda";
 
 export interface CalendarEventMetadata {
@@ -10,6 +12,9 @@ export interface CalendarEventMetadata {
   xAccountUsername?: string | null;
   xAccountAvatarUrl?: string | null;
   xAccountName?: string | null;
+  xTweetId?: string | null;
+  publishedUrl?: string | null;
+  mediaAttachments?: PostMediaAttachment[];
 }
 
 export interface CalendarEvent {

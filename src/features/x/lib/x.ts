@@ -427,6 +427,12 @@ export async function publishTweetWithStoredConnection(
     );
   }
 
+  if (mediaAttachments.length > 0 && !account.scope?.includes('media.write')) {
+    throw new Error(
+      'Your X connection is missing media.write permission, so image and GIF uploads are blocked. Reconnect X and then try publishing again.',
+    );
+  }
+
   let accessToken = await ensureStoredXAccessToken(account.id);
 
   try {

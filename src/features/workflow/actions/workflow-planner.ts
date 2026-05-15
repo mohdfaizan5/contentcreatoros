@@ -1639,11 +1639,14 @@ export async function scheduleWorkflowPlannerRun(params: {
       x_account_id: xAccount.id,
     };
 
+    const THREAD_REPLY_DELAY_MS = 30 * 1000;
     let previousGeneratedTweetId = rootTweetId;
     const replyRows = threadReplies.map((reply, replyIndex) => {
       const replyTweetId = randomUUID();
       const replyScheduledFor = new Date(scheduledFor);
-      replyScheduledFor.setTime(replyScheduledFor.getTime() + (replyIndex + 1) * 60 * 1000);
+      replyScheduledFor.setTime(
+        replyScheduledFor.getTime() + (replyIndex + 1) * THREAD_REPLY_DELAY_MS,
+      );
 
       const row = {
         id: replyTweetId,
