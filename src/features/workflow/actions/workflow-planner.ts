@@ -24,6 +24,7 @@ import {
   getBrandContextForUser,
   regenerateSevenDayDraftItem,
   type PlannerDraftItem,
+  type WorkflowCommittedContentSignal,
   type WorkflowPlannerVoiceMode,
 } from '@/features/workflow/lib/workflow-planner-ai';
 import {
@@ -118,10 +119,68 @@ async function refreshRunCounts(
   return counts;
 }
 
+async function loadRecentCommittedWorkflowContent(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string,
+) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 14);
+
+  const { data, error } = await supabase
+    .from('generated_tweets')
+    .select('status, scheduled_for, published_at, prompt_snapshot')
+    .eq('user_id', userId)
+    .in('status', ['scheduled', 'published']);
+
+  if (error) {
+    throw new Error('Unable to load recent committed workflow content.');
+  }
+
+  const recentSignals: WorkflowCommittedContentSignal[] = [];
+
+  for (const row of data ?? []) {
+    const promptSnapshot =
+      row.prompt_snapshot && typeof row.prompt_snapshot === 'object'
+        ? (row.prompt_snapshot as Record<string, unknown>)
+        : null;
+    const coreClaim =
+      promptSnapshot && typeof promptSnapshot.coreClaim === 'string'
+        ? promptSnapshot.coreClaim.trim()
+        : '';
+    const angle =
+      promptSnapshot && typeof promptSnapshot.angle === 'string'
+        ? promptSnapshot.angle.trim()
+        : '';
+    const committedAt =
+      row.status === 'published' ? row.published_at ?? null : row.scheduled_for ?? null;
+
+    if (!coreClaim || !committedAt) {
+      continue;
+    }
+
+    const committedDate = new Date(committedAt);
+
+    if (Number.isNaN(committedDate.getTime()) || committedDate.getTime() < cutoff.getTime()) {
+      continue;
+    }
+
+    recentSignals.push({
+      angle,
+      coreClaim,
+      publishedOrScheduledAt: committedAt,
+    });
+  }
+
+  return recentSignals
+    .sort((left, right) => right.publishedOrScheduledAt.localeCompare(left.publishedOrScheduledAt))
+    .slice(0, 12);
+}
+
 function toPlannerDraftItem(item: SevenDayPlanningItem): PlannerDraftItem {
   return {
     angle: item.angle,
     contentType: item.content_type,
+    coreClaim: item.core_claim?.trim() || item.angle,
     dateISO: item.item_date,
     dayLabel: item.day_label,
     id: item.id,
@@ -1315,6 +1374,10 @@ export async function regenerateWorkflowPlannerItem(params: {
   }
 
   const brandContext = await getBrandContextForUser(supabase, user.id);
+  const recentCommittedContent = await loadRecentCommittedWorkflowContent(
+    supabase,
+    user.id,
+  );
   const promptSnapshot =
     run.generation_prompt_snapshot &&
     typeof run.generation_prompt_snapshot === 'object'
@@ -1331,6 +1394,7 @@ export async function regenerateWorkflowPlannerItem(params: {
     existingItem: existingDraft,
     note: normalizeDecisionNote(params.note) ?? undefined,
     postsPerDay: promptSnapshot.postsPerDay === 2 ? 2 : 1,
+    recentCommittedContent,
     voiceMode: promptSnapshot.voiceMode === 'corporate' ? 'corporate' : 'human',
   });
 
@@ -1344,6 +1408,7 @@ export async function regenerateWorkflowPlannerItem(params: {
     next: {
       angle: regenerated.angle,
       contentType: regenerated.contentType,
+      coreClaim: regenerated.coreClaim,
       pillar: regenerated.pillar,
       rationale: regenerated.rationale,
       suggestedPost: regenerated.suggestedPost,
@@ -1351,6 +1416,7 @@ export async function regenerateWorkflowPlannerItem(params: {
     previous: {
       angle: item.angle,
       contentType: item.content_type,
+      coreClaim: item.core_claim,
       pillar: item.pillar,
       rationale: item.rationale,
       suggestedPost: item.suggested_post,
@@ -1364,6 +1430,7 @@ export async function regenerateWorkflowPlannerItem(params: {
       approval_status: 'pending',
       approved_at: null,
       content_type: regenerated.contentType,
+      core_claim: regenerated.coreClaim,
       decision_note: normalizeDecisionNote(params.note),
       pillar: regenerated.pillar,
       rationale: regenerated.rationale,
@@ -1576,6 +1643,7 @@ export async function scheduleWorkflowPlannerRun(params: {
           prompt_snapshot: {
             angle: item.angle,
             contentType: item.content_type,
+            coreClaim: item.core_claim?.trim() || item.angle,
             itemId: item.id,
             replyCount: 0,
             mediaAttachmentIds: mediaAttachments.map((attachment) => attachment.id),
@@ -1621,6 +1689,7 @@ export async function scheduleWorkflowPlannerRun(params: {
       prompt_snapshot: {
         angle: item.angle,
         contentType: item.content_type,
+        coreClaim: item.core_claim?.trim() || item.angle,
         itemId: item.id,
         mediaAttachmentIds: mediaAttachments.map((attachment) => attachment.id),
         pillar: item.pillar,

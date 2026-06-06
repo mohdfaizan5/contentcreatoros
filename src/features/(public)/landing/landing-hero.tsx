@@ -6,7 +6,15 @@ import Link from 'next/link';
 import { GradientBars } from '@/features/(public)/landing/gradient-bars';
 import { XLogoIcon } from '@phosphor-icons/react/dist/ssr';
 
-const LandingHero = () => {
+type LandingHeroProps = {
+    isAuthenticated?: boolean;
+};
+
+const LandingHero = ({ isAuthenticated = false }: LandingHeroProps) => {
+    const primaryCta = isAuthenticated
+        ? { href: '/app', label: 'Go to Dashboard' }
+        : { href: '/sign-up', label: 'Start for Free' };
+
     return (
         <section className="relative min-h-screen overflow-hidden bg-[linear-gradient(160deg,#020617_8%,#0B1120_52%,#111827_100%)]">
             <div className="pointer-events-none absolute inset-0 overflow-hidden">
@@ -25,7 +33,7 @@ const LandingHero = () => {
 
             <div className="relative z-10 mx-auto flex min-h-screen max-w-7xl flex-col items-center justify-center px-6 pt-24 text-center md:pt-32">
                 <span className="mb-6 rounded-full border border-white/20 bg-white/10 px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white/90">
-                    Built for creators who publish daily
+                    Built for startup founders who want to grow on X without the grind
                 </span>
 
                 <h1 className="mb-6 max-w-5xl font-serif-scotchdeck font-light text-5xl text-white md:text-6xl lg:text-7xl">
@@ -40,9 +48,9 @@ const LandingHero = () => {
                 </p>
 
                 <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
-                    <Link href="/sign-up">
+                    <Link href={primaryCta.href}>
                         <Button className="rounded-full bg-white px-7 py-6 text-base font-semibold text-slate-950 hover:bg-slate-100">
-                            Start for Free
+                            {primaryCta.label}
                         </Button>
                     </Link>
                     <Button

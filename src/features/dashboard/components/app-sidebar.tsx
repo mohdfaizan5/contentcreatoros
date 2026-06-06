@@ -99,19 +99,17 @@ const contentNavItems: SidebarNavItem[] = [
         // hoverBg: 'hover:bg-blue-500/10',
         // badge: 'updated',
     },
-    {
-        title: 'Tools',
-        url: '/app/tools',
-        icon: ToolboxIcon,
-    },
+    // {
+    //     title: 'Tools',
+    //     url: '/app/tools',
+    //     icon: ToolboxIcon,
+    // },
     
     {
-        title: 'Auto Replies',
+        title: 'Auto Engage',
+        url: '/app/auto-engage',
         icon: VscCommentDiscussionSparkle,
-        // icon: ChatsTeardropIcon  ,
-        // color: 'text-amber-500',
-        badge: 'comingSoon',
-        disabled: true,
+        badge: 'new',
     },
 ];
 

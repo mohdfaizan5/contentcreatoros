@@ -38,7 +38,11 @@ export type XUser = {
 export type XTweet = {
   id: string;
   text: string;
+  author_id?: string;
   created_at?: string;
+  lang?: string;
+  possibly_sensitive?: boolean;
+  conversation_id?: string;
   referenced_tweets?: Array<{
     id: string;
     type: 'retweeted' | 'quoted' | 'replied_to';
@@ -49,6 +53,10 @@ export type XTweet = {
     reply_count?: number;
     retweet_count?: number;
   };
+};
+
+export type XTweetWithAuthor = XTweet & {
+  author?: XUser | null;
 };
 
 type StoredXAccount = XAccount;
@@ -380,6 +388,143 @@ export async function getAuthenticatedUserTweets(accessToken: string, userId: st
   } catch (error) {
     throw new Error(
       normalizeTwitterApiError(error, 'Unable to load the authenticated user timeline.'),
+    );
+  }
+}
+
+export async function getXUsersByUsernames(
+  accessToken: string,
+  usernames: string[],
+) {
+  const uniqueUsernames = [
+    ...new Set(
+      usernames
+        .map((username) => username.replace(/^@/, '').trim())
+        .filter(Boolean),
+    ),
+  ];
+
+  if (!uniqueUsernames.length) {
+    return [] as XUser[];
+  }
+
+  try {
+    const client = createXUserClient(accessToken);
+    const users: XUser[] = [];
+
+    for (let index = 0; index < uniqueUsernames.length; index += 100) {
+      const batch = uniqueUsernames.slice(index, index + 100);
+      const response = await client.v2.usersByUsernames(batch, {
+        'user.fields': [
+          'created_at',
+          'description',
+          'profile_image_url',
+          'public_metrics',
+          'verified',
+        ],
+      });
+
+      users.push(...((response.data ?? []) as XUser[]));
+    }
+
+    return users;
+  } catch (error) {
+    throw new Error(
+      normalizeTwitterApiError(error, 'Unable to resolve X usernames for Auto Engage.'),
+    );
+  }
+}
+
+export async function getUserTimelinePosts(
+  accessToken: string,
+  userId: string,
+  maxResults = 10,
+) {
+  try {
+    const client = createXUserClient(accessToken);
+    const timeline = await client.v2.userTimeline(userId, {
+      max_results: Math.max(5, Math.min(100, maxResults)),
+      'tweet.fields': [
+        'author_id',
+        'conversation_id',
+        'created_at',
+        'lang',
+        'possibly_sensitive',
+        'public_metrics',
+        'referenced_tweets',
+      ],
+    });
+
+    return timeline.tweets as XTweet[];
+  } catch (error) {
+    throw new Error(
+      normalizeTwitterApiError(error, 'Unable to load the target account timeline.'),
+    );
+  }
+}
+
+export async function searchRecentXTweets(
+  accessToken: string,
+  query: string,
+  maxResults = 25,
+) {
+  const trimmedQuery = query.trim();
+
+  if (!trimmedQuery) {
+    return [] as XTweetWithAuthor[];
+  }
+
+  try {
+    const client = createXUserClient(accessToken);
+    const search = await client.v2.search(trimmedQuery, {
+      max_results: Math.max(10, Math.min(100, maxResults)),
+      'tweet.fields': [
+        'author_id',
+        'conversation_id',
+        'created_at',
+        'lang',
+        'possibly_sensitive',
+        'public_metrics',
+        'referenced_tweets',
+      ],
+    });
+
+    const tweets = search.tweets as XTweet[];
+    const authorIds = [
+      ...new Set(
+        tweets
+          .map((tweet) => tweet.author_id?.trim())
+          .filter((authorId): authorId is string => Boolean(authorId)),
+      ),
+    ];
+    const authorsById = new Map<string, XUser>();
+
+    if (authorIds.length) {
+      for (let index = 0; index < authorIds.length; index += 100) {
+        const batch = authorIds.slice(index, index + 100);
+        const response = await client.v2.users(batch, {
+          'user.fields': [
+            'created_at',
+            'description',
+            'profile_image_url',
+            'public_metrics',
+            'verified',
+          ],
+        });
+
+        for (const user of (response.data ?? []) as XUser[]) {
+          authorsById.set(user.id, user);
+        }
+      }
+    }
+
+    return tweets.map((tweet) => ({
+      ...tweet,
+      author: tweet.author_id ? authorsById.get(tweet.author_id) ?? null : null,
+    }));
+  } catch (error) {
+    throw new Error(
+      normalizeTwitterApiError(error, 'Unable to search recent X posts for Auto Engage.'),
     );
   }
 }

@@ -4,7 +4,15 @@ import React from 'react';
 import { Button } from '@/shared/components/ui/button';
 import Link from 'next/link';
 
-const LandingExpansion = () => {
+type LandingExpansionProps = {
+    isAuthenticated?: boolean;
+};
+
+const LandingExpansion = ({ isAuthenticated = false }: LandingExpansionProps) => {
+    const primaryCta = isAuthenticated
+        ? { href: '/app', label: 'Go to Dashboard' }
+        : { href: '/sign-up', label: 'Start Your First Series' };
+
     return (
         <section className="relative bg-gradient-to-b from-[#0a1628] via-[#051031] to-[#000308] py-20 md:py-32 overflow-hidden">
             {/* Stars/Space Background */}
@@ -79,11 +87,11 @@ const LandingExpansion = () => {
                         content series that build your audience over time.
                     </p>
 
-                    <Link href="/sign-up">
+                    <Link href={primaryCta.href}>
                         <Button
                             className="bg-[#2F92C7] text-white hover:bg-[#258ab8] rounded-full px-8 py-4 font-medium inline-flex items-center gap-2 shadow-lg shadow-[#2F92C7]/30"
                         >
-                            Start Your First Series
+                            {primaryCta.label}
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                                 <path d="M5 12H19M19 12L12 5M19 12L12 19" />
                             </svg>

@@ -5,20 +5,28 @@ import { Button } from '@/shared/components/ui/button';
 import { cn } from '@/shared/lib/utils';
 import Link from 'next/link';
 import Logo from '@/shared/components/logo';
+import { usePathname } from 'next/navigation';
 
 type NavTheme = 'light' | 'dark';
 
+type LandingHeaderProps = {
+    isAuthenticated?: boolean;
+};
+
 const navItems = [
-    { href: '#features', label: 'Features' },
-    { href: '#templates', label: 'Templates' },
-    { href: '#series', label: 'Series' },
-    { href: '#faq', label: 'FAQ' },
+    { href: '/#features', label: 'Features' },
+    { href: '/#templates', label: 'Templates' },
+    { href: '/#series', label: 'Series' },
+    { href: '/pricing', label: 'Pricing' },
+    { href: '/#faq', label: 'FAQ' },
 ];
 
-const LandingHeader = () => {
+const LandingHeader = ({ isAuthenticated = false }: LandingHeaderProps) => {
+    const pathname = usePathname();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [navTheme, setNavTheme] = useState<NavTheme>('dark');
     const [isScrolled, setIsScrolled] = useState(false);
+    const [activeHash, setActiveHash] = useState<string | null>(null);
 
     useEffect(() => {
         const updateNavTheme = () => {
@@ -29,6 +37,7 @@ const LandingHeader = () => {
 
             if (sections.length === 0) {
                 setIsScrolled(window.scrollY > 8);
+                setActiveHash(null);
                 return;
             }
 
@@ -45,6 +54,7 @@ const LandingHeader = () => {
 
             setNavTheme(activeSection.dataset.navTheme === 'light' ? 'light' : 'dark');
             setIsScrolled(window.scrollY > 8);
+            setActiveHash(activeSection.id ? `#${activeSection.id}` : null);
         };
 
         updateNavTheme();
@@ -58,6 +68,7 @@ const LandingHeader = () => {
     }, []);
 
     const isLight = navTheme === 'light';
+    const activeHref = pathname.startsWith('/pricing') ? '/pricing' : activeHash;
 
     return (
         <header className="fixed left-0 right-0 top-0 z-50 px-4 py-4 md:px-6">
@@ -87,13 +98,16 @@ const LandingHeader = () => {
                         isLight ? 'border-border/40 bg-slate-100/80' : 'border-white/20 bg-white/10',
                     )}
                 >
-                    {navItems.map((item, index) => (
+                    {navItems.map((item) => {
+                        const isActive = activeHref === item.href;
+
+                        return (
                         <Link
                             key={item.href}
                             href={item.href}
                             className={cn(
                                 'rounded-full px-4 py-2 text-sm font-medium transition-colors',
-                                index === 0
+                                isActive
                                     ? isLight
                                         ? 'bg-slate-950 text-white'
                                         : 'bg-white text-slate-950'
@@ -104,47 +118,80 @@ const LandingHeader = () => {
                         >
                             {item.label}
                         </Link>
-                    ))}
+                    )})}
                 </div>
 
                 <div className="hidden items-center gap-3 md:flex">
-                    <Link
-                        href="/login"
-                        className={cn(
-                            'text-sm font-semibold transition-colors hover:underline',
-                            isLight ? 'text-slate-950' : 'text-white',
-                        )}
-                    >
-                        Log In
-                    </Link>
-                    <Link href="/sign-up">
-                        <Button
-                            className={cn(
-                                'rounded-full px-6 py-2 font-semibold',
-                                isLight
-                                    ? 'bg-slate-950 text-white hover:bg-slate-800'
-                                    : 'bg-white text-slate-950 hover:bg-slate-100',
-                            )}
-                        >
-                            Start Creating
-                            <span
+                    {isAuthenticated ? (
+                        <Link href="/app">
+                            <Button
                                 className={cn(
-                                    'flex h-5 w-5 items-center justify-center rounded-full',
-                                    isLight ? 'bg-white/20' : 'bg-slate-950',
+                                    'rounded-full px-6 py-2 font-semibold',
+                                    isLight
+                                        ? 'bg-slate-950 text-white hover:bg-slate-800'
+                                        : 'bg-white text-slate-950 hover:bg-slate-100',
                                 )}
                             >
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <path
-                                        d="M5 12H19M19 12L12 5M19 12L12 19"
-                                        stroke="white"
-                                        strokeWidth="2"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </span>
-                        </Button>
-                    </Link>
+                                Go to Dashboard
+                                <span
+                                    className={cn(
+                                        'flex h-5 w-5 items-center justify-center rounded-full',
+                                        isLight ? 'bg-white/20' : 'bg-slate-950',
+                                    )}
+                                >
+                                    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <path
+                                            d="M5 12H19M19 12L12 5M19 12L12 19"
+                                            stroke="white"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                            </Button>
+                        </Link>
+                    ) : (
+                        <>
+                            <Link
+                                href="/login"
+                                className={cn(
+                                    'text-sm font-semibold transition-colors hover:underline',
+                                    isLight ? 'text-slate-950' : 'text-white',
+                                )}
+                            >
+                                Log In
+                            </Link>
+                            <Link href="/sign-up">
+                                <Button
+                                    className={cn(
+                                        'rounded-full px-6 py-2 font-semibold',
+                                        isLight
+                                            ? 'bg-slate-950 text-white hover:bg-slate-800'
+                                            : 'bg-white text-slate-950 hover:bg-slate-100',
+                                    )}
+                                >
+                                    Start Creating
+                                    <span
+                                        className={cn(
+                                            'flex h-5 w-5 items-center justify-center rounded-full',
+                                            isLight ? 'bg-white/20' : 'bg-slate-950',
+                                        )}
+                                    >
+                                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <path
+                                                d="M5 12H19M19 12L12 5M19 12L12 19"
+                                                stroke="white"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </span>
+                                </Button>
+                            </Link>
+                        </>
+                    )}
                 </div>
 
                 <button
@@ -174,42 +221,68 @@ const LandingHeader = () => {
                     )}
                 >
                     <div className="flex flex-col gap-2">
-                        {navItems.map((item) => (
+                        {navItems.map((item) => {
+                            const isActive = activeHref === item.href;
+
+                            return (
                             <Link
                                 key={item.href}
                                 href={item.href}
                                 onClick={() => setIsMenuOpen(false)}
                                 className={cn(
                                     'rounded-lg px-4 py-3 text-sm font-semibold transition-colors',
-                                    isLight ? 'hover:bg-slate-100' : 'hover:bg-white/10',
+                                    isActive
+                                        ? isLight
+                                            ? 'bg-slate-100 text-slate-950'
+                                            : 'bg-white/15 text-white'
+                                        : isLight
+                                            ? 'hover:bg-slate-100'
+                                            : 'hover:bg-white/10',
                                 )}
                             >
                                 {item.label}
                             </Link>
-                        ))}
+                        )})}
                         <hr className={cn('my-2', isLight ? 'border-border/40' : 'border-white/20')} />
-                        <Link
-                            href="/login"
-                            onClick={() => setIsMenuOpen(false)}
-                            className={cn(
-                                'rounded-lg px-4 py-3 text-center text-sm font-semibold',
-                                isLight ? 'hover:bg-slate-100' : 'hover:bg-white/10',
-                            )}
-                        >
-                            Log In
-                        </Link>
-                        <Link href="/sign-up">
-                            <Button
-                                className={cn(
-                                    'w-full rounded-lg py-3 font-semibold',
-                                    isLight
-                                        ? 'bg-slate-950 text-white hover:bg-slate-800'
-                                        : 'bg-white text-slate-950 hover:bg-slate-100',
-                                )}
-                            >
-                                Start Creating
-                            </Button>
-                        </Link>
+                        {isAuthenticated ? (
+                            <Link href="/app" onClick={() => setIsMenuOpen(false)}>
+                                <Button
+                                    className={cn(
+                                        'w-full rounded-lg py-3 font-semibold',
+                                        isLight
+                                            ? 'bg-slate-950 text-white hover:bg-slate-800'
+                                            : 'bg-white text-slate-950 hover:bg-slate-100',
+                                    )}
+                                >
+                                    Go to Dashboard
+                                </Button>
+                            </Link>
+                        ) : (
+                            <>
+                                <Link
+                                    href="/login"
+                                    onClick={() => setIsMenuOpen(false)}
+                                    className={cn(
+                                        'rounded-lg px-4 py-3 text-center text-sm font-semibold',
+                                        isLight ? 'hover:bg-slate-100' : 'hover:bg-white/10',
+                                    )}
+                                >
+                                    Log In
+                                </Link>
+                                <Link href="/sign-up">
+                                    <Button
+                                        className={cn(
+                                            'w-full rounded-lg py-3 font-semibold',
+                                            isLight
+                                                ? 'bg-slate-950 text-white hover:bg-slate-800'
+                                                : 'bg-white text-slate-950 hover:bg-slate-100',
+                                        )}
+                                    >
+                                        Start Creating
+                                    </Button>
+                                </Link>
+                            </>
+                        )}
                     </div>
                 </div>
             )}

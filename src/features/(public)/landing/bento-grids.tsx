@@ -36,7 +36,7 @@ const BentoGrid = () => {
           </div>
 
           <div className="rounded-3xl border border-border/70 bg-slate-950 p-6 shadow-[0_28px_55px_-35px_rgba(2,6,23,0.9)] md:p-8">
-            <h3 className="text-2xl font-semibold text-white">Collaborate in real time</h3>
+            <h3 className="text-2xl font-semibold text-white">Auto engage with potential customers</h3>
             <p className="mt-2 text-sm leading-6 text-white/70 md:text-base">
               Keep copy, edits, and approvals in sync so your publishing rhythm does not break when more people join.
             </p>

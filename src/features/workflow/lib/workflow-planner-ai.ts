@@ -16,6 +16,7 @@ export interface PlannerDraftItem {
   pillar: string;
   contentType: string;
   angle: string;
+  coreClaim: string;
   rationale: string;
   suggestedPost: string;
 }
@@ -37,8 +38,15 @@ type RawPlanItem = {
   pillar?: string;
   contentType?: string;
   angle?: string;
+  coreClaim?: string;
   rationale?: string;
   suggestedPost?: string;
+};
+
+export type WorkflowCommittedContentSignal = {
+  angle: string;
+  coreClaim: string;
+  publishedOrScheduledAt: string;
 };
 
 type PlannerPostSlot = {
@@ -58,6 +66,16 @@ const FALLBACK_PILLARS = [
   'Behind the Scenes',
   'Opinion/POV',
   'Engagement Prompt',
+] as const;
+
+const WORKFLOW_ANGLE_LIBRARY = [
+  'Pain Diagnosis',
+  'False Belief',
+  'Workflow Breakdown',
+  'Behind the Scenes',
+  'Product in Context',
+  'Opinion',
+  'Tactical Lesson',
 ] as const;
 
 const WORKFLOW_PLANNER_SYSTEM_PROMPT = `You are a senior X content strategist producing concise, high-signal post drafts. Every suggestedPost must be 280 characters or fewer (hard limit). Optimize for first-glance readability with a clear hook, concise lines, and coherent flow. Avoid clutter, filler, excessive emojis, and hashtag stuffing. Return strict JSON only using the exact schema requested by the user prompt.`;
@@ -96,8 +114,45 @@ function trimToCharacterLimit(value: string, maxChars: number) {
   return value.slice(0, maxChars).trimEnd();
 }
 
+function buildDefaultCoreClaim(angle: string, pillar: string) {
+  const normalizedAngle = normalizeText(angle).replace(/\s+/g, ' ').trim();
+
+  if (normalizedAngle) {
+    return normalizedAngle.endsWith('.') ? normalizedAngle : `${normalizedAngle}.`;
+  }
+
+  return `One practical takeaway tied to the ${pillar.toLowerCase()} pillar.`;
+}
+
 function hasSuggestedPostChanged(next: PlannerDraftItem, previous: PlannerDraftItem) {
   return normalizeLineBreaks(next.suggestedPost) !== normalizeLineBreaks(previous.suggestedPost);
+}
+
+function buildAngleLibraryPromptSection() {
+  return [
+    'Angle library (use these for coverage and rotate across the week when possible):',
+    ...WORKFLOW_ANGLE_LIBRARY.map((angleType, index) => `${index + 1}. ${angleType}`),
+    'Use a hybrid angle strategy: choose from this library, then instantiate each angle freshly for the current run.',
+    'Within one run, prefer soft uniqueness across angle library types when possible.',
+  ].join('\n');
+}
+
+function buildCommittedContentPromptSection(
+  recentCommittedContent: WorkflowCommittedContentSignal[] | undefined,
+) {
+  if (!recentCommittedContent?.length) {
+    return 'Recent committed content in the last 14 days: none relevant.';
+  }
+
+  const lines = recentCommittedContent.map((item, index) =>
+    `${index + 1}. Core Claim: ${item.coreClaim} | Angle: ${item.angle} | Committed at: ${item.publishedOrScheduledAt}`,
+  );
+
+  return [
+    'Recent committed content in the last 14 days (published or scheduled):',
+    ...lines,
+    'Avoid repeating recent core claims. You may revisit a nearby theme only if the new core claim is meaningfully different.',
+  ].join('\n');
 }
 
 function buildRegenerationPrompt(params: {
@@ -109,6 +164,7 @@ function buildRegenerationPrompt(params: {
   voiceMode?: WorkflowPlannerVoiceMode;
   note?: string;
   forceDifference: boolean;
+  recentCommittedContent?: WorkflowCommittedContentSignal[];
 }) {
   const postsPerDay = params.postsPerDay ?? 1;
 
@@ -117,20 +173,26 @@ function buildRegenerationPrompt(params: {
     `Post slot: ${params.targetDateLabel}`,
     `Current pillar: ${params.existingItem.pillar}`,
     `Current angle: ${params.existingItem.angle}`,
+    `Current coreClaim: ${params.existingItem.coreClaim}`,
     `Current suggestedPost: ${params.existingItem.suggestedPost}`,
     params.note ? `User note: ${params.note}` : 'User note: none',
     params.campaignBrief ? `Campaign brief: ${params.campaignBrief}` : 'Campaign brief: none',
     `Posts per day: ${postsPerDay}`,
     `Voice mode: ${params.voiceMode === 'corporate' ? 'Corporate' : 'Human'}`,
+    buildAngleLibraryPromptSection(),
+    buildCommittedContentPromptSection(params.recentCommittedContent),
     'Brand context:',
     params.brandContext,
     'Return only valid JSON object with keys:',
-    'pillar, contentType, angle, rationale, suggestedPost',
+    'pillar, contentType, angle, coreClaim, rationale, suggestedPost',
+    'Write angle as "Angle Library Type: fresh specific angle".',
+    'Write coreClaim as one short explicit sentence describing the takeaway.',
     'The suggestedPost must be exactly 1 X post and must be 280 characters or fewer.',
     params.campaignBrief
       ? 'The campaign brief is the highest-priority direction. The new post must clearly reflect it in the hook, framing, and detail choices.'
       : 'Use the brand context to keep the post on-strategy.',
     'The suggestedPost should be cleanly formatted for first-glance readability.',
+    'Avoid repeating recent core claims. Core claim repetition matters more than surface wording changes.',
     params.forceDifference
       ? 'The new suggestedPost must be materially different from the current suggestedPost with a different hook and phrasing while staying on-strategy.'
       : 'Improve clarity and impact while keeping the same strategy.',
@@ -147,6 +209,7 @@ async function generateRegeneratedPlanItem(params: {
   voiceMode?: WorkflowPlannerVoiceMode;
   note?: string;
   forceDifference: boolean;
+  recentCommittedContent?: WorkflowCommittedContentSignal[];
 }) {
   const result = await generateText({
     model: anthropic('claude-haiku-4-5'),
@@ -170,6 +233,7 @@ function buildNormalizedDraftItem(params: {
     pillar: normalizeText(params.parsed?.pillar) || params.existingItem.pillar,
     contentType: normalizeText(params.parsed?.contentType) || params.existingItem.contentType,
     angle: normalizeText(params.parsed?.angle) || params.existingItem.angle,
+    coreClaim: normalizeText(params.parsed?.coreClaim) || params.existingItem.coreClaim,
     rationale: normalizeText(params.parsed?.rationale) || params.existingItem.rationale,
     suggestedPost: normalizeText(params.parsed?.suggestedPost) || params.existingItem.suggestedPost,
   } satisfies PlannerDraftItem;
@@ -300,7 +364,14 @@ function mapPlanItemsWithSettings(
       contentType: normalizeText(rawItem?.contentType) || 'Single post',
       angle:
         normalizeText(rawItem?.angle) ||
-        `Share one practical insight that supports your ${fallbackPillar.toLowerCase()} pillar.`,
+        `${WORKFLOW_ANGLE_LIBRARY[index % WORKFLOW_ANGLE_LIBRARY.length]}: Share one practical insight that supports your ${fallbackPillar.toLowerCase()} pillar.`,
+      coreClaim:
+        normalizeText(rawItem?.coreClaim) ||
+        buildDefaultCoreClaim(
+          normalizeText(rawItem?.angle) ||
+            `${WORKFLOW_ANGLE_LIBRARY[index % WORKFLOW_ANGLE_LIBRARY.length]}: Share one practical insight that supports your ${fallbackPillar.toLowerCase()} pillar.`,
+          fallbackPillar,
+        ),
       rationale:
         normalizeText(rawItem?.rationale) ||
         (settings.campaignBrief
@@ -380,6 +451,7 @@ export async function generateSevenDayDraftItems(params: {
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
   voiceMode?: WorkflowPlannerVoiceMode;
+  recentCommittedContent?: WorkflowCommittedContentSignal[];
 }): Promise<PlannerDraftItem[]> {
   const dates = buildDateRange(params.startDateISO, params.endDateISO);
   const postsPerDay = params.postsPerDay ?? 1;
@@ -401,14 +473,20 @@ export async function generateSevenDayDraftItems(params: {
           : 'Campaign brief:\nNone provided.',
         `Posts per day: ${postsPerDay}.`,
         `Voice mode: ${params.voiceMode === 'corporate' ? 'Corporate' : 'Human'}.`,
+        buildAngleLibraryPromptSection(),
+        buildCommittedContentPromptSection(params.recentCommittedContent),
         'Post slots (must match this order exactly):',
         slotList,
         `Return only a valid JSON array of exactly ${slots.length} objects. Each object must include:`,
-        'pillar, contentType, angle, rationale, suggestedPost',
+        'pillar, contentType, angle, coreClaim, rationale, suggestedPost',
         'Each object represents one post slot only.',
+        'Write angle as "Angle Library Type: fresh specific angle".',
+        'Write coreClaim as one short explicit sentence describing the takeaway.',
         'Each suggestedPost must be exactly 1 X post and must be 280 characters or fewer.',
         'Do not combine multiple posts into one object.',
         'The campaign brief must materially influence the hook, angle, examples, and CTA framing in every object.',
+        'When no campaign brief is provided, use the recent committed content list to rotate toward fresher claims and underused angles.',
+        'Core claim repetition matters more than surface wording changes.',
         'Each suggestedPost should be formatted for quick scanning and readability at first glance.',
         'No markdown. No additional text.',
       ].join('\n\n'),
@@ -437,6 +515,7 @@ export async function regenerateSevenDayDraftItem(params: {
   campaignBrief?: string;
   postsPerDay?: 1 | 2;
   voiceMode?: WorkflowPlannerVoiceMode;
+  recentCommittedContent?: WorkflowCommittedContentSignal[];
 }): Promise<PlannerDraftItem> {
   const targetDate = startOfDay(parseISO(params.dateISO));
   const targetDateLabel = params.existingItem.dayLabel;
@@ -455,6 +534,7 @@ export async function regenerateSevenDayDraftItem(params: {
       postsPerDay: params.postsPerDay,
       voiceMode: params.voiceMode,
       forceDifference: false,
+      recentCommittedContent: params.recentCommittedContent,
     });
 
     let candidate = buildNormalizedDraftItem({
@@ -473,6 +553,7 @@ export async function regenerateSevenDayDraftItem(params: {
         postsPerDay: params.postsPerDay,
         voiceMode: params.voiceMode,
         forceDifference: true,
+        recentCommittedContent: params.recentCommittedContent,
       });
 
       candidate = buildNormalizedDraftItem({
@@ -493,6 +574,7 @@ export async function regenerateSevenDayDraftItem(params: {
   } catch {
     return {
       ...params.existingItem,
+      coreClaim: buildDefaultCoreClaim(params.existingItem.angle, params.existingItem.pillar),
       suggestedPost: buildForcedFallbackSuggestion(params.existingItem),
       rationale: params.note
         ? `${params.existingItem.rationale} (Regenerated with note: ${params.note})`

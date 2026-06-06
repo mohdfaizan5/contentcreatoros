@@ -1,4 +1,6 @@
-import { PricingBento, PricingPlan } from "@/features/(public)/pricing/components/bento-pricing";
+import { LandingHeader } from '@/features/(public)/landing';
+import { PricingBento, PricingPlan } from '@/features/(public)/pricing/components/bento-pricing';
+import { createClient } from '@/shared/lib/supabase/server';
 
 const pricingPlans: PricingPlan[] = [
   {
@@ -79,11 +81,15 @@ const pricingPlans: PricingPlan[] = [
   },
 ];
 
-export default function PricingPage() {
+export default async function PricingPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  const isAuthenticated = Boolean(user);
+
   return (
     <main className="min-h-screen bg-[linear-gradient(180deg,#fffdf8_0%,#f6f9f7_52%,#ffffff_100%)]">
+      <LandingHeader isAuthenticated={isAuthenticated} />
       <PricingBento plans={pricingPlans} />
-      
     </main>
   );
 }

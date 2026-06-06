@@ -2,6 +2,7 @@ import { createAdminClient } from '@/shared/lib/supabase/server-admin';
 import {
   generateSevenDayDraftItems,
   getBrandContextForUser,
+  type WorkflowCommittedContentSignal,
   type WorkflowPlannerVoiceMode,
 } from '@/features/workflow/lib/workflow-planner-ai';
 
@@ -30,6 +31,63 @@ export type DispatchPlannerSummary = {
   generatedItems: number;
   error?: string;
 };
+
+async function loadRecentCommittedContent(
+  supabase: ReturnType<typeof createAdminClient>,
+  userId: string,
+) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - 14);
+
+  const { data, error } = await supabase
+    .from('generated_tweets')
+    .select('status, scheduled_for, published_at, prompt_snapshot')
+    .eq('user_id', userId)
+    .in('status', ['scheduled', 'published']);
+
+  if (error) {
+    throw new Error(`Unable to load recent committed workflow content. ${error.message}`);
+  }
+
+  const recentSignals: WorkflowCommittedContentSignal[] = [];
+
+  for (const row of data ?? []) {
+    const promptSnapshot =
+      row.prompt_snapshot && typeof row.prompt_snapshot === 'object'
+        ? (row.prompt_snapshot as Record<string, unknown>)
+        : null;
+    const coreClaim =
+      promptSnapshot && typeof promptSnapshot.coreClaim === 'string'
+        ? promptSnapshot.coreClaim.trim()
+        : '';
+    const angle =
+      promptSnapshot && typeof promptSnapshot.angle === 'string'
+        ? promptSnapshot.angle.trim()
+        : '';
+    const committedAt =
+      row.status === 'published' ? row.published_at ?? null : row.scheduled_for ?? null;
+
+    if (!coreClaim || !committedAt) {
+      continue;
+    }
+
+    const committedDate = new Date(committedAt);
+
+    if (Number.isNaN(committedDate.getTime()) || committedDate.getTime() < cutoff.getTime()) {
+      continue;
+    }
+
+    recentSignals.push({
+      angle,
+      coreClaim,
+      publishedOrScheduledAt: committedAt,
+    });
+  }
+
+  return recentSignals
+    .sort((left, right) => right.publishedOrScheduledAt.localeCompare(left.publishedOrScheduledAt))
+    .slice(0, 12);
+}
 
 function normalizeSource(rawSource?: string) {
   const source = rawSource?.trim();
@@ -114,6 +172,10 @@ export async function dispatchWorkflowPlanningRuns(
 
   try {
     const brandContext = await getBrandContextForUser(supabase, claimedRun.user_id);
+    const recentCommittedContent = await loadRecentCommittedContent(
+      supabase,
+      claimedRun.user_id,
+    );
     const promptSnapshot =
       claimedRun.generation_prompt_snapshot &&
       typeof claimedRun.generation_prompt_snapshot === 'object'
@@ -131,6 +193,7 @@ export async function dispatchWorkflowPlanningRuns(
       campaignBrief,
       endDateISO: claimedRun.end_date,
       postsPerDay,
+      recentCommittedContent,
       startDateISO: claimedRun.start_date,
       voiceMode,
     });
@@ -144,6 +207,7 @@ export async function dispatchWorkflowPlanningRuns(
       item_date: item.dateISO,
       pillar: item.pillar,
       content_type: item.contentType,
+      core_claim: item.coreClaim,
       rationale: item.rationale,
       regeneration_count: 0,
       regeneration_history: [],
@@ -182,6 +246,7 @@ export async function dispatchWorkflowPlanningRuns(
           ...promptSnapshot,
           campaignBrief,
           generatedAt: completedAt,
+          freshnessLookbackDays: 14,
           model: claimedRun.generation_model || 'claude-haiku-4-5',
           multiPostMode: 'separate_items',
           postsPerDay,

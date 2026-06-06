@@ -256,7 +256,7 @@ export default function WorkflowNewRunClient({
                 <div className="inline-flex w-full items-center justify-between gap-2">
                   <Label>Tell us about your campaign</Label>
                   <Label className="font-normal text-muted-foreground text-xs" render={<span />}>
-                    Optional
+                    Strongly recommended
                   </Label>
                 </div>
                 <Textarea

@@ -44,6 +44,13 @@ export type XAccountMetricSnapshotType =
     | 'reconnect'
     | 'manual'
     | 'backfill';
+export type AutoEngageGoal =
+    | 'founder_personal_branding'
+    | 'lead_generation'
+    | 'community_engagement';
+export type AutoEngageTargetType = 'account' | 'keyword';
+export type AutoEngageSuggestionRiskLevel = 'low' | 'medium' | 'avoid';
+export type AutoEngageSuggestionStatus = 'pending' | 'copied' | 'skipped' | 'posted';
 
 // ============================================
 // EDITOR.JS TYPES
@@ -262,6 +269,69 @@ export interface XAccountMetricSnapshot {
     updated_at: string;
 }
 
+export interface AutoEngageProfile {
+    id: string;
+    user_id: string;
+    x_account_id: string;
+    profile_name: string;
+    primary_goal: AutoEngageGoal;
+    niche: string | null;
+    offer: string | null;
+    target_audience: string | null;
+    brand_voice: string | null;
+    content_pillars: string[];
+    topics_to_avoid: string[];
+    daily_limit: number;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AutoEngageTarget {
+    id: string;
+    profile_id: string;
+    user_id: string;
+    target_type: AutoEngageTargetType;
+    value: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AutoEngageSuggestion {
+    id: string;
+    profile_id: string;
+    user_id: string;
+    x_account_id: string;
+    run_id: string | null;
+    source_type: 'account' | 'keyword' | 'mention' | 'home';
+    source_value: string | null;
+    x_post_id: string;
+    x_post_author_id: string | null;
+    x_post_author_username: string;
+    x_post_author_name: string | null;
+    x_post_text: string;
+    x_post_created_at: string | null;
+    x_post_url: string;
+    metrics: Record<string, unknown>;
+    score: number;
+    reason: string;
+    risk_level: AutoEngageSuggestionRiskLevel;
+    suggested_reply: string;
+    reply_options: string[];
+    status: AutoEngageSuggestionStatus;
+    surfaced_for_date: string;
+    created_at: string;
+    updated_at: string;
+}
+
+export interface AutoEngageRun {
+    id: string;
+    user_id: string;
+    x_account_id: string;
+    profile_id: string;
+    created_at: string;
+}
+
 export interface PostMediaAttachment {
     id: string;
     bucket: string;
@@ -351,6 +421,7 @@ export interface SevenDayPlanningItem {
     pillar: string;
     content_type: string;
     angle: string;
+    core_claim: string | null;
     rationale: string;
     suggested_post: string;
     approval_status: SevenDayPlanningItemApprovalStatus;

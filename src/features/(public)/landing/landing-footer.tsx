@@ -4,7 +4,13 @@ import React from 'react';
 import Link from 'next/link';
 import Logo from '@/shared/components/logo';
 
-const LandingFooter = () => {
+type LandingFooterProps = {
+    isAuthenticated?: boolean;
+};
+
+const LandingFooter = ({ isAuthenticated = false }: LandingFooterProps) => {
+    const footerCtaHref = isAuthenticated ? '/app' : '/sign-up';
+
     return (
         <footer className="bg-[#000308] text-white py-16">
             <div className="max-w-7xl mx-auto px-6">
@@ -77,7 +83,7 @@ const LandingFooter = () => {
                                 <polygon points="9.75 15.02 15.5 11.75 9.75 8.48 9.75 15.02" fill="#000308" />
                             </svg>
                         </a>
-                        <Link href="/sign-up" className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
+                        <Link href={footerCtaHref} className="w-10 h-10 bg-white/10 rounded-full flex items-center justify-center hover:bg-white/20 transition-colors">
                             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2">
                                 <path d="M5 12H19M19 12L12 5M19 12L12 19" />
                             </svg>

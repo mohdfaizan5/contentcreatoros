@@ -5,7 +5,15 @@ import { Button } from '@/shared/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/components/ui/avatar"
 import Link from 'next/link';
 
-const LandingCryptoEntry = () => {
+type LandingCryptoEntryProps = {
+    isAuthenticated?: boolean;
+};
+
+const LandingCryptoEntry = ({ isAuthenticated = false }: LandingCryptoEntryProps) => {
+    const primaryCta = isAuthenticated
+        ? { href: '/app', label: 'Go to Dashboard' }
+        : { href: '/sign-up', label: 'Start dumping ideas' };
+
     return (
         <section className="relative bg-white py-20 md:py-32 overflow-hidden">
             {/* Decorative floating elements */}
@@ -65,11 +73,11 @@ const LandingCryptoEntry = () => {
                         solo creators who want to stay consistent without the chaos.
                     </p>
 
-                    <Link href="/sign-up">
+                    <Link href={primaryCta.href}>
                         <Button
                             className="bg-[#000100] text-white hover:bg-gray-800 rounded-full px-6 py-3 font-medium inline-flex items-center gap-2"
                         >
-                            Start dumping ideas
+                            {primaryCta.label}
                             <span className="w-6 h-6 bg-[#1F92F9] rounded-md flex items-center justify-center">
                                 <svg width="12" height="12" viewBox="0 0 24 24" fill="white">
                                     <path d="M5 12H19M19 12L12 5M19 12L12 19" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />

@@ -1255,6 +1255,14 @@ export default function WorkflowRunDetailClient({
                             </CardHeader>
 
                             <CardContent className="space-y-4">
+                                {selectedItem.core_claim ? (
+                                    <div className="rounded-lg border bg-muted/30 px-3 py-2">
+                                        <p className="text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
+                                            Core Claim
+                                        </p>
+                                        <p className="mt-1 text-sm text-foreground">{selectedItem.core_claim}</p>
+                                    </div>
+                                ) : null}
                                 {/* <div className='flex items-center gap-2 '>
                                     <Avatar className={"size-10"}>
                                         <AvatarImage alt={postingAccountName} src={xProfile?.avatarUrl ?? undefined} />
