@@ -341,7 +341,7 @@ export function TwitterPreviewWorkbench() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 pb-10">
-      <section className="relative overflow-hidden rounded-[2rem] border border-border/60 bg-[linear-gradient(135deg,rgba(29,155,240,0.10),rgba(255,255,255,0)_35%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.24),transparent_28%),linear-gradient(180deg,rgba(15,23,42,0.02),rgba(15,23,42,0))] p-6 sm:p-8">
+      <section className="relative overflow-hidden  p-6 sm:py-8">
         <div className="absolute inset-y-0 right-0 hidden w-1/3 bg-[radial-gradient(circle_at_center,rgba(29,155,240,0.12),transparent_58%)] lg:block" />
         <div className="relative flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="max-w-3xl">
@@ -358,7 +358,7 @@ export function TwitterPreviewWorkbench() {
           </div>
 
           <Button asChild variant="outline" className="w-full sm:w-auto">
-            <Link href="/app/tools">Back to tools</Link>
+            <Link href="/tools">Back to tools</Link>
           </Button>
         </div>
       </section>

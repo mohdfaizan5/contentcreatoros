@@ -7,6 +7,27 @@ import { Changelog } from '@/features/(public)/changelog/types/changelog';
  */
 export const changelog: Changelog = [
     {
+
+        version: '2.0.0',
+        date: '8 June, 2026',
+        title: 'Rethink & Rebuild - ContentOSX 2.0',
+        description: 'Introduced website-first onboarding prefill with Firecrawl extraction, AI inference, and editable review context.',
+        improvements: [
+            `- added Mastra
+- added blogs (fumadocs)
+  - added few blogs in that`,
+            'made changes to navbar (added new links)',
+            'added templates route',
+            
+        ],
+        fixes: [
+            'made tools ui clean, from ai slop',
+        ],
+        patches: [
+        
+        ],
+    },
+    {
         version: '1.0.5',
         date: 'Apr 12, 2026',
         title: 'Onboarding Autofill and Brand Detection',

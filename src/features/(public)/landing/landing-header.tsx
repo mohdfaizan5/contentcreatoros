@@ -18,7 +18,7 @@ const navItems = [
     { href: '/#templates', label: 'Templates' },
     { href: '/#series', label: 'Series' },
     { href: '/pricing', label: 'Pricing' },
-    { href: '/#faq', label: 'FAQ' },
+    { href: '/blog', label: 'Blog' },
 ];
 
 const LandingHeader = ({ isAuthenticated = false }: LandingHeaderProps) => {

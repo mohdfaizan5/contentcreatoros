@@ -5,6 +5,7 @@ import type * as React from "react";
 import { cn } from "@/shared/lib/utils";
 import { Input, type InputProps } from "@/shared/components/ui/input";
 import { Textarea, type TextareaProps } from "@/shared/components/ui/textarea";
+import { Button, type ButtonProps } from "./button";
 
 const inputGroupAddonVariants = cva(
   "flex h-auto cursor-text select-none items-center justify-center gap-2 leading-none [&>kbd]:rounded-[calc(var(--radius)-5px)] in-[[data-slot=input-group]:has([data-slot=input-control],[data-slot=textarea-control])]:[&_svg:not([class*='size-'])]:size-4.5 sm:in-[[data-slot=input-group]:has([data-slot=input-control],[data-slot=textarea-control])]:[&_svg:not([class*='size-'])]:size-4 [&_svg]:-mx-0.5 not-has-[button]:**:[svg:not([class*='opacity-'])]:opacity-80",
@@ -95,6 +96,16 @@ export function InputGroupInput({
   ...props
 }: InputProps): React.ReactElement {
   return <Input className={className} unstyled {...props} />;
+}
+
+export function InputGroupButton({ className, ...props }: ButtonProps) {
+  return (
+    <Button
+      className={cn(className)}
+      data-slot="input-group-button"
+      {...props}
+    />
+  );
 }
 
 export function InputGroupTextarea({
