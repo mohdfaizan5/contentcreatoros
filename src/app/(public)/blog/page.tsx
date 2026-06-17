@@ -5,7 +5,7 @@ import { ReadCvLogoIcon } from '@phosphor-icons/react/dist/ssr';
 import { source } from '@/shared/lib/source';
 
 export const metadata = {
-    title: 'Blog | SaaSFollo',
+    title: 'Blog | ContentOSX',
     description: 'Playbooks and field notes for solo founders shipping faster.',
 };
 
@@ -49,7 +49,7 @@ export default async function BlogIndexPage() {
             <section className="rounded-2xl border border-border bg-card text-card-foreground px-6 md:px-8 py-8 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div>
                     <p className="text-2xl font-bold">Start tracking your SaaS execution today</p>
-                    <p className="text-muted-foreground mt-1">Join teams using SaaSFollo to ship faster with clarity.</p>
+                    <p className="text-muted-foreground mt-1">Join teams using ContentOSX to ship faster with clarity.</p>
                 </div>
                 <Link href="/projects" className="inline-flex items-center gap-2 rounded-lg bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2.5 text-sm font-semibold transition-colors">
                     Try ContentOSX

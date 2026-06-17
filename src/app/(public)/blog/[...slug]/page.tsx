@@ -47,7 +47,7 @@ export default async function Page({ params }: { params: Promise<{ slug: string[
 //     const description = seo.seoDescription || page.data.description || 'No description available';
 
 //     return {
-//         title: `${title} | SaaSFollo`,
+//         title: `${title} | ContentOSX`,
 //         description,
 //         keywords: seo.keywords,
 //         openGraph: {

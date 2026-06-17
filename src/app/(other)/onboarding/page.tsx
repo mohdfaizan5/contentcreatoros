@@ -5,7 +5,7 @@ import { createClient } from '@/shared/lib/supabase/server';
 import { redirect } from 'next/navigation';
 
 export const metadata = {
-  title: 'Onboarding | SaaSFollo',
+  title: 'Onboarding | ContentOSX',
   description: 'Set up your X content strategy workspace',
 };
 

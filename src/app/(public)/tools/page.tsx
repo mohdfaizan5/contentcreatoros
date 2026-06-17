@@ -25,6 +25,12 @@ const tools = [
       "Paste copy, toggle premium mode, upload media, and preview the post in X light and dark themes.",
       
   },
+  {
+    href: "/tools/brand-identity-generator",
+    title: "Brand Identity Generator",
+    description:
+      "Generate a unique brand identity for your business or project.",
+  },
 ];
 
 export default function ToolsPage() {

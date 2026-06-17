@@ -51,7 +51,7 @@ export default async function BlogPost({ params }: BlogPostProps) {
                     <div className="flex flex-wrap items-center gap-3 md:gap-6 text-xs md:text-sm text-muted-foreground">
                         <div className="flex items-center gap-2">
                             <User className="h-4 w-4" />
-                            <span>{(page.data as { author?: string }).author || 'SaaSFollo Team'}</span>
+                            <span>{(page.data as { author?: string }).author || 'ContentOSX Team'}</span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4" />
@@ -145,7 +145,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     const { slug } = await params;
     if (!slug || slug.length === 0) {
         return {
-            title: 'SaaSFollo Blog',
+            title: 'ContentOSX Blog',
             description: 'Playbooks and field notes for solo founders shipping faster.',
         };
     }
@@ -158,7 +158,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
         keywords?: string[];
         ogImage?: string;
     };
-    const title = seo.seoTitle || `${page.data.title} | SaaSFollo Blog`;
+    const title = seo.seoTitle || `${page.data.title} | ContentOSX Blog`;
     const description = seo.seoDescription || page.data.description || 'Playbooks and field notes for solo founders shipping faster.';
 
     return {

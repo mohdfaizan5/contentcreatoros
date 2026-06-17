@@ -500,7 +500,7 @@ Those come later — if ever.
 
 You now have **two strong products**:
 
-1. SaaSfollo — Product & execution clarity
+1. ContentOSX — Product & execution clarity
 2. Content OS — Creator thinking & output clarity
 
 Do **not merge them** yet.
